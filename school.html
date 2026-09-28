@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ШКОЛА №43 — v4 OPTIMIZED</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:Consolas,monospace;color:#cfe;position:fixed;touch-action:none}
+canvas{display:block;position:fixed;inset:0;width:100%!important;height:100%!important;touch-action:none}
+.hidden{display:none!important}
+
+#menu{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#151515,#000 72%);z-index:100;padding:10px}
+#tv{position:relative;width:100%;max-width:520px;padding:16px 16px 40px;border-radius:20px;background:linear-gradient(160deg,#3d332a,#1e1813 55%,#0c0907);box-shadow:0 0 0 5px #0a0806,0 25px 60px #000}
+#scr{position:relative;width:100%;aspect-ratio:3/4;max-height:75vh;border-radius:14px;overflow:hidden;background:#04120a;box-shadow:inset 0 0 70px rgba(0,0,0,.97)}
+#crt{position:absolute;inset:0;pointer-events:none;z-index:5;background:repeating-linear-gradient(0deg,rgba(0,0,0,.3) 0 1px,transparent 1px 3px)}
+#min{position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;padding:14px 16px;overflow-y:auto}
+#min h1{font-size:15px;letter-spacing:2px;color:#5f9;text-shadow:0 0 8px #0f0;margin-bottom:3px}
+#min .sub{font-size:9px;color:#2a7;margin-bottom:14px;letter-spacing:1.5px}
+.mbtn{background:rgba(13,42,28,.55);border:1px solid #1d5;color:#9fecbf;font-family:inherit;font-size:13px;text-align:left;padding:11px 12px;cursor:pointer;letter-spacing:1.2px;border-radius:5px;transition:.1s;margin-bottom:6px}
+.mbtn:hover,.mbtn:active{background:#1d5;color:#021}
+.mbtn.danger{color:#ffa0a0;border-color:#a02020}
+.mbtn.horror{color:#f66;border-color:#800;background:rgba(60,0,0,.6)}
+.mbtn.horror:hover{background:#800;color:#fff}
+.mbtn.small{font-size:11px;padding:8px 12px}
+#tvlb{position:absolute;bottom:10px;left:0;right:0;text-align:center;color:#6a5340;font-size:10px;letter-spacing:6px;font-weight:bold}
+
+#hud{position:fixed;inset:0;pointer-events:none;z-index:30;display:none}
+#cross{position:absolute;left:50%;top:50%;width:12px;height:12px;margin:-6px;opacity:.6}
+#cross::before,#cross::after{content:'';position:absolute;background:#fff}
+#cross::before{left:5px;top:0;width:2px;height:4px}
+#cross::after{left:5px;bottom:0;width:2px;height:4px}
+#cross i{position:absolute;top:5px;width:4px;height:2px;background:#fff}
+#cross i.l{left:0}#cross i.r{right:0}
+#cross.on{opacity:1;transform:scale(1.3)}
+#tbox{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top));font-size:13px;color:#bff0d0;text-shadow:0 0 6px #000;letter-spacing:1px;text-align:right;line-height:1.4}
+#tbox .day{display:block;color:#ffd76a;font-size:14px;letter-spacing:2px}
+#tbox.warn .time{color:#f88}
+#tbox .bell{color:#fa0;animation:pulse .5s infinite}
+@keyframes pulse{50%{opacity:.3}}
+#obj{position:absolute;left:10px;top:calc(10px + env(safe-area-inset-top));font-size:10.5px;line-height:1.4;color:#d9ffe5;padding:5px 9px;background:rgba(0,0,0,.55);border-left:2px solid #4dff9b;max-width:55vw;border-radius:2px}
+#obj:empty{display:none}
+#bars{position:absolute;left:10px;bottom:calc(10px + env(safe-area-inset-bottom));width:130px}
+.br{margin-bottom:4px}
+.br label{font-size:8px;letter-spacing:1.5px;color:#9ac5b0;display:block;margin-bottom:1px}
+.br div{height:5px;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.16);border-radius:2px;overflow:hidden}
+.br i{display:block;height:100%;background:#4dff9b;transition:width .25s}
+.br i.low{background:#f55}
+.br i.mid{background:#fa0}
+.br i.sanity{background:#a080ff}
+#prompt{position:absolute;left:50%;bottom:22%;transform:translate(-50%,4px);font-size:11px;color:#fff;padding:6px 11px;background:rgba(0,0,0,.85);border:1px solid #4dff9b;border-radius:4px;opacity:0;transition:.15s;white-space:nowrap;max-width:90vw}
+#prompt.on{opacity:1;transform:translate(-50%,0)}
+#prompt b{color:#4dff9b}
+#toasts{position:absolute;right:10px;bottom:32%;display:flex;flex-direction:column;align-items:flex-end;gap:4px;max-width:60vw}
+.toast{font-size:10px;color:#ffd76a;padding:5px 9px;background:rgba(0,0,0,.85);border:1px solid rgba(255,215,106,.4);border-radius:3px;animation:tin .2s,tout .5s ease-in 3.4s forwards}
+@keyframes tin{from{opacity:0;transform:translateX(20px)}}
+@keyframes tout{to{opacity:0;transform:translateX(20px)}}
+#dmg{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(150,0,0,.9));opacity:0;transition:.3s;pointer-events:none;z-index:15}
+#flick{position:fixed;inset:0;background:#ffe0a0;opacity:0;pointer-events:none;z-index:29}
+#flick.on{animation:fl .7s}
+@keyframes fl{0%{opacity:.5}100%{opacity:0}}
+#fps{position:fixed;left:8px;bottom:8px;font-size:11px;color:#4dff9b;background:rgba(0,0,0,.6);padding:3px 8px;border-radius:2px;z-index:35;font-family:monospace;line-height:1.4}
+#fps b{color:#fa0}
+#screamer{position:fixed;inset:0;background:#000;z-index:99;display:none;pointer-events:none}
+#screamer.on{display:block}
+#screamerFace{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:50vmin;color:#c00;text-shadow:0 0 20px #f00,0 0 40px #f00;animation:sp .1s infinite}
+@keyframes sp{0%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.08)}}
+#heartbeat{position:fixed;inset:0;pointer-events:none;z-index:14;background:radial-gradient(circle at center,transparent 40%,rgba(120,0,0,.4));opacity:0;transition:opacity .3s}
+
+.panel{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;background:rgba(0,0,0,.85);padding:10px}
+.pbox{background:linear-gradient(160deg,rgba(10,22,16,.98),rgba(6,14,10,.98));border:2px solid #1d5;padding:16px;max-width:440px;width:100%;max-height:88vh;overflow-y:auto;border-radius:8px;font-size:12px;line-height:1.55;color:#bfe}
+.pbox h2{color:#5f9;font-size:14px;margin-bottom:10px;letter-spacing:2px}
+.pbox button{background:#0d2a1c;color:#9fecbf;border:1px solid #1d5;padding:9px 12px;margin:4px 4px 0 0;font-family:inherit;font-size:11.5px;letter-spacing:1px;border-radius:4px;cursor:pointer}
+.pbox button:hover{background:#1d5;color:#021}
+.pbox button.primary{background:#1a5c3a;color:#dfffe9;border-color:#3fd18a}
+.pbox button.danger{background:#4a1414;color:#ffbaba;border-color:#a02020}
+#pcBtns{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:8px}
+#pcBtns button{margin:0;width:100%}
+#pcBtns .full{grid-column:span 2}
+#pcInfo{color:#9fdcb8;margin-bottom:10px;padding:8px;background:rgba(0,40,20,.4);border-left:3px solid #4dff9b;font-size:11px;line-height:1.6}
+#pcInfo b{color:#4dff9b}
+#pcLog{margin-top:10px;color:#6c9;font-size:10.5px;min-height:18px;padding:7px 9px;background:rgba(0,0,0,.5);border-left:2px solid #1d5}
+#dlgN{color:#ffd76a;font-size:12px;letter-spacing:1.5px;margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid rgba(255,215,106,.3)}
+#dlgT{font-size:12px;line-height:1.55;color:#e0f5e8;min-height:36px;margin-bottom:11px}
+.sr{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:11px}
+.sr>span:first-child{width:145px;color:#8dc8a8;font-size:10.5px}
+input[type=range]{flex:1;height:4px;accent-color:#4dff9b}
+.sv{width:44px;text-align:right;color:#4dff9b;font-size:10.5px}
+#endT{font-size:19px;letter-spacing:3px;text-align:center;margin-bottom:10px}
+#endX{font-size:11.5px;line-height:1.55;text-align:center;color:#cfe;margin-bottom:12px}
+#endS{color:#6c9;font-size:10.5px;margin-bottom:14px;padding:9px;background:rgba(0,40,20,.4);border-radius:4px;text-align:center;line-height:1.7}
+.rules{font-size:11px;line-height:1.65;color:#cfe;max-height:60vh;overflow-y:auto;padding-right:6px}
+.rules h3{color:#ffd76a;margin:9px 0 5px;font-size:11px}
+.rules b{color:#4dff9b}
+.kbd{display:inline-block;background:#0d2a1c;border:1px solid #1d5;border-radius:3px;padding:1px 6px;font-size:10px;color:#4dff9b;margin:0 2px}
+
+#radioPanel .pbox{max-width:420px;border-color:#4d80ff;background:linear-gradient(160deg,rgba(8,15,30,.98),rgba(4,8,18,.98))}
+#radioPanel h2{color:#6ab0ff}
+.radio-btn{display:block;width:100%;text-align:left;background:rgba(20,40,80,.6)!important;border-color:#3a6fb0!important;color:#c8dcff!important;padding:10px 14px!important;margin:5px 0!important}
+.radio-btn:hover{background:#3a6fb0!important;color:#fff!important}
+.radio-btn b{color:#6ab0ff;display:block;margin-bottom:2px}
+.radio-btn span{font-size:10.5px;opacity:.8}
+#radioLog{margin-top:10px;color:#6ab0ff;font-size:10.5px;min-height:18px;padding:8px;background:rgba(0,0,10,.6);border-left:2px solid #3a6fb0}
+
+#touchUI{position:fixed;inset:0;z-index:28;display:none;pointer-events:none}
+#touchUI.on{display:block}
+#joyBase{position:absolute;left:18px;bottom:calc(18px + env(safe-area-inset-bottom));width:118px;height:118px;border-radius:50%;background:rgba(0,0,0,.35);border:2px solid rgba(120,255,180,.4);pointer-events:auto;touch-action:none}
+#joyKnob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(120,255,180,.95),rgba(40,120,80,.85));pointer-events:none}
+#lookZone{position:absolute;right:0;top:0;width:58%;height:100%;pointer-events:auto;touch-action:none}
+#btnAct{position:absolute;right:18px;bottom:calc(130px + env(safe-area-inset-bottom));width:76px;height:76px;border-radius:50%;background:rgba(80,255,140,.35);border:3px solid #4dff9b;color:#fff;font-size:11px;font-weight:bold;pointer-events:auto;display:flex;align-items:center;justify-content:center}
+#btnVape{position:absolute;right:108px;bottom:calc(190px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:rgba(160,200,255,.3);border:2px solid rgba(160,200,255,.6);color:#e0eeff;font-size:9.5px;pointer-events:auto;display:flex;align-items:center;justify-content:center}
+#btnRadio{position:absolute;right:108px;bottom:calc(255px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:rgba(80,140,255,.3);border:2px solid rgba(80,140,255,.6);color:#d0e0ff;font-size:9.5px;pointer-events:auto;display:flex;align-items:center;justify-content:center}
+#btnTorch{position:absolute;left:145px;bottom:calc(18px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:rgba(255,220,140,.3);border:2px solid rgba(255,220,140,.6);color:#fff4c8;font-size:9.5px;pointer-events:auto;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<div id="menu"><div id="tv"><div id="scr">
+<div id="crt"></div>
+<div id="min">
+<h1>ШКОЛА №43<br>НОЧНАЯ СМЕНА</h1>
+<div class="sub">v4 • ОПТИМИЗАЦИЯ</div>
+<div id="menuList"></div>
+</div>
+</div><div id="tvlb">ГОРИЗОНТ-43</div></div></div>
+
+<div id="hud">
+<div id="cross"><i class="l"></i><i class="r"></i></div>
+<div id="tbox">
+<span class="day" id="dayBox">ДЕНЬ 1/5</span>
+<span class="time" id="clock">--:--</span>
+<span id="bellIcon" class="bell hidden"> 🔔</span>
+</div>
+<div id="obj"></div>
+<div id="bars">
+<div class="br"><label>СИЛЫ</label><div><i id="stam"></i></div></div>
+<div class="br"><label>СЫТОСТЬ</label><div><i id="hung"></i></div></div>
+<div class="br" id="sanityWrap" style="display:none"><label>РАССУДОК</label><div><i id="sanity" class="sanity"></i></div></div>
+</div>
+<div id="prompt"></div>
+<div id="toasts"></div>
+</div>
+<div id="dmg"></div>
+<div id="flick"></div>
+<div id="heartbeat"></div>
+<div id="screamer"><div id="screamerFace">☠</div></div>
+<div id="fps"><b id="fpsVal">--</b> FPS | <span id="fpsInfo">dc:-- tri:--</span></div>
+
+<div id="touchUI">
+<div id="joyBase"><div id="joyKnob"></div></div>
+<div id="lookZone"></div>
+<button id="btnAct">ВЗАИМ</button>
+<button id="btnVape">ВЕЙП</button>
+<button id="btnRadio">📻 РАЦИЯ</button>
+<button id="btnTorch">🔦 СВЕТ</button>
+</div>
+
+<div class="panel" id="pcPanel"><div class="pbox">
+<h2>ПОСТ ОХРАНЫ</h2>
+<div id="pcInfo"></div>
+<div id="pcBtns">
+<button data-cmd="code1" class="danger">КОД 1</button>
+<button data-cmd="code3" class="danger">КОД 3</button>
+<button data-cmd="bell">ЗВОНОК</button>
+<button data-cmd="sched">СМЕНА</button>
+<button data-cmd="close" class="primary full">ЗАКРЫТЬ [E]</button>
+</div>
+<div id="pcLog">Терминал готов.</div>
+</div></div>
+
+<div class="panel" id="radioPanel"><div class="pbox">
+<h2>РАЦИЯ • КАНАЛ 3</h2>
+<button class="radio-btn" data-radio="1"><b>КОД 1</b><span>Опасная сущность — все отступают</span></button>
+<button class="radio-btn" data-radio="2"><b>КОД 2</b><span>Обход завершён</span></button>
+<button class="radio-btn" data-radio="3"><b>КОД 3</b><span>КОНЕЦ СМЕНЫ</span></button>
+<button class="radio-btn" data-radio="4"><b>КОД 4</b><span>Восстановить силы</span></button>
+<button class="radio-btn" data-radio="5"><b>КОД 5</b><span>Всё чисто</span></button>
+<button data-cmd="close" class="primary" style="width:100%;margin-top:8px">ЗАКРЫТЬ [R]</button>
+<div id="radioLog">Рация готова.</div>
+</div></div>
+
+<div class="panel" id="dlgPanel"><div class="pbox">
+<div id="dlgN"></div><div id="dlgT"></div>
+<button id="dlgNext" class="primary">ДАЛЕЕ [E]</button>
+</div></div>
+
+<div class="panel" id="rulesPanel"><div class="pbox">
+<h2>ПРАВИЛА</h2>
+<div class="rules" id="rulesText"></div>
+<button id="rulesOk" class="primary">ПОНЯЛ</button>
+</div></div>
+
+<div class="panel" id="setPanel"><div class="pbox">
+<h2>НАСТРОЙКИ</h2>
+<div class="sr"><span>Чувствительность</span><input id="s_sens" type="range" min="0.3" max="3" step="0.05"><span class="sv" id="v_sens"></span></div>
+<div class="sr"><span>Угол обзора</span><input id="s_fov" type="range" min="60" max="110" step="1"><span class="sv" id="v_fov"></span></div>
+<div class="sr"><span>Яркость</span><input id="s_bright" type="range" min="0.6" max="2.5" step="0.05"><span class="sv" id="v_bright"></span></div>
+<div class="sr"><span>Туман</span><input id="s_dist" type="range" min="15" max="100" step="1"><span class="sv" id="v_dist"></span></div>
+<div class="sr"><span>Размер HUD</span><input id="s_hud" type="range" min="0.8" max="1.4" step="0.05"><span class="sv" id="v_hud"></span></div>
+<div class="sr"><span>Качество (пиксели)</span><input id="s_qual" type="range" min="0" max="3" step="1"><span class="sv" id="v_qual"></span></div>
+<div class="sr"><span>Лимит FPS</span><input id="s_fps" type="range" min="0" max="4" step="1"><span class="sv" id="v_fps"></span></div>
+<div class="sr"><span>Дальние NPC</span><input id="s_lod" type="range" min="10" max="60" step="1"><span class="sv" id="v_lod"></span></div>
+<div class="sr"><span>NPC (кол-во)</span><input id="s_npc" type="range" min="3" max="15" step="1"><span class="sv" id="v_npc"></span></div>
+<div class="sr"><span>Показ FPS</span><input id="s_showfps" type="range" min="0" max="1" step="1"><span class="sv" id="v_showfps"></span></div>
+<div style="margin-top:14px"><button id="setBack" class="primary">НАЗАД</button><button id="setReset">СБРОС</button></div>
+</div></div>
+
+<div class="panel" id="endPanel"><div class="pbox">
+<h1 id="endT"></h1><p id="endX"></p><div id="endS"></div>
+<button id="endR" class="primary" style="width:100%">НОВАЯ СМЕНА</button>
+</div></div>
+
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+              || (navigator.maxTouchPoints>0);
+
+const DEF={
+  sens:1.5, fov:78, bright:1.5, dist:isMobile?30:55,
+  hud:1.0, qual:0,
+  fps:0,
+  lod:isMobile?15:30,
+  npcCount:isMobile?8:15,
+  showFps:1
+};
+let cfg=Object.assign({},DEF);
+try{Object.assign(cfg,JSON.parse(localStorage.getItem('sh43v4')||'{}'));}catch(e){}
+
+const PR_OPTS=[0.5, 0.75, 1.0, 1.5];
+const FPS_OPTS=[0, 60, 30, 45, 120];
+
+let device = isMobile ? 'touch' : 'kbm';
+let difficulty = 'normal';
+const DIFF={
+  easy:  {anomMul:0.55, hungRate:0.30, stamRate:8,  sanityRate:0,  label:'ЛЕГКО'},
+  normal:{anomMul:1.00, hungRate:0.55, stamRate:11, sanityRate:0,  label:'НОРМА'},
+  hard:  {anomMul:1.65, hungRate:0.85, stamRate:15, sanityRate:0,  label:'СЛОЖНО'},
+  horror:{anomMul:2.20, hungRate:1.00, stamRate:18, sanityRate:0.8,label:'ХОРРОР'}
+};
+const isHorror=()=>difficulty==='horror';
+
+const DAY_SECONDS = 300;
+const MAX_DAY = 5;
+
+const G={
+  running:false, paused:false, dead:false,
+  day:1, dayTime:0, seed:1,
+  stam:100, hunger:100, sanity:100, floor:0,
+  bell:false, bellT:0,
+  code1:false, code1T:0,
+  deaths:0, ach:new Set(), smoke:[],
+  tpCD:0, hasKnife:false, hasBun:false,
+  vapeCD:0,
+  fiz:{active:false, t:0, jumps:0, done:false},
+  larionovActive:false, larionovT:0,
+  amiraSpawned:false, escapeReady:false,
+  rulesShown:false,
+  flashlightOn:true,
+  radioOpen:false,
+  screamerCD:0,
+  fps:60, fpsAcc:0, fpsFrames:0
+};
+
+let renderer=null, scene=null, camera=null, torch=null, world=null, canvas=null;
+const BOX_GEO = new THREE.BoxGeometry(1, 1, 1);
+
+function initThree(){
+  renderer=new THREE.WebGLRenderer({
+    antialias:false, powerPreference:'high-performance',
+    stencil:false, depth:true, alpha:false
+  });
+  const pr = isMobile ? 0.75 : PR_OPTS[cfg.qual];
+  renderer.setPixelRatio(pr);
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.sortObjects = false;
+  document.body.appendChild(renderer.domElement);
+
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x1a2230);
+  scene.fog=new THREE.Fog(0x1a2230,5,cfg.dist);
+
+  camera=new THREE.PerspectiveCamera(cfg.fov,innerWidth/innerHeight,0.15,isMobile?80:150);
+  camera.rotation.order='YXZ';
+  scene.add(camera);
+
+  const amb=new THREE.AmbientLight(0xffffff, isHorror()?0.4:0.85);
+  scene.add(amb);
+  const hemi=new THREE.HemisphereLight(0xd0e0f0,0x505860, isHorror()?0.35:0.55);
+  scene.add(hemi);
+
+  torch=new THREE.PointLight(0xfff4dc, isHorror()?2.5:1.8, isHorror()?14:20, 1.5);
+  torch.position.set(0,0,0);
+  camera.add(torch);
+
+  world=new THREE.Group();
+  world.matrixAutoUpdate = false;
+  scene.add(world);
+
+  attachCanvas();
+  if(cfg.showFps) document.getElementById('fps').style.display='block';
+  else document.getElementById('fps').style.display='none';
+}
+function attachCanvas(){
+  if(!renderer || !renderer.domElement) return;
+  canvas=renderer.domElement;
+  canvas.addEventListener('click',()=>{
+    if(G.running && !G.paused && !mouseLocked) requestLock();
+  });
+}
+function requestLock(){
+  if(!canvas || device==='touch') return;
+  if(G.running && !G.paused && !G.dead){
+    const p=canvas.requestPointerLock();
+    if(p&&p.catch) p.catch(()=>{});
+  }
+}
+
+let M={};
+function initMaterials(){
+  M.floor = new THREE.MeshLambertMaterial({color:0xb8c0b0});
+  M.ceil = new THREE.MeshLambertMaterial({color:0xd8d8cc});
+  M.wall = new THREE.MeshLambertMaterial({color:0xc0c8b8});
+  M.wall2 = new THREE.MeshLambertMaterial({color:0xa8b4c0});
+  M.wood = new THREE.MeshLambertMaterial({color:0xa07850});
+  M.desk = new THREE.MeshLambertMaterial({color:0xc8b080});
+  M.metal = new THREE.MeshLambertMaterial({color:0x808890});
+  M.dark = new THREE.MeshLambertMaterial({color:0x404850});
+  M.lamp = new THREE.MeshBasicMaterial({color:0xfff8e0});
+  M.red = new THREE.MeshLambertMaterial({color:0xa04040});
+  M.white = new THREE.MeshLambertMaterial({color:0xe8e8e8});
+  M.black = new THREE.MeshLambertMaterial({color:0x1a1a20});
+  M.board = new THREE.MeshLambertMaterial({color:0x1a3a25});
+  M.chair = new THREE.MeshLambertMaterial({color:0x6a4a2a});
+}
+
+const FH=4.0, WH=3.5;
+const X_MIN=-50, X_MAX=50, Z_CORR=3, Z_ROOM=20, RW=12.5;
+
+let colliders=[], rooms={}, npcs=[], pcPos=new THREE.Vector3();
+let layout=null;
+
+const ROOM_NAMES={
+  stairs:'ЛЕСТНИЦА', post:'ПОСТ', director:'ДИРЕКТОР', doctor:'МЕДКАБ',
+  english:'АНГЛИЙСКИЙ', cafe:'СТОЛОВАЯ', gym:'СПОРТЗАЛ', gym2:'РАЗДЕВАЛКА',
+  wc1:'ТУАЛЕТ', wc2:'ТУАЛЕТ', wc3:'ТУАЛЕТ', wc4:'ТУАЛЕТ',
+  class1a:'1-А', class1b:'1-Б', class4b:'4-Б',
+  class5a:'5-А', class6a:'6-А', class7a:'7-А',
+  teachers:'УЧИТЕЛЬСКАЯ', trud:'ТРУД', storage:'СКЛАД',
+  library:'БИБЛИОТЕКА', chemistry:'ХИМИЯ', math:'МАТЕМАТИКА',
+  physics:'ФИЗИКА', biology:'БИОЛОГИЯ', computer:'ИНФОРМАТИКА',
+  music:'МУЗЫКА', history:'ИСТОРИЯ'
+};
+
+const FIXED_F1_N=['stairs','class1a','class1b','wc1','wc2','gym','gym2','stairs'];
+const FIXED_F1_S=['post','director','doctor','english','cafe','cafe','teachers','trud'];
+const FIXED_F2_N=['stairs','class5a','class6a','wc3','wc4','class7a','physics','stairs'];
+const POOL_S=['library','chemistry','math','biology','computer','music','history','storage'];
+
+function rng(seed){let a=seed|0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffle(arr,r){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=(r()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function generateLayout(seed){
+  const r=rng(seed*7919+13);
+  const poolS=shuffle(POOL_S,r);
+  return {
+    0:{ n:FIXED_F1_N.slice(), s:FIXED_F1_S.slice() },
+    1:{
+      n:FIXED_F2_N.slice(),
+      s:[poolS[0]||'library',poolS[1]||'chemistry',poolS[2]||'math',poolS[3]||'biology',
+         poolS[4]||'computer',poolS[5]||'music',poolS[6]||'history',poolS[7]||'storage']
+    }
+  };
+}
+function roomBounds(i,side){
+  const x0=X_MIN+RW*i, x1=x0+RW;
+  if(side==='n') return {x0,x1,z0:Z_CORR,z1:Z_ROOM};
+  return {x0,x1,z0:-Z_ROOM,z1:-Z_CORR};
+}
+function addBox(x,y,z,w,h,d,mat,col){
+  if(col===undefined) col=true;
+  const o=new THREE.Mesh(BOX_GEO, mat);
+  o.position.set(x,y,z);
+  o.scale.set(w,h,d);
+  o.matrixAutoUpdate = false;
+  o.updateMatrix();
+  world.add(o);
+  if(col) colliders.push({
+    minX:x-w/2, maxX:x+w/2,
+    minY:y-h/2, maxY:y+h/2,
+    minZ:z-d/2, maxZ:z+d/2
+  });
+  return o;
+}
+function wallAlongX(x0,x1,z,y0,gaps,mat){
+  const ops=(gaps||[]).slice().sort((a,b)=>a[0]-b[0]);
+  let cur=x0;
+  for(const [a,b] of ops){
+    if(a>cur) addBox((cur+a)/2,y0+WH/2,z,a-cur,WH,0.35,mat);
+    cur=Math.max(cur,b);
+  }
+  if(cur<x1) addBox((cur+x1)/2,y0+WH/2,z,x1-cur,WH,0.35,mat);
+}
+
+const signTexCache = {};
+function makeSignTexture(text){
+  if(signTexCache[text]) return signTexCache[text];
+  const c=document.createElement('canvas');
+  c.width=256; c.height=64;
+  const g=c.getContext('2d');
+  g.fillStyle='#0e3260'; g.fillRect(0,0,256,64);
+  g.strokeStyle='#f0f8ff'; g.lineWidth=4;
+  g.strokeRect(2,2,252,60);
+  g.fillStyle='#ffffff';
+  g.font='bold 26px Consolas, monospace';
+  g.textAlign='center';
+  g.textBaseline='middle';
+  g.fillText(text, 128, 34);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace=THREE.SRGBColorSpace;
+  t.magFilter=THREE.LinearFilter;
+  t.minFilter=THREE.LinearFilter;
+  t.generateMipmaps=false;
+  signTexCache[text]=t;
+  return t;
+}
+function addDoorSign(cx, y, z, text, facing){
+  const tex = makeSignTexture(text);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, fog:false });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55), mat);
+  mesh.position.set(cx, y, z);
+  mesh.rotation.y = facing==='n' ? Math.PI : 0;
+  mesh.matrixAutoUpdate = false;
+  mesh.updateMatrix();
+  world.add(mesh);
+}
+
+function buildSchool(){
+  if(!world) return;
+  while(world.children.length) world.remove(world.children[0]);
+  colliders=[]; rooms={}; npcs=[];
+  G.smoke=[];
+  for(const k in signTexCache) delete signTexCache[k];
+
+  layout=generateLayout(G.seed);
+
+  addBox(0,-0.15,0,X_MAX-X_MIN+2,0.3,Z_ROOM*2+2,M.floor,false);
+  addBox(0,FH-0.15,0,X_MAX-X_MIN+2,0.3,Z_ROOM*2+2,M.ceil,false);
+  addBox(0,2*FH-0.15,0,X_MAX-X_MIN+2,0.3,Z_ROOM*2+2,M.ceil,false);
+
+  for(let f=0;f<2;f++){
+    const y0=f*FH;
+    const L=layout[f];
+
+    addBox(0,y0+WH/2, Z_ROOM+0.2, X_MAX-X_MIN+2, WH, 0.4, M.wall);
+    addBox(0,y0+WH/2,-Z_ROOM-0.2, X_MAX-X_MIN+2, WH, 0.4, M.wall);
+    addBox(X_MIN-0.2,y0+WH/2,0, 0.4, WH, Z_ROOM*2+2, M.wall);
+    addBox(X_MAX+0.2,y0+WH/2,0, 0.4, WH, Z_ROOM*2+2, M.wall);
+
+    const gN=[],gS=[];
+    for(let i=0;i<8;i++){
+      const bn=roomBounds(i,'n'),bs=roomBounds(i,'s');
+      gN.push([(bn.x0+bn.x1)/2-1.3,(bn.x0+bn.x1)/2+1.3]);
+      gS.push([(bs.x0+bs.x1)/2-1.3,(bs.x0+bs.x1)/2+1.3]);
+    }
+    wallAlongX(X_MIN,X_MAX,Z_CORR,y0,gN,M.wall2);
+    wallAlongX(X_MIN,X_MAX,-Z_CORR,y0,gS,M.wall2);
+
+    for(let i=1;i<8;i++){
+      const x=X_MIN+RW*i;
+      const rn1=L.n[i-1],rn2=L.n[i];
+      const rs1=L.s[i-1],rs2=L.s[i];
+      const skipN=(rn1==='gym'&&rn2==='gym2')||(rn1==='cafe'&&rn2==='cafe');
+      const skipS=(rs1==='cafe'&&rs2==='cafe');
+      if(!skipN) addBox(x,y0+WH/2,(Z_CORR+Z_ROOM)/2,0.3,WH,Z_ROOM-Z_CORR,M.wall);
+      if(!skipS) addBox(x,y0+WH/2,-(Z_CORR+Z_ROOM)/2,0.3,WH,Z_ROOM-Z_CORR,M.wall);
+    }
+
+    for(let i=0;i<8;i++){
+      const bn=roomBounds(i,'n'),bs=roomBounds(i,'s');
+      const rn=L.n[i], rs=L.s[i];
+      const cxn=(bn.x0+bn.x1)/2, cxs=(bs.x0+bs.x1)/2;
+
+      rooms[`${f}_n_${i}`]={type:rn,...bn,cx:cxn,cz:(bn.z0+bn.z1)/2};
+      rooms[`${f}_s_${i}`]={type:rs,...bs,cx:cxs,cz:(bs.z0+bs.z1)/2};
+
+      addDoorSign(cxn+1.9, y0+WH-0.5, Z_CORR-0.2, ROOM_NAMES[rn]||'?', 'n');
+      addDoorSign(cxs-1.9, y0+WH-0.5, -Z_CORR+0.2, ROOM_NAMES[rs]||'?', 's');
+
+      fillRoom(rn, rooms[`${f}_n_${i}`], y0, f, i, 'n');
+      fillRoom(rs, rooms[`${f}_s_${i}`], y0, f, i, 's');
+    }
+
+    const lampStep = isMobile ? 25 : 15;
+    for(let x=X_MIN+8;x<=X_MAX-8;x+=lampStep){
+      addBox(x,y0+WH-0.1,0,2.4,0.08,0.5,M.lamp,false);
+    }
+  }
+
+  const EL=isMobile?100:200, HW=2.5;
+  addBox(X_MIN-EL/2,-0.15,0,EL,0.3,HW*2+0.5,M.floor,false);
+  addBox(X_MIN-EL/2,WH,0,EL,0.3,HW*2+0.5,M.ceil,false);
+  addBox(X_MIN-EL/2,WH/2,-HW-0.25,EL,WH,0.3,M.wall2,false);
+  addBox(X_MIN-EL/2,WH/2,HW+0.25,EL,WH,0.3,M.wall2,false);
+  colliders.push({minX:-9999,maxX:X_MIN,minY:0,maxY:WH,minZ:-HW-0.5,maxZ:-HW});
+  colliders.push({minX:-9999,maxX:X_MIN,minY:0,maxY:WH,minZ:HW,maxZ:HW+0.5});
+
+  const post=rooms['0_s_0'];
+  if(post) pcPos.set(post.cx-1.6,1.2,post.cz+3);
+}
+
+function fillRoom(type,b,y0,f,i,side){
+  const isClass=type.startsWith('class');
+
+  if(isClass){
+    for(let r=0;r<2;r++) for(let c=0;c<2;c++){
+      const x=b.x0+3.5+c*5;
+      const z=b.cz-2+r*4;
+      addBox(x,y0+0.75,z,1.4,0.08,0.7,M.desk,false);
+      addBox(x,y0+0.4,z,1.4,0.75,0.1,M.wood,false);
+      colliders.push({minX:x-0.7,maxX:x+0.7,minY:y0,maxY:y0+0.85,minZ:z-0.4,maxZ:z+0.4});
+    }
+    const bz=side==='n'?b.z1-0.2:b.z0+0.2;
+    const bd=new THREE.Mesh(new THREE.PlaneGeometry(4,1.4),M.board);
+    bd.position.set(b.cx,y0+2.0,bz);
+    bd.rotation.y=side==='n'?Math.PI:0;
+    bd.matrixAutoUpdate=false;bd.updateMatrix();
+    world.add(bd);
+  }
+  else if(type==='cafe'&&i===4){
+    for(let c=0;c<3;c++){
+      const x=b.x0+3+c*3.5;
+      addBox(x,y0+0.75,b.cz,1.4,0.08,0.8,M.desk,false);
+    }
+  }
+  else if(type==='gym'&&i===5){
+    for(let k=0;k<2;k++) addBox(b.x0+2+k*3,y0+0.35,b.z1-1.5,2.2,0.15,0.4,M.wood);
+  }
+  else if(type==='gym2'){
+    addBox(b.cx,y0+0.3,b.cz-3,2,0.15,0.4,M.wood);
+    addBox(b.cx,y0+0.5,b.cz-3,2,0.15,0.4,M.wood);
+  }
+  else if(type.startsWith('wc')){
+    for(let k=0;k<2;k++) addBox(b.x0+3+k*4,y0+0.5,b.z1-1.5,1.2,2,0.15,M.metal,false);
+    addBox(b.cx,y0+0.85,b.z0+1.5,3,0.2,0.6,M.white);
+  }
+  else if(type==='post'&&f===0&&i===0){
+    addBox(b.cx-1.6,y0+0.45,b.cz+3,1.8,0.9,0.9,M.wood);
+    addBox(b.cx-1.6,y0+1.2,b.cz+3,1.0,0.65,0.1,M.dark,false);
+    addBox(b.cx+3,y0+0.4,b.cz-4.5,2,0.5,1.1,M.dark);
+  }
+  else if(type==='director'&&f===0){
+    // Стол директора
+    addBox(b.cx,y0+0.45,b.cz+3.5,2.4,0.85,1.2,M.wood);
+    // Стул директора (за столом)
+    addBox(b.cx,y0+0.45,b.cz+5,0.6,0.9,0.6,M.black,false);
+    // Шкаф с документами
+    addBox(b.x0+1.5,y0+1.0,b.cz-3,0.8,2.0,1.2,M.wood);
+    // Сейф
+    addBox(b.x1-1.5,y0+0.9,b.cz-3,1.0,1.7,0.9,M.metal);
+    // 3 стула для прогульщиков (перед столом)
+    for(let k=0;k<3;k++){
+      const cx=b.cx-2.5+k*2.5;
+      const cz=b.cz+1.8;
+      addBox(cx,y0+0.35,cz,0.6,0.7,0.6,M.chair,false);   // стул
+      addBox(cx,y0+0.7,cz,0.6,0.1,0.6,M.chair,false);    // сиденье
+      colliders.push({minX:cx-0.35,maxX:cx+0.35,minY:y0,maxY:y0+0.8,minZ:cz-0.35,maxZ:cz+0.35});
+    }
+  }
+  else if(type==='doctor'&&f===0){
+    addBox(b.cx-1.5,y0+0.4,b.cz+3,2,0.5,1.1,M.white);
+  }
+  else if(type==='english'){
+    for(let r=0;r<2;r++) for(let c=0;c<2;c++)
+      addBox(b.x0+3+c*5,y0+0.75,b.cz-2+r*4,1.4,0.08,0.7,M.desk,false);
+  }
+  else if(type==='trud'&&f===0){
+    for(let k=0;k<2;k++) addBox(b.x0+3+k*5,y0+0.45,b.cz+2,2,0.9,1,M.wood);
+  }
+  else if(type==='storage'){
+    for(let k=0;k<3;k++) addBox(b.x0+2+k*2.5,y0+0.95,b.cz+3,0.8,1.9,0.6,M.metal);
+  }
+  else if(type==='library'){
+    for(let k=0;k<2;k++) addBox(b.x0+3+k*5,y0+1.2,b.cz+3,2.2,2.4,0.4,M.wood);
+  }
+  else if(type==='chemistry'||type==='physics'){
+    for(let k=0;k<2;k++) for(let j=0;j<2;j++)
+      addBox(b.x0+3+k*5,y0+0.75,b.cz-3+j*6,1.6,0.08,1,M.desk,false);
+  }
+  else if(type==='computer'){
+    for(let k=0;k<2;k++) for(let j=0;j<2;j++){
+      const x=b.x0+3+k*5,z=b.cz-2+j*4;
+      addBox(x,y0+0.75,z,1.4,0.08,0.75,M.desk,false);
+    }
+  }
+  else if(type==='music'){
+    addBox(b.cx,y0+0.5,b.cz+4,2,1,0.7,M.black);
+  }
+}
+
+const P={x:0,z:0,yaw:0,pitch:0,radius:0.38,floor:0};
+
+function makeHuman(shirt,pants,skin,scale){
+  scale=scale||1;
+  const g=new THREE.Group();
+  const mk=(w,h,d,c,y)=>{const o=new THREE.Mesh(BOX_GEO,new THREE.MeshLambertMaterial({color:c}));o.scale.set(w*scale,h*scale,d*scale);o.position.y=y*scale;o.matrixAutoUpdate=false;o.updateMatrix();g.add(o);return o;};
+  mk(0.5,0.72,0.3,shirt,1.16);
+  mk(0.26,0.28,0.26,skin||0xe0b890,1.64);
+  const a1=mk(0.14,0.55,0.14,shirt,1.16);a1.position.x=-0.33*scale;
+  const a2=mk(0.14,0.55,0.14,shirt,1.16);a2.position.x=0.33*scale;
+  const l1=mk(0.17,0.72,0.18,pants,0.36);l1.position.x=-0.12*scale;
+  const l2=mk(0.17,0.72,0.18,pants,0.36);l2.position.x=0.12*scale;
+  g.userData.limbs=[a1,a2,l1,l2];
+  return g;
+}
+function nameSprite(text,color){
+  const c=document.createElement('canvas');
+  c.width=128;c.height=32;
+  const g=c.getContext('2d');
+  g.font='bold 16px Consolas';
+  g.textAlign='center';
+  g.lineWidth=2;g.strokeStyle='#000';
+  g.strokeText(text,64,22);
+  g.fillStyle=color||'#ffe9a0';g.fillText(text,64,22);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:t,depthTest:false,transparent:true
+  }));
+  sp.scale.set(1.3,0.32,1);
+  return sp;
+}
+function spawnNPC(id,x,y,z,name,kind,color,opts){
+  opts=opts||{};
+  const g=makeHuman(opts.shirt||color||0x6677aa,opts.pants||0x333a44,opts.skin,opts.scale);
+  g.position.set(x,y,z);
+  world.add(g);
+  const sp=nameSprite(name,kind==='anomaly'?'#ff9a9a':(kind==='staff'?'#9ad0ff':(kind==='friendly'?'#a0ffa0':(kind==='truant'?'#ffb060':'#ffe9a0'))));
+  sp.position.y=2.1*(opts.scale||1);
+  g.add(sp);
+  const npc={
+    id,name,kind,obj:g,
+    state:opts.state||'idle',
+    speed:opts.speed||0.9,
+    hostile:!!opts.hostile,
+    tx:x,tz:z,wanderT:Math.random()*3,
+    dialogue:opts.dialogue||null,
+    onContact:opts.onContact||null,
+    bob:Math.random()*6,
+    y:y,
+    noMove:opts.noMove||false,
+    pose:opts.pose||null,
+    visible:true
+  };
+  if(opts.pose){
+    const L=g.userData.limbs;
+    if(opts.pose==='smoking'){L[0].rotation.x=-1.2;L[1].rotation.x=-1.0;}
+    if(opts.pose==='smearing'){L[0].rotation.x=-1.4;}
+    if(opts.pose==='oiled'){L[0].rotation.z=0.7;L[1].rotation.z=-0.7;}
+    if(opts.pose==='sit'){
+      // Ноги вперёд, руки на коленях
+      L[2].rotation.x=-1.5;L[3].rotation.x=-1.5;
+      L[0].rotation.x=0.3;L[1].rotation.x=0.3;
+      // Смещение вниз — сидит
+      g.position.y -= 0.45;
+    }
+    if(opts.pose==='sad'){
+      // Опущенные руки, голова вниз — для прогульщиков
+      L[0].rotation.z=0.2;L[1].rotation.z=-0.2;
+    }
+    L.forEach(l=>{l.updateMatrix();});
+  }
+  npcs.push(npc);
+  return npc;
+}
+const findNPC=id=>npcs.find(n=>n.id===id);
+const removeNPC=n=>{if(!n)return;world.remove(n.obj);const i=npcs.indexOf(n);if(i>=0)npcs.splice(i,1);};
+
+function gameHour(){
+  const t=G.dayTime/DAY_SECONDS;
+  return (20+t*11.5)%24;
+}
+function timeStr(){
+  const h=gameHour();
+  return String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor((h-Math.floor(h))*60)).padStart(2,'0');
+}
+function isNight(){const h=gameHour();return h>=20||h<7.5;}
+function skyHex(){
+  const h=gameHour();
+  const horror=isHorror();
+  if(h>=21||h<4.5) return horror?0x020204:0x141c2c;
+  if(h<6) return horror?0x08080e:0x243048;
+  if(h<7.5) return horror?0x1a1820:0x4a4055;
+  if(h<9) return 0x8098b8;
+  if(h<16) return 0x88b0d0;
+  if(h<18.5) return 0xb0906a;
+  if(h<20) return horror?0x100810:0x302840;
+  return horror?0x020204:0x141c2c;
+}
+function updateSky(){
+  if(!scene) return;
+  const c=skyHex();
+  scene.background.setHex(c);
+  scene.fog.color.setHex(c);
+}
+
+function triggerScreamer(){
+  if(!isHorror()||G.screamerCD>0) return;
+  G.screamerCD=8+Math.random()*12;
+  const el=document.getElementById('screamer');
+  const face=document.getElementById('screamerFace');
+  const faces=['☠','👁','💀','👹','👻'];
+  face.textContent=faces[Math.floor(Math.random()*faces.length)];
+  el.classList.add('on');
+  P.yaw+=(Math.random()-0.5)*1.5;
+  setTimeout(()=>{el.classList.remove('on');},600);
+  G.sanity=Math.max(0,G.sanity-15);
+  updateSanityHUD();
+  if(G.sanity<=0) killPlayer('Рассудок не выдержал.');
+}
+function updateSanityHUD(){
+  const w=document.getElementById('sanityWrap');
+  if(isHorror()){
+    w.style.display='block';
+    const s=document.getElementById('sanity');
+    s.style.width=G.sanity+'%';
+    s.classList.toggle('low',G.sanity<25);
+    s.classList.toggle('mid',G.sanity<60&&G.sanity>=25);
+  } else w.style.display='none';
+}
+
+function spawnNightAnomalies(dt){
+  if(!isNight()) return;
+  const mul=DIFF[difficulty].anomMul;
+  const y=G.floor*FH;
+  const h=gameHour();
+
+  if(!findNPC('daywatch') && !G.code1 && Math.random()<dt*0.008*mul){
+    spawnNPC('daywatch',X_MAX-5,y,0,'ДНЕВНОЙ СТОРОЖ','anomaly',0x554466,{
+      hostile:true,speed:isHorror()?3.0:2.0,state:'chase',
+      shirt:0x3a3a48,skin:0xb0b0b0,
+      onContact:()=>{if(!G.code1) killPlayer('Правило 1: Дневной сторож.');}
+    });
+    pushObj('⚠ ДНЕВНОЙ СТОРОЖ! На пост → КОД 1 (R).');
+    toast('ДНЕВНОЙ СТОРОЖ');
+    if(isHorror()) triggerScreamer();
+  }
+
+  if(h>=2.7166 && h<=2.8666 && !findNPC('director')){
+    spawnNPC('director',0,y,0,'ДИРЕКТОР','staff',0x334466,{
+      shirt:0x2c3a55,pants:0x1e2636,skin:0xdcb89c,
+      state:'idle',noMove:true,speed:0,
+      dialogue:['Директор смотрит.','Помашите (E).']
+    });
+    pushObj('🕑 Директор. Помашите (E).');
+  }
+  if(h>2.8666){const d=findNPC('director');if(d)removeNPC(d);}
+
+  if(!findNPC('fizruk_night') && h>0.5 && h<5 && !G.fiz.done && Math.random()<dt*0.006*mul){
+    spawnNPC('fizruk_night',X_MAX-8,y,0,'ФИЗРУК','anomaly',0xcc7733,{
+      hostile:true,speed:isHorror()?3.2:2.5,state:'chase',
+      shirt:0xcc7733,
+      onContact:()=>{if(!G.fiz.done) killPlayer('Правило 3: Физрук.');}
+    });
+    G.fiz.active=true;G.fiz.t=60;
+    pushObj('⚠ ФИЗРУК! Спортзал → 4 прыжка.');
+    toast('ФИЗРУК');
+  }
+
+  if(!findNPC('t4b') && h>23 && Math.random()<dt*0.007*mul){
+    spawnNPC('t4b',-15,y,0,'Учитель 4Б','anomaly',0xaa4455,{
+      speed:isHorror()?1.4:0.9,state:'chase',
+      shirt:0x8b3a4a,skin:0xe8d8c8,
+      onContact:()=>{
+        unlock('Хорошая дата');toast('Учитель: «5!»');removeNPC(findNPC('t4b'));
+      }
+    });
+    toast('Учитель 4Б');
+  }
+
+  if(!G.larionovActive && h>3 && h<4 && Math.random()<dt*0.004*mul){
+    G.larionovActive=true;G.larionovT=isHorror()?20:30;
+    const g=rooms['0_n_5'];
+    spawnNPC('larionov',g?g.cx:20,y,g?g.cz:0,'ЛАРИОНОВ','anomaly',0x902020,{
+      hostile:true,speed:0,state:'idle',
+      shirt:0x3a2020,skin:0xa06060,
+      onContact:()=>{if(!G.code1) killPlayer('Правило 5.');}
+    });
+    pushObj('☣ ЛАРИОНОВ! КОД 3 за 30 сек!');
+    if(isHorror()) triggerScreamer();
+  }
+
+  if(!findNPC('anton') && h>1 && h<5 && Math.random()<dt*0.006*mul){
+    spawnNPC('anton',0,y,-1,'Антон','anomaly',0xdddddd,{
+      hostile:true,speed:isHorror()?2.0:1.5,state:'chase',
+      shirt:0xdde5ee,skin:0xf0c8a8,scale:0.75,
+      onContact:()=>{
+        if(G.hasBun){G.hasBun=false;unlock('Пекарь');removeNPC(findNPC('anton'));}
+        else killPlayer('Правило 6: Антон.');
+      }
+    });
+    toast('Антон');
+  }
+
+  if(!G.amiraSpawned && h>2 && Math.random()<dt*0.004*mul){
+    G.amiraSpawned=true;G.escapeReady=true;
+    spawnNPC('amira',-10,y,-1,'Амира','friendly',0xc06ab0,{
+      shirt:0xc06ab0,pants:0x4a3a5a,
+      state:'idle',noMove:true,
+      dialogue:['Уйти со смены?','Выход через директора.']
+    });
+    spawnNPC('maksim',-8,y,-1,'Максим','friendly',0x6ab0c0,{
+      shirt:0x6ab0c0,pants:0x3a4a5a,
+      state:'idle',noMove:true,
+      dialogue:['Знаем выход.']
+    });
+    toast('Амира и Максим');
+  }
+}
+
+let vapeGroup=null;
+function buildVape(){
+  if(!camera) return;
+  vapeGroup=new THREE.Group();
+  const mk=(g,c,x,y,z)=>{
+    const o=new THREE.Mesh(g,new THREE.MeshLambertMaterial({color:c}));
+    o.position.set(x,y,z);vapeGroup.add(o);
+  };
+  mk(BOX_GEO,0x1b1b22,0,0,0).scale.set(0.05,0.11,0.03);
+  vapeGroup.position.set(0.22,-0.18,-0.34);
+  camera.add(vapeGroup);
+}
+function useVape(){
+  if(!G.running||G.paused||G.dead||G.vapeCD>0) return;
+  G.vapeCD=2.5;
+  const dir=new THREE.Vector3();camera.getWorldDirection(dir);
+  const px=P.x+dir.x*2.5,pz=P.z+dir.z*2.5,py=G.floor*FH+1.4;
+  const cloud={pos:new THREE.Vector3(px,py,pz),radius:1,maxR:4,life:30,maxLife:30,group:new THREE.Group()};
+  const mat=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false,color:0xd8e0e8,fog:false});
+  for(let i=0;i<4;i++){
+    const s=new THREE.Mesh(new THREE.SphereGeometry(0.7,4,4),mat.clone());
+    s.userData.off=new THREE.Vector3((Math.random()-0.5)*3,(Math.random()-0.5)*1.5,(Math.random()-0.5)*3);
+    cloud.group.add(s);
+  }
+  cloud.group.position.copy(cloud.pos);
+  world.add(cloud.group);
+  G.smoke.push(cloud);
+  unlock('Вейпер');
+}
+function updateSmoke(dt){
+  for(let i=G.smoke.length-1;i>=0;i--){
+    const c=G.smoke[i];c.life-=dt;
+    if(c.life<=0){world.remove(c.group);G.smoke.splice(i,1);continue;}
+    const t=1-c.life/c.maxLife;c.radius=1+t*(c.maxR-1);
+    const fade=c.life>4?1:c.life/4;
+    c.group.children.forEach(s=>{
+      s.material.opacity=0.32*fade;
+      s.position.copy(s.userData.off).multiplyScalar(0.6+t*1.4);
+      s.position.y+=t*0.6;
+    });
+  }
+}
+
+function collide(){
+  const r=P.radius;
+  const yLo=G.floor*FH+0.2,yHi=G.floor*FH+1.9;
+  for(let it=0;it<2;it++){
+    let pushed=false;
+    for(let ci=0;ci<colliders.length;ci++){
+      const b=colliders[ci];
+      if(b.maxY<yLo||b.minY>yHi) continue;
+      const cx=Math.max(b.minX,Math.min(P.x,b.maxX));
+      const cz=Math.max(b.minZ,Math.min(P.z,b.maxZ));
+      const dx=P.x-cx,dz=P.z-cz;
+      const d2=dx*dx+dz*dz;
+      if(d2>=r*r) continue;
+      if(d2>1e-6){
+        const d=Math.sqrt(d2);
+        P.x+=dx/d*(r-d+0.001);
+        P.z+=dz/d*(r-d+0.001);
+      } else {
+        const dL=P.x-b.minX,dR=b.maxX-P.x,dD=P.z-b.minZ,dU=b.maxZ-P.z;
+        const m=Math.min(dL,dR,dD,dU);
+        if(m===dL)P.x=b.minX-r-0.01;
+        else if(m===dR)P.x=b.maxX+r+0.01;
+        else if(m===dD)P.z=b.minZ-r-0.01;
+        else P.z=b.maxZ+r+0.01;
+      }
+      pushed=true;
+    }
+    if(!pushed) break;
+  }
+}
+function checkStairs(){
+  if(G.tpCD>0 || !layout) return;
+  const L=layout[G.floor];
+  for(let i=0;i<8;i++){
+    if(L.n[i]!=='stairs') continue;
+    const r=rooms[`${G.floor}_n_${i}`];
+    if(!r) continue;
+    if(P.x>r.x0+1.5 && P.x<r.x1-1.5 && P.z>r.z0+1.5 && P.z<r.z1-1.5){
+      G.floor=1-G.floor;
+      G.tpCD=1.5;
+      const nr=rooms[`${G.floor}_n_${i}`];
+      if(nr){P.x=(nr.x0+nr.x1)/2;P.z=nr.z0+3;}
+      toast('Этаж '+(G.floor+1));
+      return;
+    }
+  }
+}
+
+let curInt=null;
+function collect(){
+  const list=[];
+  const y=G.floor*FH;
+  if(Math.abs(pcPos.y-y)<3) list.push({pos:pcPos,label:'Рабочий ПК',r:3,a:openPC});
+  for(const n of npcs){
+    if(Math.abs(n.obj.position.y-y)>1.5) continue;
+    list.push({
+      pos:n.obj.position,
+      label:'Говорить: '+n.name,r:2.4,a:()=>talkNPC(n)
+    });
+  }
+  if(G.fiz.active){
+    const g=rooms['0_n_6']||rooms['0_n_5'];
+    if(g) list.push({
+      pos:new THREE.Vector3(g.cx,y+0.7,g.cz-3),
+      label:'Прыгнуть ('+G.fiz.jumps+'/4)',r:3,a:doJump
+    });
+  }
+  for(const k in rooms){
+    const r=rooms[k];
+    if(r.type==='cafe' && k.startsWith(G.floor+'_')){
+      list.push({
+        pos:new THREE.Vector3(r.x0+2,y+1.2,r.cz+5),
+        label:'Взять булочку',r:3,a:()=>{
+          G.hunger=Math.min(100,G.hunger+45);
+          G.hasBun=true;
+          toast('Булочка.');
+        }
+      });
+    }
+    if(r.type==='doctor' && k.startsWith('0_')){
+      list.push({
+        pos:new THREE.Vector3(r.cx,y+1.2,r.cz+2),
+        label:'Полечиться (+30)',r:3,a:()=>{
+          G.sanity=Math.min(100,G.sanity+30);
+          G.stam=Math.min(100,G.stam+20);
+          updateSanityHUD();
+          toast('Легче.');
+        }
+      });
+    }
+  }
+  return list;
+}
+function updatePrompt(){
+  if(isMobile && (performance.now()|0) % 100 < 50) return;
+  const list=collect();
+  const dir=new THREE.Vector3();camera.getWorldDirection(dir);
+  let best=null,bs=-1;
+  for(const it of list){
+    const dx=it.pos.x-P.x,dz=it.pos.z-P.z,d=Math.hypot(dx,dz);
+    if(d>it.r) continue;
+    const dot=(dx*dir.x+dz*dir.z)/(d||1);
+    if(dot<0.2) continue;
+    const sc=dot-d*0.05;
+    if(sc>bs){bs=sc;best=it;}
+  }
+  curInt=best;
+  const el=document.getElementById('prompt');
+  const cr=document.getElementById('cross');
+  if(best){
+    el.innerHTML='<b>[E]</b> '+best.label;
+    el.classList.add('on');
+    cr.classList.add('on');
+  } else {
+    el.classList.remove('on');
+    cr.classList.remove('on');
+  }
+}
+function tryInteract(){ if(curInt && !G.paused && !G.dead) curInt.a(); }
+function doJump(){
+  G.fiz.jumps++;
+  toast('Прыжок '+G.fiz.jumps+'/4');
+  if(G.fiz.jumps>=4){
+    G.fiz.active=false;G.fiz.done=true;G.fiz.jumps=0;
+    unlock('Мастер спорта');
+    const f=findNPC('fizruk_night');
+    if(f){f.state='wander';f.speed=0.8;f.hostile=false;}
+  }
+}
+
+let dlgQ=[],dlgCB=null;
+function talkNPC(n){
+  if(n.id==='director'){unlock('Вежливость');removeNPC(n);dlgQ=['Помахали.'];startDlg();return;}
+  if(n.id==='buhov' && !G.hasKnife){G.hasKnife=true;unlock('Инструмент');dlgQ=['Бухов: «Держи нож.»'];startDlg();return;}
+  if(n.id==='tetya'){G.hasBun=true;G.hunger=Math.min(100,G.hunger+40);dlgQ=['Тётя Валя: «Возьми булочку.»'];startDlg();return;}
+  if(n.id==='amira' && G.escapeReady){dlgQ=['Уйти со смены?'];startDlg(()=>endGame('escape','ПОБЕГ',''));return;}
+  if(n.dialogue){dlgQ=n.dialogue.slice();startDlg();return;}
+  dlgQ=[n.name+' молчит.'];startDlg();
+}
+function startDlg(cb){
+  dlgCB=cb||null;
+  document.getElementById('dlgT').textContent=dlgQ[0]||'';
+  document.getElementById('dlgPanel').style.display='flex';
+  if(document.pointerLockElement) document.exitPointerLock();
+}
+document.getElementById('dlgNext').onclick=()=>{
+  dlgQ.shift();
+  if(!dlgQ.length){
+    document.getElementById('dlgPanel').style.display='none';
+    const cb=dlgCB;dlgCB=null;
+    if(cb) cb();
+    else requestLock();
+  } else document.getElementById('dlgT').textContent=dlgQ[0];
+};
+
+function openPC(){
+  document.getElementById('pcPanel').style.display='flex';
+  document.getElementById('pcInfo').innerHTML=
+    'День: <b>'+G.day+'/5</b> • Время: <b>'+timeStr()+'</b><br>'+
+    'Этаж: <b>'+(G.floor+1)+'</b> • '+DIFF[difficulty].label+'<br>'+
+    'Статус: '+(G.code1?'<b style="color:#f66">КОД 1</b>':(G.bell?'<b style="color:#fa0">ЗВОНОК</b>':'<b style="color:#7f9">норма</b>'));
+  document.getElementById('pcLog').textContent='Терминал готов.';
+  if(document.pointerLockElement) document.exitPointerLock();
+}
+document.getElementById('pcPanel').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const cmd=b.dataset.cmd,log=document.getElementById('pcLog');
+  if(cmd==='code1'){sendRadio(1);}
+  else if(cmd==='code3'){sendRadio(3);}
+  else if(cmd==='bell'){
+    if(G.bell){G.bell=false;G.bellT=0;document.getElementById('bellIcon').classList.add('hidden');log.textContent='>> ЗВОНОК ВЫКЛ.';}
+    else log.textContent='>> ОК.';
+  }
+  else if(cmd==='sched'){log.textContent='>> 5 дней × 5 мин.';}
+  else if(cmd==='close'){document.getElementById('pcPanel').style.display='none';requestLock();}
+});
+
+function openRadio(){
+  G.radioOpen=true;
+  document.getElementById('radioPanel').style.display='flex';
+  if(document.pointerLockElement) document.exitPointerLock();
+}
+function closeRadio(){
+  G.radioOpen=false;
+  document.getElementById('radioPanel').style.display='none';
+  requestLock();
+}
+document.getElementById('radioPanel').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.cmd==='close'){closeRadio();return;}
+  const code=parseInt(b.dataset.radio);
+  if(code) sendRadio(code);
+});
+function sendRadio(code){
+  const log=document.getElementById('radioLog');
+  switch(code){
+    case 1:
+      G.code1=true;G.code1T=30;unlock('Код 1');
+      for(const n of npcs){
+        if(n.kind==='anomaly'){n.state='wander';n.hostile=false;setTimeout(()=>{n.hostile=true;n.state='chase';},15000);}
+      }
+      log.textContent='>> КОД 1: СУЩНОСТИ ОТСТУПАЮТ 15с.';
+      toast('КОД 1');
+      break;
+    case 2: log.textContent='>> КОД 2: ОБХОД.'; toast('КОД 2'); break;
+    case 3: endGame('code3','КОД 3',''); return;
+    case 4:
+      G.stam=Math.min(100,G.stam+50);G.sanity=Math.min(100,G.sanity+20);
+      updateSanityHUD();log.textContent='>> КОД 4: СИЛЫ ВОССТАНОВЛЕНЫ.';toast('КОД 4');
+      break;
+    case 5: log.textContent='>> КОД 5: ЧИСТО.'; toast('КОД 5'); break;
+  }
+}
+
+function toggleFlashlight(){
+  G.flashlightOn=!G.flashlightOn;
+  if(torch) torch.intensity=G.flashlightOn?(isHorror()?2.5:1.8):0;
+  toast(G.flashlightOn?'🔦 ВКЛ':'🔦 ВЫКЛ');
+}
+
+function killPlayer(reason){
+  if(G.dead) return;
+  G.dead=true;G.deaths++;
+  unlock('Смертник');
+  document.getElementById('dmg').style.opacity=1;
+  setTimeout(()=>{document.getElementById('dmg').style.opacity=0;},600);
+  setTimeout(()=>endGame('death','ВЫ ПОГИБЛИ',reason),500);
+}
+const ENDINGS={
+  survive:{t:'ВСЕ 5 ДНЕЙ',d:'Вы выжили.'},
+  code3:{t:'КОД 3',d:'Смена прервана.'},
+  escape:{t:'ПОБЕГ',d:''},
+  death:{t:'ВЫ ПОГИБЛИ',d:''},
+  madness:{t:'БЕСКОНЕЧНОСТЬ',d:''},
+  killer:{t:'КРОВАВАЯ СМЕНА',d:''}
+};
+function endGame(k,title,text){
+  G.running=false;G.paused=true;
+  if(document.pointerLockElement) document.exitPointerLock();
+  const e=ENDINGS[k]||{t:title,d:text};
+  document.getElementById('endT').textContent=e.t;
+  document.getElementById('endX').textContent=e.d;
+  document.getElementById('endS').innerHTML=
+    'День: <b>'+G.day+'/5</b> • Время: <b>'+timeStr()+'</b><br>'+
+    'Сложность: <b>'+DIFF[difficulty].label+'</b><br>'+
+    'Смертей: <b>'+G.deaths+'</b>';
+  document.getElementById('endPanel').style.display='flex';
+  document.getElementById('hud').style.display='none';
+  document.getElementById('touchUI').classList.remove('on');
+  document.getElementById('radioPanel').style.display='none';
+  document.getElementById('pcPanel').style.display='none';
+}
+document.getElementById('endR').onclick=()=>{
+  document.getElementById('endPanel').style.display='none';
+  startGame(true);
+};
+
+const keys={};
+let mouseLocked=false;
+let joyActive=null,joyStart={x:0,y:0},joyVec={x:0,y:0};
+let lookActive=null,lookLast={x:0,y:0};
+
+document.addEventListener('pointerlockchange',()=>{
+  mouseLocked=document.pointerLockElement===canvas;
+});
+document.addEventListener('mousemove',e=>{
+  if(!mouseLocked||!G.running||G.paused) return;
+  const s=0.0022*cfg.sens;
+  P.yaw-=e.movementX*s;
+  P.pitch=Math.max(-1.5,Math.min(1.5,P.pitch-e.movementY*s));
+});
+document.addEventListener('keydown',e=>{
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code)) e.preventDefault();
+  keys[e.code]=true;
+  if(document.getElementById('dlgPanel').style.display==='flex'){
+    if(e.code==='KeyE'||e.code==='Enter'||e.code==='Space') document.getElementById('dlgNext').click();
+    return;
+  }
+  if(!G.running||G.paused) return;
+  if(e.code==='KeyE') tryInteract();
+  if(e.code==='KeyV') useVape();
+  if(e.code==='KeyR'){if(G.radioOpen)closeRadio();else openRadio();}
+  if(e.code==='KeyF') toggleFlashlight();
+  if(e.code==='KeyEscape' && document.pointerLockElement) document.exitPointerLock();
+});
+document.addEventListener('keyup',e=>{keys[e.code]=false;});
+
+function setupTouch(){
+  const jb=document.getElementById('joyBase'),jk=document.getElementById('joyKnob'),lz=document.getElementById('lookZone');
+  if(!jb||!lz) return;
+  jb.addEventListener('touchstart',e=>{e.preventDefault();const t=e.changedTouches[0];joyActive=t.identifier;joyStart.x=t.clientX;joyStart.y=t.clientY;},{passive:false});
+  jb.addEventListener('touchmove',e=>{
+    e.preventDefault();if(joyActive===null)return;
+    for(const t of e.changedTouches){
+      if(t.identifier!==joyActive)continue;
+      let dx=t.clientX-joyStart.x,dy=t.clientY-joyStart.y;const d=Math.hypot(dx,dy),max=44;
+      if(d>max){dx=dx/d*max;dy=dy/d*max}
+      joyVec.x=dx/max;joyVec.y=dy/max;
+      jk.style.transform=`translate(${dx}px,${dy}px)`;
+    }
+  },{passive:false});
+  const endJoy=e=>{for(const t of e.changedTouches)if(t.identifier===joyActive){joyActive=null;joyVec.x=joyVec.y=0;jk.style.transform=''}};
+  jb.addEventListener('touchend',endJoy);jb.addEventListener('touchcancel',endJoy);
+  lz.addEventListener('touchstart',e=>{const t=e.changedTouches[0];lookActive=t.identifier;lookLast.x=t.clientX;lookLast.y=t.clientY;},{passive:true});
+  lz.addEventListener('touchmove',e=>{
+    if(lookActive===null)return;
+    for(const t of e.changedTouches){
+      if(t.identifier!==lookActive)continue;
+      P.yaw-=(t.clientX-lookLast.x)*0.006*cfg.sens;
+      P.pitch=Math.max(-1.4,Math.min(1.4,P.pitch-(t.clientY-lookLast.y)*0.006*cfg.sens));
+      lookLast.x=t.clientX;lookLast.y=t.clientY;
+    }
+  },{passive:true});
+  const endLook=e=>{for(const t of e.changedTouches)if(t.identifier===lookActive)lookActive=null};
+  lz.addEventListener('touchend',endLook);lz.addEventListener('touchcancel',endLook);
+  const bind=(id,fn)=>{const b=document.getElementById(id);if(!b)return;b.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();fn();},{passive:false});b.addEventListener('click',e=>{e.stopPropagation();fn();});};
+  bind('btnAct',()=>tryInteract());
+  bind('btnVape',()=>useVape());
+  bind('btnRadio',()=>openRadio());
+  bind('btnTorch',()=>toggleFlashlight());
+}
+
+let lastT=0,bobT=0,frameSkip=0,lastFrameTime=0,lastFpsUpdate=0;
+
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min(0.05,(now-lastT)/1000);
+  lastT=now;
+
+  const fpsLimit = FPS_OPTS[cfg.fps];
+  if(fpsLimit > 0){
+    const interval = 1000/fpsLimit;
+    if(now - lastFrameTime < interval - 1.5) return;
+    lastFrameTime = now;
+  }
+
+  G.fpsFrames++;G.fpsAcc += dt;
+  if(now - lastFpsUpdate > 500){
+    G.fps=Math.round(G.fpsFrames/((now-lastFpsUpdate)/1000));
+    G.fpsFrames=0;lastFpsUpdate=now;
+    if(cfg.showFps){
+      document.getElementById('fpsVal').textContent=G.fps;
+      if(renderer && renderer.info){
+        document.getElementById('fpsInfo').textContent =
+          'dc:'+renderer.info.render.calls+' tri:'+renderer.info.render.triangles;
+      }
+    }
+  }
+
+  if(!renderer||!scene||!camera) return;
+
+  if(G.running && !G.paused && !G.dead){
+    const D=DIFF[difficulty];
+
+    let fw=0,st=0;
+    if(keys['KeyW']||keys['ArrowUp']) fw+=1;
+    if(keys['KeyS']||keys['ArrowDown']) fw-=1;
+    if(keys['KeyD']||keys['ArrowRight']) st+=1;
+    if(keys['KeyA']||keys['ArrowLeft']) st-=1;
+    if(device==='touch'&&(joyVec.x||joyVec.y)){st+=joyVec.x;fw-=joyVec.y}
+    const mag=Math.hypot(fw,st);
+    if(mag>1){fw/=mag;st/=mag;}
+
+    const sprint=keys['ShiftLeft'] && G.stam>1 && mag>0.01;
+    const speed=sprint?5.5:3.0;
+
+    G.stam=sprint?Math.max(0,G.stam-dt*D.stamRate):Math.min(100,G.stam+dt*D.stamRate*0.65);
+    G.hunger=Math.max(0,G.hunger-dt*D.hungRate);
+    if(G.hunger<=0) G.stam=Math.max(0,G.stam-dt*8);
+
+    if(isHorror() && D.sanityRate>0){
+      let nearAnomaly=false;
+      for(const n of npcs){
+        if(n.kind!=='anomaly'||!n.hostile) continue;
+        const d=Math.hypot(n.obj.position.x-P.x,n.obj.position.z-P.z);
+        if(d<8 && Math.abs(n.obj.position.y-G.floor*FH)<2){nearAnomaly=true;break;}
+      }
+      if(nearAnomaly) G.sanity=Math.max(0,G.sanity-dt*D.sanityRate*2);
+      else G.sanity=Math.min(100,G.sanity+dt*0.15);
+      updateSanityHUD();
+      G.screamerCD-=dt;
+      if(G.screamerCD<=0 && Math.random()<dt*0.008) triggerScreamer();
+      const hb=document.getElementById('heartbeat');
+      if(G.sanity<60) hb.style.opacity=0.3+Math.sin(now*0.005)*0.15;
+      else hb.style.opacity=0;
+    }
+
+    const sy=Math.sin(P.yaw),cy=Math.cos(P.yaw);
+    P.x+=(fw*(-sy)+st*cy)*speed*dt;
+    P.z+=(fw*(-cy)+st*(-sy))*speed*dt;
+
+    collide();
+    if(P.x>X_MIN-1 && P.x<X_MAX+1) P.z=Math.max(-Z_ROOM+0.5,Math.min(Z_ROOM-0.5,P.z));
+    P.x=Math.max(X_MIN-100+1,Math.min(X_MAX+0.4,P.x));
+
+    G.tpCD=Math.max(0,G.tpCD-dt);
+    checkStairs();
+
+    if(P.x<-80){unlock('Бесконечность');endGame('madness','БЕСКОНЕЧНОСТЬ','');}
+
+    bobT+=dt*(sprint?12:8)*(mag>0.01?1:0);
+    const bob=(mag>0.01)?Math.sin(bobT)*0.03:0;
+    const fY=G.floor*FH;
+    camera.position.set(P.x,fY+1.65+bob,P.z);
+    camera.rotation.y=P.yaw;
+    camera.rotation.x=P.pitch;
+
+    if(G.vapeCD>0) G.vapeCD-=dt;
+
+    frameSkip++;
+    if(!isMobile || frameSkip % 2 === 0) updateNPCs(dt*(isMobile?2:1));
+    updateSmoke(dt);
+    updateSky();
+    updatePrompt();
+    if(!isMobile || frameSkip % 3 === 0) spawnNightAnomalies(dt*(isMobile?3:1));
+
+    G.dayTime += dt;
+    if(G.dayTime >= DAY_SECONDS){
+      G.dayTime -= DAY_SECONDS;
+      G.day++;
+      if(G.day > MAX_DAY){
+        unlock('Выживший');
+        endGame('survive','ВСЕ 5 ДНЕЙ','Вы выжили!');
+        return;
+      }
+      unlock('День '+G.day);
+      toast('☀ День '+G.day+'/5');
+      G.fiz={active:false,t:0,jumps:0,done:false};
+      G.larionovActive=false;G.amiraSpawned=false;
+      G.sanity=Math.min(100,G.sanity+30);
+      updateSanityHUD();
+      for(const id of ['daywatch','t4b','fizruk_night','anton','director','larionov','amira','maksim']){
+        const n=findNPC(id);if(n)removeNPC(n);
+      }
+    }
+
+    if(G.bell){
+      G.bellT-=dt;
+      if(G.bellT<=0){G.bell=false;document.getElementById('bellIcon').classList.add('hidden');killPlayer('Звонок.');}
+    }
+    if(G.larionovActive){
+      G.larionovT-=dt;
+      if(G.larionovT<=0){G.larionovActive=false;const n=findNPC('larionov');if(n)removeNPC(n);
+        if(!G.code1 && !G.dead) killPlayer('Правило 5.');}
+    }
+    if(G.fiz.active){
+      G.fiz.t-=dt;
+      if(G.fiz.t<=0){G.fiz.active=false;const n=findNPC('fizruk_night');if(n && !G.fiz.done) killPlayer('Правило 3.');}
+    }
+    if(G.code1){G.code1T-=dt;if(G.code1T<=0) G.code1=false;}
+
+    document.getElementById('clock').textContent=timeStr();
+    document.getElementById('dayBox').textContent='ДЕНЬ '+G.day+'/'+MAX_DAY;
+    document.getElementById('stam').style.width=G.stam+'%';
+    document.getElementById('hung').style.width=G.hunger+'%';
+    document.getElementById('stam').classList.toggle('low',G.stam<25);
+    document.getElementById('hung').classList.toggle('low',G.hunger<25);
+    const h=gameHour();
+    document.getElementById('tbox').classList.toggle('warn',h>=1&&h<5);
+  }
+  renderer.render(scene,camera);
+}
+
+function updateNPCs(dt){
+  const lod=cfg.lod;
+  const lod2=lod*lod;
+  let processed=0;
+  const maxNPC=cfg.npcCount;
+
+  for(const n of npcs){
+    if(Math.abs(n.obj.position.y-G.floor*FH)>1.5 && n.state!=='chase') continue;
+    if(n.noMove) continue;
+
+    const dx0=n.obj.position.x-P.x;
+    const dz0=n.obj.position.z-P.z;
+    const d2=dx0*dx0+dz0*dz0;
+
+    if(n.kind!=='anomaly' && d2 > (lod*1.5)*(lod*1.5)){
+      if(n.visible){n.obj.visible=false;n.visible=false;}
+      continue;
+    } else if(!n.visible && n.kind!=='anomaly'){
+      n.obj.visible=true;n.visible=true;
+    }
+
+    if(d2 > lod2 && n.state!=='chase') continue;
+    if(processed++ >= maxNPC && n.kind!=='anomaly') continue;
+
+    let slow=1;
+    for(const c of G.smoke){
+      if(Math.hypot(n.obj.position.x-c.pos.x,n.obj.position.z-c.pos.z)<c.radius && n.kind==='anomaly') slow=0.18;
+    }
+
+    if(n.state==='chase' && !G.dead){
+      const dx=P.x-n.obj.position.x,dz=P.z-n.obj.position.z;
+      const d=Math.hypot(dx,dz);
+      if(d>0.01){
+        const sp=n.speed*slow*dt;
+        n.obj.position.x+=dx/d*sp;
+        n.obj.position.z+=dz/d*sp;
+      }
+      n.obj.rotation.y=Math.atan2(dx,dz);
+      if(d<1.1){
+        if(n.onContact) n.onContact();
+        else killPlayer('Сущность.');
+      }
+    } else if(n.state==='wander'){
+      n.wanderT-=dt;
+      if(n.wanderT<=0){
+        n.wanderT=2+Math.random()*4;
+        n.tx=X_MIN+10+Math.random()*(X_MAX-X_MIN-20);
+        n.tz=(Math.random()-0.5)*4;
+      }
+      const dx=n.tx-n.obj.position.x,dz=n.tz-n.obj.position.z;
+      const d=Math.hypot(dx,dz);
+      if(d>0.4){
+        n.obj.position.x+=dx/d*n.speed*slow*dt;
+        n.obj.position.z+=dz/d*n.speed*slow*dt;
+        n.obj.rotation.y=Math.atan2(dx,dz);
+      }
+    }
+
+    if(d2 < 100 && n.state==='chase'){
+      n.bob+=dt*9;
+      const L=n.obj.userData.limbs;
+      if(!n.pose){
+        L[0].rotation.x=Math.sin(n.bob)*0.5;
+        L[1].rotation.x=-Math.sin(n.bob)*0.5;
+        L[2].rotation.x=-Math.sin(n.bob)*0.5;
+        L[3].rotation.x=Math.sin(n.bob)*0.5;
+      }
+    }
+  }
+}
+
+function pushObj(t){document.getElementById('obj').textContent=t;}
+function toast(t){
+  const d=document.createElement('div');
+  d.className='toast';d.textContent=t;
+  document.getElementById('toasts').appendChild(d);
+  setTimeout(()=>d.remove(),4000);
+}
+function unlock(n){
+  if(G.ach.has(n)) return;
+  G.ach.add(n);toast('🏆 '+n);
+}
+
+function startGame(newSeed){
+  if(!renderer||!scene){alert('3D не загрузилось.');return;}
+  document.getElementById('menu').classList.add('hidden');
+  document.getElementById('hud').style.display='block';
+  document.getElementById('endPanel').style.display='none';
+  document.getElementById('radioPanel').style.display='none';
+  document.getElementById('screamer').classList.remove('on');
+  document.getElementById('touchUI').classList.toggle('on',device==='touch');
+
+  G.running=true;G.paused=false;G.dead=false;
+  G.day=1;G.dayTime=0;G.floor=0;
+  G.stam=100;G.hunger=100;G.sanity=100;
+  G.bell=false;G.bellT=0;G.code1=false;G.code1T=0;
+  G.tpCD=0;G.hasKnife=false;G.hasBun=false;G.vapeCD=0;
+  G.fiz={active:false,t:0,jumps:0,done:false};
+  G.larionovActive=false;G.larionovT=0;
+  G.amiraSpawned=false;G.escapeReady=false;
+  G.deaths=0;G.ach.clear();
+  G.flashlightOn=true;G.radioOpen=false;
+  G.screamerCD=isHorror()?20:999;
+
+  if(newSeed) G.seed=Math.floor(Math.random()*100000)+1;
+  buildSchool();
+
+  if(torch) torch.intensity=isHorror()?2.5:1.8;
+  scene.children.forEach(ch=>{
+    if(ch.isAmbientLight) ch.intensity=isHorror()?0.4:0.85;
+    if(ch.isHemisphereLight) ch.intensity=isHorror()?0.35:0.55;
+  });
+
+  const post=rooms['0_s_0'];
+  P.x=post.cx;P.z=post.cz+3;
+  P.yaw=0;P.pitch=0;P.floor=0;
+
+  // ═══════════════════════════════════════════
+  // ПРОГУЛЬЩИКИ — сидят в кабинете директора
+  // ═══════════════════════════════════════════
+  const dirRoom=rooms['0_s_1'];
+  if(dirRoom){
+    const truantData=[
+      {name:'Костя',shirt:0x5060a0,pants:0x303040,skin:0xe8c8a8,
+       dialogue:['Костя: «Прогулял 6 уроков…»','«Родителей вызвали.»','«Мамка убьёт.»']},
+      {name:'Влад',shirt:0xa05060,pants:0x403050,skin:0xd8b090,
+       dialogue:['Влад: «Мы просто в туалете сидели.»','«Ничего не делали!»','«Директор не верит…»']},
+      {name:'Стас',shirt:0x60a050,pants:0x303030,skin:0xf0d0b0,
+       dialogue:['Стас: «Ну и скукота.»','«Когда предки придут?»','«Хочу домой.»']}
+    ];
+    for(let k=0;k<3;k++){
+      const t=truantData[k];
+      const cx=dirRoom.cx-2.5+k*2.5;
+      const cz=dirRoom.cz+1.8;
+      spawnNPC('truant'+k, cx, 0, cz, t.name, 'truant', t.shirt, {
+        shirt:t.shirt, pants:t.pants, skin:t.skin,
+        state:'idle', noMove:true, pose:'sit',
+        dialogue:t.dialogue
+      });
+    }
+    // Директор тоже есть — за столом, но появляется только в 2:43
+    // Пока его нет — только прогульщики ждут
+  }
+
+  const trud=rooms['0_s_7'];
+  spawnNPC('buhov',trud.cx+2,0,trud.cz-2,'Бухов','staff',0x88a0ff,{
+    shirt:0x5a6a9a,pants:0x2a2a3a,skin:0xe0b890,
+    state:'idle',noMove:true,
+    dialogue:['Бухов: «Держи нож.»']
+  });
+
+  const cafe=rooms['0_s_4'];
+  spawnNPC('tetya',cafe.cx+2,0,cafe.cz+4,'Тётя Валя','staff',0xffb0c0,{
+    shirt:0xffb0c0,pants:0x4a4a5a,
+    state:'idle',noMove:true,
+    dialogue:['Валя: «Булочка.»']
+  });
+
+  const doc=rooms['0_s_2'];
+  spawnNPC('doctor1',doc.cx,0,doc.cz+3,'Доктор','staff',0xf0f0f0,{
+    shirt:0xf0f0f0,pants:0xf0f0f0,skin:0xe8c0a0,
+    state:'idle',noMove:true,
+    dialogue:['Доктор: «Как самочувствие?»']
+  });
+
+  pushObj('День 1/5. R — рация, F — фонарик.');
+  toast('🌙 День 1/5' + (isHorror()?' [ХОРРОР]':''));
+  toast('👥 Прогульщики в кабинете директора');
+  updateSanityHUD();
+
+  if(!G.rulesShown){
+    G.rulesShown=true;
+    setTimeout(()=>{document.getElementById('rulesPanel').style.display='flex';},400);
+  } else setTimeout(()=>requestLock(),200);
+}
+
+const ml=document.getElementById('menuList');
+let menuSel=0,screen='main';
+function renderMenu(){
+  ml.innerHTML='';
+  const items=[];
+  if(screen==='main'){
+    items.push(['▶ НАЧАТЬ СМЕНУ',()=>{screen='setup';renderMenu();}]);
+    items.push(['ПРАВИЛА И УПРАВЛЕНИЕ',()=>{
+      document.getElementById('rulesPanel').style.display='flex';
+      document.getElementById('rulesText').innerHTML=
+        '<h3>ЦЕЛЬ: 5 ДНЕЙ × 5 МИНУТ</h3>'+
+        '<h3>ПРАВИЛО 1</h3>Сторож → <b>КОД 1</b> (R).<br>'+
+        '<h3>ПРАВИЛО 2</h3>Директор 2:43 → помахать (E).<br>'+
+        '<h3>ПРАВИЛО 3</h3>Физрук → 4 прыжка.<br>'+
+        '<h3>ПРАВИЛО 4</h3>Учитель 4Б.<br>'+
+        '<h3>ПРАВИЛО 5</h3>Ларионов → <b>КОД 3</b>.<br>'+
+        '<h3>ПРАВИЛО 6</h3>Антон → булочка.<br>'+
+        '<h3>ПРАВИЛО 7</h3>Амира и Максим → побег.<br>'+
+        '<h3>В КАБИНЕТЕ ДИРЕКТОРА</h3>Сидят 3 прогульщика — Костя, Влад, Стас. Поговори с ними (E).<br>'+
+        '<h3>ПК</h3>'+
+        '<span class="kbd">WASD</span> движение • <span class="kbd">Мышь</span> обзор • <span class="kbd">Shift</span> бег<br>'+
+        '<span class="kbd">E</span> взаимодействие • <span class="kbd">V</span> вейп<br>'+
+        '<span class="kbd">R</span> РАЦИЯ • <span class="kbd">F</span> ФОНАРИК • <span class="kbd">Esc</span> пауза<br>'+
+        '<h3>ТЕЛЕФОН</h3>Стик + свайп + кнопки.';
+    }]);
+    items.push(['НАСТРОЙКИ',openSettings]);
+    items.push(['ОБ ИГРЕ',()=>alert('ШКОЛА №43 v4\n\n5 дней × 5 минут.\n7 правил. Прогульщики в кабинете директора.')]);
+  } else if(screen==='setup'){
+    items.push(['— СЛОЖНОСТЬ: '+DIFF[difficulty].label,()=>{
+      const arr=['easy','normal','hard','horror'];
+      difficulty=arr[(arr.indexOf(difficulty)+1)%4];
+      renderMenu();
+    }]);
+    items.push(['— УСТРОЙСТВО: '+(device==='kbm'?'МЫШЬ':'СЕНСОР'),()=>{
+      device=device==='kbm'?'touch':'kbm';
+      renderMenu();
+    }]);
+    if(difficulty==='horror') items.push(['▶ НАЧАТЬ ХОРРОР',()=>{startGame(true);},true]);
+    else items.push(['▶ НАЧАТЬ',()=>{startGame(true);}]);
+    items.push(['← НАЗАД',()=>{screen='main';renderMenu();}]);
+  }
+  items.forEach(([t,f,horror],i)=>{
+    const b=document.createElement('button');
+    b.className='mbtn'+(t[0]==='—'?' small':'')+(horror?' horror':'');
+    b.textContent=t;
+    b.onmouseenter=()=>{menuSel=i;};
+    b.onclick=f;
+    ml.appendChild(b);
+  });
+}
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('menu').classList.contains('hidden')) return;
+  const btns=ml.querySelectorAll('.mbtn');
+  if(!btns.length) return;
+  if(e.code==='ArrowDown'){menuSel=(menuSel+1)%btns.length;btns[menuSel].focus();e.preventDefault();}
+  if(e.code==='ArrowUp'){menuSel=(menuSel-1+btns.length)%btns.length;btns[menuSel].focus();e.preventDefault();}
+  if(e.code==='Enter'&&btns[menuSel]) btns[menuSel].click();
+});
+document.getElementById('rulesOk').onclick=()=>{
+  document.getElementById('rulesPanel').style.display='none';
+  requestLock();
+};
+
+function openSettings(){
+  document.getElementById('setPanel').style.display='flex';
+  const map={s_sens:'sens',s_fov:'fov',s_bright:'bright',s_dist:'dist',
+    s_hud:'hud',s_qual:'qual',s_fps:'fps',s_lod:'lod',s_npc:'npcCount',s_showfps:'showFps'};
+  for(const id in map){
+    const el=document.getElementById(id);if(!el) continue;
+    el.value=cfg[map[id]];
+    document.getElementById('v_'+map[id]).textContent=cfg[map[id]];
+    el.oninput=e=>{
+      cfg[map[id]]=parseFloat(e.target.value);
+      document.getElementById('v_'+map[id]).textContent=e.target.value;
+      applyS();localStorage.setItem('sh43v4',JSON.stringify(cfg));
+    };
+  }
+}
+document.getElementById('setBack').onclick=()=>document.getElementById('setPanel').style.display='none';
+document.getElementById('setReset').onclick=()=>{
+  cfg=Object.assign({},DEF);applyS();
+  localStorage.setItem('sh43v4',JSON.stringify(cfg));
+  openSettings();
+};
+function applyS(){
+  if(camera){camera.fov=cfg.fov;camera.updateProjectionMatrix();}
+  if(scene){scene.fog.far=cfg.dist;}
+  document.getElementById('hud').style.fontSize=(13*cfg.hud)+'px';
+  if(renderer){
+    const pr = isMobile ? 0.75 : PR_OPTS[cfg.qual];
+    renderer.setPixelRatio(pr);
+    renderer.setSize(innerWidth,innerHeight);
+  }
+  document.getElementById('fps').style.display=cfg.showFps?'block':'none';
+}
+
+addEventListener('resize',()=>{
+  if(camera){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
+  if(renderer) renderer.setSize(innerWidth,innerHeight);
+});
+
+renderMenu();
+setupTouch();
+
+try {
+  initThree();
+  initMaterials();
+  applyS();
+  G.seed=Math.floor(Math.random()*100000)+1;
+  buildSchool();
+  menuSel=0;
+  renderMenu();
+  requestAnimationFrame(t=>{lastT=t;lastFrameTime=t;lastFpsUpdate=t;loop(t);});
+} catch(err){
+  console.error('3D init failed:', err);
+  window.__3dError = err;
+}
+</script>
+</body>
+</html>
