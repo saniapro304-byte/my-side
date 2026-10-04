@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#17212b">
 <title>Spacegram</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
   :root{
@@ -42,13 +43,11 @@
   .app{position:fixed;inset:0;display:flex;overflow:hidden;background:var(--panel)}
   @media(min-width:900px){.app{max-width:1100px;height:100vh;max-height:800px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.6)}}
 
-  /* LOADER */
   .loader{position:fixed;inset:0;background:var(--panel);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:14px;transition:opacity .3s}
   .loader.hidden{opacity:0;pointer-events:none}
   .loader .spinner{width:38px;height:38px;border:3px solid var(--panel2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* AUTH */
   .auth-screen{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;align-items:center;padding:20px;gap:10px;background:var(--panel);overflow-y:auto;padding-top:calc(20px + var(--safe-top));padding-bottom:calc(20px + var(--safe-bottom))}
   .auth-screen.show{display:flex}
   .auth-screen h1{font-size:clamp(26px,7vw,36px);margin-bottom:8px;font-weight:800;background:linear-gradient(135deg,#64b5ef,#4a9eff,#7dd3fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
@@ -63,7 +62,6 @@
   .main-app{display:none;width:100%;height:100%}
   .main-app.active{display:flex}
 
-  /* SIDEBAR */
   .sidebar{width:100%;height:100%;background:var(--panel);display:flex;flex-direction:column;position:absolute;inset:0;transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:5}
   .sidebar.hidden{transform:translateX(-100%)}
   @media(min-width:700px){.sidebar{width:300px;position:relative;inset:auto;transform:none!important;border-right:1px solid var(--border)}.sidebar.hidden{transform:none!important}}
@@ -71,8 +69,9 @@
   .sidebar-header{padding:calc(8px + var(--safe-top)) 10px 6px;display:flex;justify-content:space-between;align-items:center;gap:6px}
   .sidebar-header h2{font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent),#4a9eff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .header-actions{display:flex;gap:4px;align-items:center}
-  .header-btn{width:32px;height:32px;border-radius:50%;background:var(--panel2);border:none;color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .header-btn{width:32px;height:32px;border-radius:50%;background:var(--panel2);border:none;color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative}
   .header-btn:active{transform:scale(.9)}
+  .header-btn .notif-dot{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--panel)}
   .user-avatar-small{width:32px;height:32px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;overflow:hidden;color:#fff;font-weight:600;flex-shrink:0}
   .user-avatar-small img{width:100%;height:100%;object-fit:cover}
 
@@ -101,21 +100,25 @@
   .chat-item{padding:7px 10px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:10px;margin:1px 0}
   .chat-item:active{background:var(--hover)}
   .chat-item.active{background:var(--accent-bg)}
+  .chat-item.unread .chat-preview{color:var(--text);font-weight:600}
   .chat-avatar{width:42px;height:42px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;overflow:hidden;color:#fff;font-weight:600;position:relative}
   .chat-avatar img{width:100%;height:100%;object-fit:cover}
   .online-dot{position:absolute;bottom:0;right:0;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--panel)}
   .chat-info{flex:1;min-width:0}
   .chat-name{font-weight:600;font-size:14px;display:flex;align-items:center;gap:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .chat-preview{color:var(--text2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-  .chat-time{color:var(--text3);font-size:10px;flex-shrink:0}
+  .chat-time{color:var(--text3);font-size:10px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+  .unread-count{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;min-width:18px;text-align:center}
+  .unread-count.muted{background:var(--text3)}
 
   .badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;flex-shrink:0;font-size:9px;font-weight:bold;color:#fff}
   .badge.verified{background:var(--blue-grad)}
   .badge.creator{background:var(--red-grad)}
   .badge.plus{background:var(--gold-grad);color:#000}
   .badge.banned{background:#444}
+  .badge.system{background:linear-gradient(135deg,#10b981,#059669)}
+  @keyframes pulse{0%,100%{box-shadow:0 0 6px rgba(255,74,74,.6)}50%{box-shadow:0 0 14px rgba(255,74,74,1)}}
 
-  /* CHAT AREA */
   .chat-area{flex:1;display:flex;flex-direction:column;background:var(--bg);position:absolute;inset:0;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:6}
   .chat-area.open{transform:translateX(0)}
   @media(min-width:700px){.chat-area{position:relative;inset:auto;transform:none!important}}
@@ -306,7 +309,31 @@
   .story-viewer .nav.left{left:0}
   .story-viewer .nav.right{right:0}
 
-  /* ================== ADMIN PANEL ================== */
+  /* NOTIFICATIONS PANEL */
+  .notif-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1800;justify-content:flex-end;flex-direction:column;align-items:flex-end;padding:0}
+  .notif-panel.active{display:flex}
+  .notif-content{background:var(--panel);width:100%;max-width:400px;height:100vh;display:flex;flex-direction:column;animation:slideInRight .3s;box-shadow:-10px 0 30px rgba(0,0,0,.5)}
+  @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
+  .notif-header{padding:calc(14px + var(--safe-top)) 16px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+  .notif-header h3{font-size:16px;font-weight:700}
+  .notif-header button{background:var(--panel2);border:none;color:var(--text);width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer}
+  .notif-list{flex:1;overflow-y:auto;padding:8px}
+  .notif-item{padding:12px;background:var(--panel2);border-radius:12px;margin-bottom:6px;cursor:pointer;display:flex;gap:10px;position:relative}
+  .notif-item.unread{border-left:3px solid var(--accent)}
+  .notif-item .ni-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;color:#fff;font-weight:600;flex-shrink:0}
+  .notif-item .ni-avatar img{width:100%;height:100%;object-fit:cover}
+  .notif-item .ni-content{flex:1;min-width:0}
+  .notif-item .ni-title{font-size:13px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:4px}
+  .notif-item .ni-text{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .notif-item .ni-time{font-size:10px;color:var(--text3);margin-top:3px}
+  .notif-empty{padding:40px 20px;text-align:center;color:var(--text2);font-size:13px}
+
+  .toast{position:fixed;top:calc(16px + var(--safe-top));left:50%;transform:translateX(-50%);background:var(--panel);color:var(--text);padding:11px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.5);border:1px solid var(--border);animation:toastIn .3s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,-20px)}to{opacity:1;transform:translate(-50%,0)}}
+  .toast.out{opacity:0;transform:translate(-50%,-20px);transition:.3s}
+  .toast.notif-toast{background:var(--accent-bg);color:#fff;border-color:var(--accent)}
+
+  /* ADMIN */
   .admin-panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:3000;overflow-y:auto}
   .admin-panel.active{display:block}
   @media(min-width:900px){.admin-panel{max-width:1100px;height:100vh;max-height:800px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}}
@@ -324,12 +351,7 @@
   .admin-tabs button{padding:8px 14px;border-radius:16px;background:var(--panel2);border:none;color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap;font-weight:500}
   .admin-tabs button.active{background:var(--gold-grad);color:#000;font-weight:700}
   .admin-content{flex:1;overflow-y:auto;padding:12px 14px calc(20px + var(--safe-bottom))}
-  .admin-content::-webkit-scrollbar{width:5px}
-  .admin-content::-webkit-scrollbar-thumb{background:var(--panel2);border-radius:3px}
-
   .admin-search{width:100%;padding:11px 14px;border:2px solid transparent;border-radius:11px;background:var(--panel2);color:var(--text);outline:none;font-size:14px;margin-bottom:10px}
-  .admin-search:focus{border-color:var(--accent)}
-
   .admin-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
   .admin-card .ac-avatar{width:44px;height:44px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;color:#fff;font-weight:600;flex-shrink:0;position:relative}
   .admin-card .ac-avatar img{width:100%;height:100%;object-fit:cover}
@@ -339,18 +361,14 @@
   .admin-card .ac-nick{font-size:11px;color:var(--text2)}
   .admin-card .ac-stats{font-size:10px;color:var(--text3);margin-top:3px;display:flex;gap:8px}
   .admin-card .ac-actions{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:170px}
-
   .ac-btn{padding:6px 10px;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;color:#fff;display:flex;align-items:center;gap:3px}
-  .ac-btn:active{transform:scale(.94)}
   .ac-btn.blue{background:var(--blue-grad)}
   .ac-btn.gold{background:var(--gold-grad);color:#000}
   .ac-btn.red{background:var(--red-grad)}
   .ac-btn.green{background:linear-gradient(135deg,#4ade80,#16a34a)}
   .ac-btn.gray{background:#444}
   .ac-btn.blue.off,.ac-btn.gold.off,.ac-btn.red.off{background:#333;color:#888}
-
   .admin-empty{padding:30px 20px;text-align:center;color:var(--text2);font-size:13px}
-
   .confirm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:3500;justify-content:center;align-items:center;padding:20px}
   .confirm-modal.active{display:flex}
   .confirm-box{background:var(--panel);padding:22px;border-radius:16px;width:100%;max-width:380px;border:2px solid var(--border)}
@@ -362,12 +380,9 @@
   .confirm-box .btns button{flex:1;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
   .confirm-box .btns button.confirm{background:var(--red);color:#fff}
   .confirm-box .btns button.cancel{background:var(--panel2);color:var(--text)}
-
   .admin-log{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;font-size:12px}
   .admin-log .t{color:var(--text3);font-size:10px;margin-top:3px}
   .admin-log .a{color:var(--accent);font-weight:600}
-
-  /* Admin login */
   .admin-login{position:fixed;inset:0;background:var(--bg);z-index:3000;display:none;flex-direction:column;justify-content:center;align-items:center;padding:20px;gap:12px}
   .admin-login.active{display:flex}
   .admin-login h2{font-size:24px;background:linear-gradient(135deg,#ffd700,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
@@ -394,6 +409,7 @@
     <button id="loginBtn">Войти</button>
     <button class="ghost" id="registerBtn">Зарегистрироваться</button>
     <div class="hint">Username: 3-20 символов, только a-z 0-9 _</div>
+    <div class="hint" style="margin-top:6px;color:var(--yellow)">💡 Зарегистрируйся как @spacegram — получишь верификацию</div>
   </div>
 
   <div class="main-app" id="mainApp">
@@ -401,6 +417,7 @@
       <div class="sidebar-header">
         <h2 id="logo">💬 Spacegram</h2>
         <div class="header-actions">
+          <button class="header-btn" id="notifBtn" title="Уведомления">🔔<span class="notif-dot" id="notifDot" style="display:none"></span></button>
           <button class="header-btn" id="adminBtn" title="Админка" style="display:none">🔐</button>
           <button class="header-btn" id="plusBtn" title="Plus">👑</button>
           <button class="header-btn" id="newGroupBtn" title="Группа/канал">👥</button>
@@ -411,6 +428,7 @@
       <div class="stories-row" id="storiesRow"></div>
       <div class="folders" id="folders">
         <button class="folder-btn active" data-folder="all">Все</button>
+        <button class="folder-btn" data-folder="unread">Непрочитанные</button>
         <button class="folder-btn" data-folder="private">Личные</button>
         <button class="folder-btn" data-folder="group">Группы</button>
         <button class="folder-btn" data-folder="channel">Каналы</button>
@@ -469,6 +487,21 @@
   </div>
 </div>
 
+<!-- NOTIFICATIONS PANEL -->
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-content">
+    <div class="notif-header">
+      <h3>🔔 Уведомления</h3>
+      <div style="display:flex;gap:6px">
+        <button onclick="markAllRead()" title="Прочитать все" style="width:auto;padding:0 12px;border-radius:17px;font-size:11px;font-weight:600">✓ Все</button>
+        <button onclick="clearNotifications()" title="Очистить">🗑</button>
+        <button onclick="closeNotifPanel()">✕</button>
+      </div>
+    </div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+</div>
+
 <div class="img-viewer" id="imgViewer">
   <button class="close" onclick="document.getElementById('imgViewer').classList.remove('active')">✕</button>
   <img id="imgViewerImg" src="">
@@ -486,7 +519,6 @@
   <div class="nav right" onclick="nextStory()"></div>
 </div>
 
-<!-- PROFILE -->
 <div class="modal" id="profileModal">
   <div class="modal-content">
     <h2>Мой профиль</h2>
@@ -506,7 +538,6 @@
   </div>
 </div>
 
-<!-- SETTINGS -->
 <div class="modal" id="settingsModal">
   <div class="modal-content">
     <h2>⚙️ Настройки</h2>
@@ -525,10 +556,17 @@
       <button data-wp="gradient3">Закат</button>
       <button data-wp="custom">Свои 👑</button>
     </div>
+    <div class="section-title">Уведомления</div>
+    <div class="setting-row"><div class="label">🔔 Пуши в браузере</div><label class="switch"><input type="checkbox" id="pushToggle"><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">🔊 Звук</div><label class="switch"><input type="checkbox" id="soundToggle" checked><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">📳 Вибрация</div><label class="switch"><input type="checkbox" id="vibrateToggle" checked><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">📱 Badge на иконке</div><label class="switch"><input type="checkbox" id="badgeToggle" checked><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">🍞 Всплывающие уведомления</div><label class="switch"><input type="checkbox" id="toastNotifToggle" checked><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">💬 Показывать непрочитанные</div><label class="switch"><input type="checkbox" id="unreadToggle" checked><span class="slider"></span></label></div>
     <div class="section-title">Поведение</div>
-    <div class="setting-row"><div class="label">🔔 Уведомления</div><label class="switch"><input type="checkbox" id="notifToggle" checked><span class="slider"></span></label></div>
-    <div class="setting-row"><div class="label">✓✓ Отчёты</div><label class="switch"><input type="checkbox" id="readReceiptsToggle" checked><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">✓✓ Отчёты о прочтении</div><label class="switch"><input type="checkbox" id="readReceiptsToggle" checked><span class="slider"></span></label></div>
     <div class="setting-row"><div class="label">⌨️ Enter отправить</div><label class="switch"><input type="checkbox" id="enterSendToggle" checked><span class="slider"></span></label></div>
+    <button class="ghost" id="testNotifBtn">🔔 Тест уведомления</button>
     <button class="ghost" id="clearChatsBtn">🗑 Очистить все чаты</button>
     <button class="ghost" id="closeSettingsBtn">Закрыть</button>
   </div>
@@ -582,17 +620,15 @@
   </div>
 </div>
 
-<!-- ADMIN LOGIN -->
 <div class="admin-login" id="adminLogin">
   <h2>🔐 Админ-панель</h2>
-  <p style="color:var(--text2);font-size:13px;text-align:center;max-width:320px">Введи секретный пароль для доступа к модерации</p>
+  <p style="color:var(--text2);font-size:13px;text-align:center;max-width:320px">Введи секретный пароль</p>
   <input type="password" id="adminSecret" placeholder="••••••••">
   <div class="err" id="adminError"></div>
   <button id="adminLoginBtn">Войти</button>
-  <button class="ghost" style="background:var(--panel2);color:var(--text)" onclick="closeAdminLogin()">Отмена</button>
+  <button style="background:var(--panel2);color:var(--text)" onclick="closeAdminLogin()">Отмена</button>
 </div>
 
-<!-- ADMIN PANEL -->
 <div class="admin-panel" id="adminPanel">
   <div class="admin-shell">
     <div class="admin-top">
@@ -603,7 +639,6 @@
     <div class="admin-tabs" id="adminTabs">
       <button data-tab="users" class="active">👥 Юзеры</button>
       <button data-tab="bans">🚫 Баны</button>
-      <button data-tab="reports">⚠️ Жалобы</button>
       <button data-tab="logs">📋 Логи</button>
       <button data-tab="settings">⚙️ Настройки</button>
     </div>
@@ -611,7 +646,6 @@
   </div>
 </div>
 
-<!-- CONFIRM -->
 <div class="confirm-modal" id="confirmModal">
   <div class="confirm-box">
     <h3 id="confirmTitle">Подтверждение</h3>
@@ -624,7 +658,6 @@
   </div>
 </div>
 
-<!-- PLUS -->
 <div class="plus-page" id="plusPage">
   <button class="plus-close" onclick="document.getElementById('plusPage').classList.remove('active')">✕</button>
   <div class="plus-content">
@@ -646,9 +679,10 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import "https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js";
 
 const SUPABASE_URL="https://qtuvtxbxtypvttfjiydv.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0dXZ0eGJ4dHlwdnR0ZmppeWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg1NzEsImV4cCI6MjEwNjY4NDU3MX0.hxLhZNqjMoxJmGDgNdfb8eiFg3yGBKwwkioZJG74EpA";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0dXZ0eGJ4dHlwdnR0ZmppeWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg1NzEsImV4cCI6MjEwNjg0NTczMX0.hxLhZNqjMoxJmGDgNdfb8eiFg3yGBKwwkioZJG74EpA";
 const ADMIN_SECRET="spacegram2026";
 const CREATOR_USERNAME="itzrealsaneghka";
+const OFFICIAL_USERNAME="spacegram";
 const PREMIUM_EMOJIS=['😎','🔥','💎','👑','🚀','🌟','💫','⚡','🎯','🏆','🥇','💯'];
 const TENOR_KEY="LIVDSRZULELA";
 const THEMES=[
@@ -681,6 +715,10 @@ let settings=JSON.parse(localStorage.getItem('sg_settings')||'{}');
 let selectedGift=null,giftTargetId=null;
 let currentAdminTab='users';
 let adminSearchTimer=null;
+let unreadCounts={};      // { chatId: count }
+let lastSeenMessageTimes={}; // для дедупликации уведомлений
+let audioCtx=null;
+let currentOpenChatId=null;
 
 function applyTheme(){
   document.body.className='';
@@ -705,12 +743,246 @@ function renderBadges(p){
   if(p.is_banned)return '<span class="badge banned">🚫</span>';
   let h='';
   if(p.is_creator)h+='<span class="badge creator">★</span>';
+  else if(p.username===OFFICIAL_USERNAME)h+='<span class="badge system" title="Официальный">✓</span>';
   else if(p.is_verified)h+='<span class="badge verified">✓</span>';
   if(p.is_plus)h+='<span class="badge plus">👑</span>';
   if(p.premium_emoji)h+=`<span style="font-size:13px">${p.premium_emoji}</span>`;
   return h;
 }
 function hideLoader(){$('loader').classList.add('hidden')}
+
+// ==================== УВЕДОМЛЕНИЯ ====================
+function initAudio(){
+  if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+}
+
+function playNotifSound(type='message'){
+  if(settings.sound===false)return;
+  try{
+    initAudio();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const now=audioCtx.currentTime;
+    const o1=audioCtx.createOscillator();
+    const o2=audioCtx.createOscillator();
+    const g=audioCtx.createGain();
+    o1.connect(g);o2.connect(g);g.connect(audioCtx.destination);
+    if(type==='message'){
+      o1.type='sine';o1.frequency.value=880;
+      o2.type='sine';o2.frequency.value=1174;
+      g.gain.setValueAtTime(0,now);
+      g.gain.linearRampToValueAtTime(0.12,now+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
+      o1.start(now);o2.start(now+0.05);
+      o1.stop(now+0.35);o2.stop(now+0.35);
+    }else if(type==='notif'){
+      o1.type='triangle';o1.frequency.value=659;
+      g.gain.setValueAtTime(0,now);
+      g.gain.linearRampToValueAtTime(0.1,now+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,now+0.25);
+      o1.start(now);o1.stop(now+0.25);
+    }else if(type==='sent'){
+      o1.type='sine';o1.frequency.value=523;
+      g.gain.setValueAtTime(0,now);
+      g.gain.linearRampToValueAtTime(0.06,now+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001,now+0.12);
+      o1.start(now);o1.stop(now+0.12);
+    }
+  }catch(e){}
+}
+
+function vibrate(pattern=[50]){
+  if(settings.vibrate===false)return;
+  if(navigator.vibrate)try{navigator.vibrate(pattern)}catch(e){}
+}
+
+async function requestPushPermission(){
+  if(!('Notification' in window)){toast('❌ Браузер не поддерживает уведомления');return false}
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied'){toast('❌ Уведомления запрещены в браузере');return false}
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){toast('🔔 Уведомления включены!');return true}
+  return false;
+}
+
+function showPushNotification(sender,text,avatarUrl){
+  if(settings.push!==true)return;
+  if(Notification.permission!=='granted')return;
+  if(document.visibilityState==='visible'&&currentOpenChatId)return;
+  try{
+    const notif=new Notification(sender,{
+      body:text,
+      icon:avatarUrl||'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚀</text></svg>',
+      badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💬</text></svg>',
+      tag:'sg-msg-'+Date.now(),
+      renotify:true
+    });
+    notif.onclick=()=>{window.focus();notif.close()};
+    setTimeout(()=>{try{notif.close()}catch(e){}},8000);
+  }catch(e){console.warn('Notif error',e)}
+}
+
+function showToastNotif(sender,text){
+  if(settings.toastNotif===false)return;
+  const t=document.createElement('div');
+  t.className='toast notif-toast';
+  t.innerHTML=`<span>💬</span><span style="font-weight:700">${esc(sender)}</span><span style="opacity:.9;font-weight:400">${esc(text.slice(0,40))}${text.length>40?'…':''}</span>`;
+  document.body.appendChild(t);
+  t.onclick=()=>{t.remove()};
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300)},3500);
+}
+
+function updateBadge(){
+  if(settings.badge===false){
+    if(navigator.setAppBadge)try{navigator.setAppBadge(0)}catch(e){}
+    if(navigator.clearAppBadge)try{navigator.clearAppBadge()}catch(e){}
+    return;
+  }
+  const total=Object.values(unreadCounts).reduce((a,b)=>a+b,0);
+  if(navigator.setAppBadge)try{navigator.setAppBadge(total||0)}catch(e){}
+  if(navigator.clearAppBadge&&!total)try{navigator.clearAppBadge()}catch(e){}
+  // Favicon badge
+  const favicon=document.querySelector('link[rel="icon"]');
+  if(favicon&&total>0){
+    const canvas=document.createElement('canvas');
+    canvas.width=64;canvas.height=64;
+    const ctx=canvas.getContext('2d');
+    ctx.font='50px serif';
+    ctx.fillText('🚀',5,50);
+    ctx.beginPath();
+    ctx.arc(52,12,12,0,Math.PI*2);
+    ctx.fillStyle='#ef4444';
+    ctx.fill();
+    ctx.fillStyle='#fff';
+    ctx.font='bold 16px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(total>99?'99+':total,52,12);
+    favicon.href=canvas.toDataURL('image/png');
+  }else if(favicon){
+    favicon.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>";
+  }
+  // Notification dot
+  const dot=$('notifDot');
+  if(dot)dot.style.display=total>0?'block':'none';
+}
+
+// Список уведомлений (хранится в localStorage)
+function getNotifList(){return JSON.parse(localStorage.getItem('sg_notifs')||'[]')}
+function saveNotifList(list){localStorage.setItem('sg_notifs',JSON.stringify(list.slice(0,100)))}
+function addNotifToList(n){
+  const list=getNotifList();
+  list.unshift(n);
+  saveNotifList(list);
+  renderNotifList();
+}
+function renderNotifList(){
+  const list=getNotifList();
+  const el=$('notifList');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div class="notif-empty">Уведомлений нет<br><span style="font-size:32px">🔔</span></div>';return}
+  el.innerHTML=list.map((n,i)=>`
+    <div class="notif-item ${n.read?'':'unread'}" onclick="openNotifChat('${n.chatId||''}','${n.id}')">
+      <div class="ni-avatar">${n.avatar?`<img src="${n.avatar}">`:esc(n.sender[0]).toUpperCase()}</div>
+      <div class="ni-content">
+        <div class="ni-title">${esc(n.sender)} ${n.sender==='@'+OFFICIAL_USERNAME?'<span class="badge system" style="width:12px;height:12px;font-size:8px">✓</span>':''}</div>
+        <div class="ni-text">${esc(n.text)}</div>
+        <div class="ni-time">${fmtRelative(n.time)}</div>
+      </div>
+    </div>`).join('');
+}
+window.openNotifChat=(chatId,notifId)=>{
+  const list=getNotifList().map(n=>n.id===notifId?{...n,read:true}:n);
+  saveNotifList(list);
+  renderNotifList();
+  if(chatId){
+    const chat=list.find(n=>n.id===notifId);
+    if(chat){closeNotifPanel();openChat(chatId,chat.otherId)}
+  }
+};
+window.markAllRead=()=>{
+  const list=getNotifList().map(n=>({...n,read:true}));
+  saveNotifList(list);renderNotifList();
+  toast('✓ Все прочитаны');
+};
+window.clearNotifications=()=>{
+  if(!confirm('Очистить все уведомления?'))return;
+  saveNotifList([]);renderNotifList();
+};
+$('notifBtn').onclick=()=>{$('notifPanel').classList.add('active');renderNotifList();markAllRead()};
+window.closeNotifPanel=()=>$('notifPanel').classList.remove('active');
+$('notifPanel').onclick=e=>{if(e.target===$('notifPanel'))closeNotifPanel()};
+
+function fmtRelative(t){
+  const diff=Date.now()-t;
+  if(diff<60000)return 'сейчас';
+  if(diff<3600000)return Math.floor(diff/60000)+' мин';
+  if(diff<86400000)return Math.floor(diff/3600000)+' ч';
+  return new Date(t).toLocaleDateString('ru');
+}
+
+async function handleIncomingMessage(m){
+  // Уже видели?
+  const key=m.id;
+  if(lastSeenMessageTimes[key])return;
+  lastSeenMessageTimes[key]=Date.now();
+  // От нас?
+  if(m.sender===currentUser.id)return;
+  // Открыт этот чат?
+  const sender=await getUser(m.sender);
+  const senderName=sender?.display_name||'Кто-то';
+  if(currentOpenChatId===m.chat_id&&document.visibilityState==='visible'){
+    // Просто пометить прочитанным
+    sb.from('messages').update({is_read:true}).eq('id',m.id).then(()=>{});
+    return;
+  }
+  // Инкремент
+  unreadCounts[m.chat_id]=(unreadCounts[m.chat_id]||0)+1;
+  // Уведомление
+  playNotifSound('message');
+  vibrate([100,50,100]);
+  showPushNotification(senderName,m.text||'📎 Файл',sender?.avatar_url);
+  showToastNotif(senderName,m.text||'📎 Файл');
+  addNotifToList({
+    id:m.id,
+    chatId:m.chat_id,
+    otherId:m.sender,
+    sender:senderName,
+    avatar:sender?.avatar_url,
+    text:m.text||'📎 Файл',
+    time:Date.now(),
+    read:false
+  });
+  updateBadge();
+  renderChatsUnread();
+}
+
+async function loadUnreadCounts(){
+  const uid=currentUser.id;
+  const{data:chats}=await sb.from('chats').select('id').or(`user1.eq.${uid},user2.eq.${uid}`);
+  if(!chats?.length)return;
+  const chatIds=chats.map(c=>c.id);
+  const{data:msgs}=await sb.from('messages').select('chat_id').in('chat_id',chatIds).eq('is_read',false).neq('sender',uid);
+  unreadCounts={};
+  (msgs||[]).forEach(m=>{unreadCounts[m.chat_id]=(unreadCounts[m.chat_id]||0)+1});
+  updateBadge();
+  renderChatsUnread();
+}
+
+function renderChatsUnread(){
+  if(settings.unread===false)return;
+  document.querySelectorAll('.chat-item').forEach(el=>{
+    const id=el.dataset.chatId;
+    const count=unreadCounts[id]||0;
+    el.classList.toggle('unread',count>0);
+    const timeEl=el.querySelector('.chat-time');
+    if(!timeEl)return;
+    let badge=timeEl.querySelector('.unread-count');
+    if(count>0){
+      if(!badge){badge=document.createElement('div');badge.className='unread-count';timeEl.appendChild(badge)}
+      badge.textContent=count>99?'99+':count;
+    }else if(badge)badge.remove();
+  });
+}
 
 async function init(){
   applyTheme();
@@ -729,7 +1001,16 @@ async function enterApp(){
     await loadStickers();
     await loadChats();
     subscribeChats();
+    subscribeAllMessages();
     loadStories();
+    await loadUnreadCounts();
+    renderNotifList();
+    // Инициализируем audio по первому взаимодействию
+    document.addEventListener('click',()=>{if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume()},{once:true});
+    // Разрешение на пуши при первом действии
+    if('Notification' in window&&Notification.permission==='default'&&settings.push!==false){
+      setTimeout(()=>{requestPushPermission()},3000);
+    }
   }catch(e){console.error(e)}
   hideLoader();
 }
@@ -747,8 +1028,14 @@ $('registerBtn').onclick=async()=>{
   if(error)return $('authError').textContent=error.message;
   if(!data.user)return $('authError').textContent='Ошибка';
   const isCreator=uname===CREATOR_USERNAME;
-  await sb.from('profiles').insert({id:data.user.id,username:uname,display_name:uname,is_creator:isCreator,is_verified:isCreator,is_plus:isCreator,last_seen:new Date().toISOString()});
+  const isOfficial=uname===OFFICIAL_USERNAME;
+  await sb.from('profiles').insert({
+    id:data.user.id,username:uname,display_name:uname,
+    is_creator:isCreator,is_verified:isCreator||isOfficial,
+    is_plus:isCreator||isOfficial,last_seen:new Date().toISOString()
+  });
   currentUser=data.user;await enterApp();
+  if(isOfficial)toast('🔵 Поздравляем! Верификация @spacegram активна');
 };
 
 $('loginBtn').onclick=async()=>{
@@ -892,7 +1179,12 @@ window.closeStoryViewer=()=>{$('storyViewer').classList.remove('active');clearTi
 
 // SETTINGS
 $('settingsBtn').onclick=()=>{
-  $('notifToggle').checked=settings.notifications!==false;
+  $('pushToggle').checked=settings.push===true;
+  $('soundToggle').checked=settings.sound!==false;
+  $('vibrateToggle').checked=settings.vibrate!==false;
+  $('badgeToggle').checked=settings.badge!==false;
+  $('toastNotifToggle').checked=settings.toastNotif!==false;
+  $('unreadToggle').checked=settings.unread!==false;
   $('readReceiptsToggle').checked=settings.readReceipts!==false;
   $('enterSendToggle').checked=settings.enterSend!==false;
   document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('active',(b.dataset.mode==='light')===(settings.mode==='light')));
@@ -925,9 +1217,28 @@ $('wallpaperToggle').onclick=e=>{
     };inp.click();
   }else{settings.wallpaper=wp;saveSettings();applyTheme();document.querySelectorAll('#wallpaperToggle button').forEach(b=>b.classList.toggle('active',b===e.target))}
 };
-$('notifToggle').onchange=e=>{settings.notifications=e.target.checked;saveSettings()};
+$('pushToggle').onchange=async e=>{
+  if(e.target.checked){
+    const ok=await requestPushPermission();
+    settings.push=ok;
+    if(!ok)e.target.checked=false;
+  }else settings.push=false;
+  saveSettings();
+};
+$('soundToggle').onchange=e=>{settings.sound=e.target.checked;saveSettings()};
+$('vibrateToggle').onchange=e=>{settings.vibrate=e.target.checked;saveSettings()};
+$('badgeToggle').onchange=e=>{settings.badge=e.target.checked;saveSettings();updateBadge()};
+$('toastNotifToggle').onchange=e=>{settings.toastNotif=e.target.checked;saveSettings()};
+$('unreadToggle').onchange=e=>{settings.unread=e.target.checked;saveSettings();renderChatsUnread()};
 $('readReceiptsToggle').onchange=e=>{settings.readReceipts=e.target.checked;saveSettings()};
 $('enterSendToggle').onchange=e=>{settings.enterSend=e.target.checked;saveSettings()};
+$('testNotifBtn').onclick=async()=>{
+  playNotifSound('message');
+  vibrate([100,50,100]);
+  showPushNotification('Spacegram','Тестовое уведомление 🔔','');
+  showToastNotif('Spacegram','Тест уведомления');
+  toast('🔔 Тест отправлен!');
+};
 $('clearChatsBtn').onclick=async()=>{
   if(!confirm('Удалить все чаты?'))return;
   const uid=currentUser.id;
@@ -957,6 +1268,7 @@ async function loadChats(){
   if(currentFolder==='private')filtered=filtered.filter(c=>!c.is_group&&!c.is_channel);
   else if(currentFolder==='group')filtered=filtered.filter(c=>c.is_group);
   else if(currentFolder==='channel')filtered=filtered.filter(c=>c.is_channel);
+  else if(currentFolder==='unread')filtered=filtered.filter(c=>unreadCounts[c.id]>0);
   if(!filtered.length){list.innerHTML='<div style="padding:24px;color:var(--text2);text-align:center;font-size:13px">Нет чатов</div>';return}
   const uidsToFetch=filtered.filter(c=>!c.is_group&&!c.is_channel).map(c=>c.user1===uid?c.user2:c.user1).filter(id=>!userCache[id]);
   if(uidsToFetch.length){
@@ -970,6 +1282,7 @@ async function loadChats(){
     const isOnline=prof.last_seen&&(Date.now()-new Date(prof.last_seen).getTime())<90000;
     const div=document.createElement('div');
     div.className='chat-item'+(chat.id===currentChatId?' active':'');
+    div.dataset.chatId=chat.id;
     div.onclick=()=>openChat(chat.id,otherId);
     const time=chat.created_at?new Date(chat.created_at).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):'';
     const icon=chat.is_channel?'📢':chat.is_group?'👥':'';
@@ -979,11 +1292,21 @@ async function loadChats(){
       <div class="chat-time">${time}</div>`;
     list.appendChild(div);
   }
+  renderChatsUnread();
 }
 
 function subscribeChats(){
   if(chatsChannel)sb.removeChannel(chatsChannel);
-  chatsChannel=sb.channel('chats_ch').on('postgres_changes',{event:'*',schema:'public',table:'chats'},()=>loadChats()).subscribe();
+  chatsChannel=sb.channel('chats_ch').on('postgres_changes',{event:'*',schema:'public',table:'chats'},()=>{loadChats()}).subscribe();
+}
+
+function subscribeAllMessages(){
+  // Глобальная подписка на ВСЕ новые сообщения для уведомлений
+  sb.channel('all_messages')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},async payload=>{
+      await handleIncomingMessage(payload.new);
+    })
+    .subscribe();
 }
 
 $('searchInput').oninput=(()=>{
@@ -1018,7 +1341,7 @@ async function startChat(otherId){
 }
 
 async function openChat(chatId,otherId){
-  currentChatId=chatId;currentChatUser=otherId;
+  currentChatId=chatId;currentChatUser=otherId;currentOpenChatId=chatId;
   const{data:chat}=await sb.from('chats').select('*').eq('id',chatId).single();
   currentChatObj=chat;
   $('chatArea').classList.add('open');
@@ -1038,6 +1361,10 @@ async function openChat(chatId,otherId){
     $('headerStatus').textContent=isOnline?'в сети':'был(а) недавно';
     $('headerAvatar').innerHTML=prof?.avatar_url?`<img src="${prof.avatar_url}">`:(prof?.display_name||'?')[0].toUpperCase();
   }
+  // Сбросить unread для этого чата
+  delete unreadCounts[chatId];
+  updateBadge();
+  renderChatsUnread();
   await loadMessages(chatId);
   if(messagesChannel)sb.removeChannel(messagesChannel);
   messagesChannel=sb.channel('m_'+chatId)
@@ -1049,6 +1376,8 @@ async function openChat(chatId,otherId){
 async function loadMessages(chatId){
   const{data}=await sb.from('messages').select('*').eq('chat_id',chatId).order('created_at').limit(200);
   allMessages=data||[];
+  // Запоминаем что видели (чтобы не было уведомлений)
+  allMessages.forEach(m=>{if(m.sender!==currentUser.id)lastSeenMessageTimes[m.id]=Date.now()});
   const msgs=$('messages');msgs.innerHTML='';
   let lastDate='';
   allMessages.forEach(m=>{
@@ -1187,7 +1516,7 @@ window.showSidebar=()=>{
   $('stickerPanel').classList.remove('show');
   $('gifPanel').classList.remove('show');
   if(messagesChannel){sb.removeChannel(messagesChannel);messagesChannel=null}
-  currentChatId=null;
+  currentChatId=null;currentOpenChatId=null;
 };
 
 window.openUserProfile=async uid=>{
@@ -1234,6 +1563,7 @@ async function sendMessage(){
   $('messageInput').value='';
   const{error}=await sb.from('messages').insert({chat_id:currentChatId,sender:currentUser.id,text,is_read:false,reply_to:replyTo?.id||null});
   if(error)return alert(error.message);
+  playNotifSound('sent');
   replyTo=null;$('replyPreview').classList.remove('show');
   sb.from('chats').update({last_message:text.slice(0,50)}).eq('id',currentChatId).then(()=>{});
 }
@@ -1359,10 +1689,11 @@ $('createGroupBtn').onclick=async()=>{
 
 $('chatMenuBtn').onclick=e=>{
   e.stopPropagation();if(!currentChatId)return;
-  const c=prompt('1 - Очистить\n2 - Удалить\n3 - Опрос\n4 - Отмена');
+  const c=prompt('1 - Очистить\n2 - Удалить\n3 - Опрос\n4 - Уведомления чата\n5 - Отмена');
   if(c==='1'){if(confirm('Очистить?'))sb.from('messages').delete().eq('chat_id',currentChatId).then(()=>loadMessages(currentChatId))}
   else if(c==='2'){if(confirm('Удалить чат?'))sb.from('messages').delete().eq('chat_id',currentChatId).then(()=>sb.from('chats').delete().eq('id',currentChatId).then(()=>{showSidebar();loadChats()}))}
   else if(c==='3')$('pollModal').classList.add('active');
+  else if(c==='4')toast('🔔 Уведомления для чата: '+(settings.mutedChats?.includes(currentChatId)?'выключены':'включены'));
 };
 $('searchMsgBtn').onclick=()=>{
   const q=prompt('Поиск:');if(!q)return;
@@ -1385,49 +1716,36 @@ $('sendGiftBtn').onclick=async()=>{
   alert('🎁 Отправлено!');$('giftModal').classList.remove('active');
 };
 
-// ==================== ADMIN SYSTEM ====================
+// ==================== ADMIN ====================
 $('adminBtn').onclick=openAdminGate;
 $('logo').onclick=(()=>{let c=0;return()=>{c++;if(c>=5){openAdminGate();c=0}}})();
-
 function openAdminGate(){
   if(isAdmin)return openAdminPanel();
   $('adminLogin').classList.add('active');
-  $('adminSecret').value='';
-  $('adminError').textContent='';
+  $('adminSecret').value='';$('adminError').textContent='';
   setTimeout(()=>$('adminSecret').focus(),100);
 }
 window.closeAdminLogin=()=>$('adminLogin').classList.remove('active');
-
 $('adminLoginBtn').onclick=async()=>{
-  const s=$('adminSecret').value;
-  $('adminError').textContent='';
+  const s=$('adminSecret').value;$('adminError').textContent='';
   if(s!==ADMIN_SECRET)return $('adminError').textContent='❌ Неверный пароль';
   const{error}=await sb.from('admins').insert({id:currentUser.id});
   if(error&&!error.message.includes('duplicate'))return $('adminError').textContent=error.message;
   isAdmin=true;$('adminBtn').style.display='flex';document.body.style.border='3px solid gold';
-  closeAdminLogin();
-  openAdminPanel();
-  logAdminAction('login','','');
+  closeAdminLogin();openAdminPanel();logAdminAction('login','','');
 };
-
 async function checkAdmin(){
   const{data}=await sb.from('admins').select('id').eq('id',currentUser.id).maybeSingle();
   isAdmin=!!data;
   if(isAdmin){$('adminBtn').style.display='flex';document.body.style.border='3px solid gold'}
 }
-
 window.closeAdmin=()=>{$('adminPanel').classList.remove('active');loadChats()};
-function openAdminPanel(){
-  $('adminPanel').classList.add('active');
-  renderAdminStats();
-  loadAdminTab('users');
-}
+function openAdminPanel(){$('adminPanel').classList.add('active');renderAdminStats();loadAdminTab('users')}
 $('adminTabs').onclick=e=>{
   const b=e.target.closest('button');if(!b)return;
   document.querySelectorAll('#adminTabs button').forEach(x=>x.classList.toggle('active',x===b));
   loadAdminTab(b.dataset.tab);
 };
-
 async function renderAdminStats(){
   const[{count:uc},{count:mc},{count:cc},{count:bc}]=await Promise.all([
     sb.from('profiles').select('*',{count:'exact',head:true}),
@@ -1441,24 +1759,16 @@ async function renderAdminStats(){
     <div class="admin-stat"><div class="n">${cc||0}</div><div class="l">Чаты</div></div>
     <div class="admin-stat"><div class="n" style="color:var(--red)">${bc||0}</div><div class="l">Баны</div></div>`;
 }
-
 async function loadAdminTab(tab){
-  currentAdminTab=tab;
   const el=$('adminContent');
   if(tab==='users'){
     el.innerHTML=`<input type="text" class="admin-search" id="adminSearch" placeholder="🔍 Поиск @username или имя...">
       <div id="adminList"></div>`;
-    $('adminSearch').oninput=e=>{
-      clearTimeout(adminSearchTimer);
-      adminSearchTimer=setTimeout(()=>loadAdminUsers(e.target.value.trim().toLowerCase()),350);
-    };
+    $('adminSearch').oninput=e=>{clearTimeout(adminSearchTimer);adminSearchTimer=setTimeout(()=>loadAdminUsers(e.target.value.trim().toLowerCase()),350)};
     loadAdminUsers('');
   }else if(tab==='bans'){
     el.innerHTML='<div id="bannedList"></div>';
     loadBannedUsers();
-  }else if(tab==='reports'){
-    el.innerHTML='<div id="reportsList"></div>';
-    loadReports();
   }else if(tab==='logs'){
     el.innerHTML='<div id="logsList"></div>';
     loadAdminLogs();
@@ -1470,50 +1780,43 @@ async function loadAdminTab(tab){
         <div class="setting-row" style="margin-bottom:6px"><div class="label">Режим обслуживания</div><label class="switch"><input type="checkbox" id="maintenanceToggle"><span class="slider"></span></label></div>
         <button class="ac-btn gold" id="exportDataBtn" style="width:100%;margin-top:8px;padding:10px">📥 Экспорт данных (JSON)</button>
         <button class="ac-btn red" id="clearOldMessagesBtn" style="width:100%;margin-top:6px;padding:10px">🗑 Удалить сообщения старше 30 дней</button>
+        <button class="ac-btn blue" id="testNotifAdminBtn" style="width:100%;margin-top:6px;padding:10px">🔔 Тест уведомления</button>
       </div>`;
     loadAppSettings();
   }
 }
-
 async function loadAdminUsers(search){
   const list=$('adminList');if(!list)return;
   list.innerHTML='<div class="admin-empty">Загрузка...</div>';
   let q=sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_banned,is_creator,messages_count,gifts_received,created_at').order('created_at',{ascending:false}).limit(60);
-  if(search.length>=2){
-    q=q.or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
-  }
+  if(search.length>=2)q=q.or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
   const{data}=await q;
   if(!data?.length){list.innerHTML='<div class="admin-empty">Никого не найдено</div>';return}
   list.innerHTML='';
-  data.forEach(u=>{
-    list.appendChild(renderAdminUserCard(u));
-  });
+  data.forEach(u=>list.appendChild(renderAdminUserCard(u)));
 }
-
 function renderAdminUserCard(u){
   const div=document.createElement('div');
   div.className='admin-card';
   const isCreator=u.username===CREATOR_USERNAME;
+  const isOfficial=u.username===OFFICIAL_USERNAME;
   const bannedCls=u.is_banned?'banned':'';
   div.innerHTML=`
     <div class="ac-avatar ${bannedCls}">${u.avatar_url?`<img src="${u.avatar_url}" loading="lazy">`:(u.display_name||'?')[0].toUpperCase()}</div>
     <div class="ac-info">
       <div class="ac-name">${esc(u.display_name||u.username)} ${renderBadges(u)}</div>
-      <div class="ac-nick">@${esc(u.username)}${isCreator?' • СОЗДАТЕЛЬ':''}</div>
+      <div class="ac-nick">@${esc(u.username)}${isCreator?' • СОЗДАТЕЛЬ':''}${isOfficial?' • ОФИЦИАЛЬНЫЙ':''}</div>
       <div class="ac-stats"><span>💬 ${u.messages_count||0}</span><span>🎁 ${u.gifts_received||0}</span></div>
     </div>
     <div class="ac-actions">
-      <button class="ac-btn blue ${u.is_verified?'':'off'}" data-act="verify" title="Синяя галочка">${u.is_verified?'🔵':'✓'}</button>
+      <button class="ac-btn blue ${u.is_verified?'':'off'}" data-act="verify" title="Верификация">${u.is_verified?'🔵':'✓'}</button>
       <button class="ac-btn gold ${u.is_plus?'':'off'}" data-act="plus" title="Plus">👑</button>
       <button class="ac-btn red ${u.is_banned?'':'off'}" data-act="ban" title="Бан">🚫</button>
-      <button class="ac-btn gray" data-act="gift" title="Дать подарок">🎁</button>
+      <button class="ac-btn gray" data-act="gift" title="Подарок">🎁</button>
     </div>`;
-  div.querySelectorAll('button[data-act]').forEach(btn=>{
-    btn.onclick=()=>adminUserAction(btn.dataset.act,u,btn);
-  });
+  div.querySelectorAll('button[data-act]').forEach(btn=>{btn.onclick=()=>adminUserAction(btn.dataset.act,u,btn)});
   return div;
 }
-
 async function adminUserAction(act,u,btn){
   if(act==='verify'){
     const nv=!u.is_verified;
@@ -1532,15 +1835,13 @@ async function adminUserAction(act,u,btn){
   }else if(act==='ban'){
     if(u.is_banned){
       await sb.from('profiles').update({is_banned:false,ban_reason:null,banned_at:null,banned_by:null}).eq('id',u.id);
-      btn.classList.add('off');
-      userCache={};
+      btn.classList.add('off');userCache={};
       logAdminAction('unban',u.id,u.username);
       toast('✓ Разбанен');
     }else{
-      openConfirm('🚫 Забанить '+u.username,'Пользователь не сможет войти. Укажи причину:',async(reason)=>{
+      openConfirm('🚫 Забанить '+u.username,'Пользователь не сможет войти:',async(reason)=>{
         await sb.from('profiles').update({is_banned:true,ban_reason:reason||'Нарушение правил',banned_at:new Date().toISOString(),banned_by:currentUser.id}).eq('id',u.id);
-        btn.classList.remove('off');
-        userCache={};
+        btn.classList.remove('off');userCache={};
         logAdminAction('ban',u.id,u.username+' | '+(reason||''));
         toast('🚫 Забанен');
       });
@@ -1552,15 +1853,13 @@ async function adminUserAction(act,u,btn){
     toast('🎁 Подарок выдан');
   }
 }
-
 async function loadBannedUsers(){
   const list=$('bannedList');
   const{data}=await sb.from('profiles').select('id,username,display_name,avatar_url,ban_reason,banned_at').eq('is_banned',true).order('banned_at',{ascending:false});
   if(!data?.length){list.innerHTML='<div class="admin-empty">Никого не забанено 🎉</div>';return}
   list.innerHTML='';
   data.forEach(u=>{
-    const div=document.createElement('div');
-    div.className='admin-card';
+    const div=document.createElement('div');div.className='admin-card';
     div.innerHTML=`
       <div class="ac-avatar banned">${u.avatar_url?`<img src="${u.avatar_url}">`:(u.display_name||'?')[0].toUpperCase()}</div>
       <div class="ac-info">
@@ -1568,81 +1867,31 @@ async function loadBannedUsers(){
         <div class="ac-nick">@${esc(u.username)}</div>
         <div class="ac-stats"><span style="color:var(--red)">${esc(u.ban_reason||'—')}</span></div>
       </div>
-      <button class="ac-btn green" data-uid="${u.id}">✓ Разбан</button>`;
+      <button class="ac-btn green">✓ Разбан</button>`;
     div.querySelector('button').onclick=async()=>{
       await sb.from('profiles').update({is_banned:false,ban_reason:null,banned_at:null,banned_by:null}).eq('id',u.id);
-      logAdminAction('unban',u.id,u.username);
-      loadBannedUsers();renderAdminStats();
+      logAdminAction('unban',u.id,u.username);loadBannedUsers();renderAdminStats();
     };
     list.appendChild(div);
   });
 }
-
-async function loadReports(){
-  const list=$('reportsList');
-  list.innerHTML='<div class="admin-empty">Загрузка...</div>';
-  const{data}=await sb.from('reports').select('*').order('created_at',{ascending:false}).limit(50);
-  if(!data?.length){list.innerHTML='<div class="admin-empty">Жалоб нет ✨</div>';return}
-  list.innerHTML='';
-  for(const r of data){
-    const div=document.createElement('div');
-    div.className='admin-card';
-    div.style.flexDirection='column';
-    div.style.alignItems='stretch';
-    const reporter=await getUser(r.reporter);
-    const target=r.target_user?await getUser(r.target_user):null;
-    div.innerHTML=`
-      <div style="font-size:12px;margin-bottom:6px">
-        <b>${esc(reporter?.display_name||'?')}</b> пожаловался на <b>${esc(target?.display_name||'—')}</b>
-      </div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">Причина: ${esc(r.reason)}</div>
-      <div style="font-size:10px;color:var(--text3)">${new Date(r.created_at).toLocaleString('ru')}</div>
-      <div style="display:flex;gap:6px;margin-top:8px">
-        ${target?`<button class="ac-btn red" data-uid="${target.id}">🚫 Забанить</button>`:''}
-        <button class="ac-btn gray" data-rid="${r.id}">✓ Обработано</button>
-      </div>`;
-    div.querySelectorAll('button').forEach(b=>{
-      b.onclick=async()=>{
-        if(b.dataset.uid){
-          await sb.from('profiles').update({is_banned:true,ban_reason:'Жалоба: '+r.reason,banned_at:new Date().toISOString(),banned_by:currentUser.id}).eq('id',b.dataset.uid);
-          logAdminAction('ban_by_report',b.dataset.uid,r.reason);
-          toast('🚫 Забанен');
-        }
-        await sb.from('reports').update({status:'resolved'}).eq('id',r.id);
-        loadReports();renderAdminStats();
-      };
-    });
-    list.appendChild(div);
-  }
-}
-
 async function loadAdminLogs(){
   const list=$('logsList');
   const{data}=await sb.from('admin_logs').select('*').order('created_at',{ascending:false}).limit(50);
   if(!data?.length){list.innerHTML='<div class="admin-empty">Логов нет</div>';return}
-  list.innerHTML=data.map(l=>{
-    const actionNames={login:'🔐 Вход',ban:'🚫 Бан',unban:'✓ Разбан',verify_grant:'🔵 Выдал галочку',verify_revoke:'⚪ Снял галочку',plus_grant:'👑 Выдал Plus',plus_revoke:'⚪ Снял Plus',gift:'🎁 Выдал подарок',ban_by_report:'🚫 Бан по жалобе'};
-    return `<div class="admin-log"><div class="a">${actionNames[l.action]||l.action}</div><div>${esc(l.details||'')}</div><div class="t">${new Date(l.created_at).toLocaleString('ru')}</div></div>`;
-  }).join('');
+  const names={login:'🔐 Вход',ban:'🚫 Бан',unban:'✓ Разбан',verify_grant:'🔵 Выдал галочку',verify_revoke:'⚪ Снял галочку',plus_grant:'👑 Выдал Plus',plus_revoke:'⚪ Снял Plus',gift:'🎁 Выдал подарок'};
+  list.innerHTML=data.map(l=>`<div class="admin-log"><div class="a">${names[l.action]||l.action}</div><div>${esc(l.details||'')}</div><div class="t">${new Date(l.created_at).toLocaleString('ru')}</div></div>`).join('');
 }
-
 async function logAdminAction(action,target_id,details){
   try{await sb.from('admin_logs').insert({admin_id:currentUser.id,action,target_id:target_id||null,details})}catch(e){}
 }
-
 async function loadAppSettings(){
   const{data}=await sb.from('app_settings').select('*');
   const s={};(data||[]).forEach(x=>s[x.key]=x.value);
   $('regOpenToggle').checked=s.registration_open!==false;
   $('maintenanceToggle').checked=s.maintenance===true;
-  $('regOpenToggle').onchange=async e=>{
-    await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','registration_open');
-    toast('✓ Сохранено');
-  };
-  $('maintenanceToggle').onchange=async e=>{
-    await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','maintenance');
-    toast('✓ Сохранено');
-  };
+  $('regOpenToggle').onchange=async e=>{await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','registration_open');toast('✓')};
+  $('maintenanceToggle').onchange=async e=>{await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','maintenance');toast('✓')};
   $('exportDataBtn').onclick=async()=>{
     const{data:users}=await sb.from('profiles').select('*');
     const blob=new Blob([JSON.stringify(users,null,2)],{type:'application/json'});
@@ -1650,22 +1899,24 @@ async function loadAppSettings(){
     const a=document.createElement('a');a.href=url;a.download='spacegram_users.json';a.click();
   };
   $('clearOldMessagesBtn').onclick=()=>{
-    openConfirm('🗑 Удалить старые','Удалить все сообщения старше 30 дней?',async()=>{
+    openConfirm('🗑 Удалить старые','Удалить сообщения старше 30 дней?',async()=>{
       const d=new Date();d.setDate(d.getDate()-30);
       await sb.from('messages').delete().lt('created_at',d.toISOString());
       toast('✓ Удалено');
     });
   };
+  $('testNotifAdminBtn').onclick=()=>{
+    playNotifSound('message');vibrate([100,50,100]);
+    showPushNotification('Spacegram','Тест от админа','');
+    showToastNotif('Spacegram','Тест от админа');
+    toast('🔔 Тест отправлен');
+  };
 }
 
-// CONFIRM MODAL
 let confirmCallback=null;
 function openConfirm(title,text,cb){
-  $('confirmTitle').textContent=title;
-  $('confirmText').textContent=text;
-  $('confirmInput').value='';
-  $('confirmModal').classList.add('active');
-  confirmCallback=cb;
+  $('confirmTitle').textContent=title;$('confirmText').textContent=text;$('confirmInput').value='';
+  $('confirmModal').classList.add('active');confirmCallback=cb;
   setTimeout(()=>$('confirmInput').focus(),100);
 }
 window.closeConfirm=()=>{$('confirmModal').classList.remove('active');confirmCallback=null};
@@ -1675,19 +1926,14 @@ $('confirmOk').onclick=async()=>{
   closeConfirm();
 };
 
-// TOAST
 function toast(msg){
   const t=document.createElement('div');
-  t.textContent=msg;
-  t.style.cssText='position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--panel2);color:var(--text);padding:11px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);border:1px solid var(--border);animation:toastIn .3s;white-space:nowrap';
+  t.className='toast';
+  t.innerHTML=`<span>${msg}</span>`;
   document.body.appendChild(t);
-  const style=document.createElement('style');
-  style.textContent='@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}';
-  document.head.appendChild(style);
-  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},2000);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300)},2200);
 }
 
-// PLUS
 window.openPlusPage=()=>{$('plusStatus').innerHTML=currentProfile?.is_plus?'<span class="plus-badge" style="font-size:13px;padding:5px 14px">✅ АКТИВЕН</span>':'';$('plusPage').classList.add('active')};
 $('plusBtn').onclick=openPlusPage;
 
@@ -1698,9 +1944,21 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.msg-wrap'))document.querySelectorAll('.msg-wrap.show-toolbar').forEach(x=>x.classList.remove('show-toolbar'));
 });
 
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    if(currentOpenChatId)loadMessages(currentOpenChatId);
+    loadUnreadCounts();
+  }
+});
+
+window.addEventListener('focus',()=>{if(currentOpenChatId)loadMessages(currentOpenChatId)});
+
 function esc(t){const d=document.createElement('div');d.textContent=t??'';return d.innerHTML}
+
+// Диагностика сервис-воркера для PWA badge
+if('serviceWorker' in navigator)navigator.serviceWorker.register('data:text/javascript,self.addEventListener("install",e=>self.skipWaiting());self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()))').catch(()=>{});
 
 init();
 </script>
 </body>
-                                                                </html>
+     </html>
