@@ -69,9 +69,8 @@
   .sidebar-header{padding:calc(8px + var(--safe-top)) 10px 6px;display:flex;justify-content:space-between;align-items:center;gap:6px}
   .sidebar-header h2{font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent),#4a9eff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .header-actions{display:flex;gap:4px;align-items:center}
-  .header-btn{width:32px;height:32px;border-radius:50%;background:var(--panel2);border:none;color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative}
+  .header-btn{width:32px;height:32px;border-radius:50%;background:var(--panel2);border:none;color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .header-btn:active{transform:scale(.9)}
-  .header-btn .notif-dot{position:absolute;top:2px;right:2px;width:8px;height:8px;background:var(--red);border-radius:50%;border:2px solid var(--panel)}
   .user-avatar-small{width:32px;height:32px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;overflow:hidden;color:#fff;font-weight:600;flex-shrink:0}
   .user-avatar-small img{width:100%;height:100%;object-fit:cover}
 
@@ -109,7 +108,6 @@
   .chat-preview{color:var(--text2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
   .chat-time{color:var(--text3);font-size:10px;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
   .unread-count{background:var(--accent);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;min-width:18px;text-align:center}
-  .unread-count.muted{background:var(--text3)}
 
   .badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;flex-shrink:0;font-size:9px;font-weight:bold;color:#fff}
   .badge.verified{background:var(--blue-grad)}
@@ -117,7 +115,6 @@
   .badge.plus{background:var(--gold-grad);color:#000}
   .badge.banned{background:#444}
   .badge.system{background:linear-gradient(135deg,#10b981,#059669)}
-  @keyframes pulse{0%,100%{box-shadow:0 0 6px rgba(255,74,74,.6)}50%{box-shadow:0 0 14px rgba(255,74,74,1)}}
 
   .chat-area{flex:1;display:flex;flex-direction:column;background:var(--bg);position:absolute;inset:0;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:6}
   .chat-area.open{transform:translateX(0)}
@@ -309,31 +306,9 @@
   .story-viewer .nav.left{left:0}
   .story-viewer .nav.right{right:0}
 
-  /* NOTIFICATIONS PANEL */
-  .notif-panel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1800;justify-content:flex-end;flex-direction:column;align-items:flex-end;padding:0}
-  .notif-panel.active{display:flex}
-  .notif-content{background:var(--panel);width:100%;max-width:400px;height:100vh;display:flex;flex-direction:column;animation:slideInRight .3s;box-shadow:-10px 0 30px rgba(0,0,0,.5)}
-  @keyframes slideInRight{from{transform:translateX(100%)}to{transform:translateX(0)}}
-  .notif-header{padding:calc(14px + var(--safe-top)) 16px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
-  .notif-header h3{font-size:16px;font-weight:700}
-  .notif-header button{background:var(--panel2);border:none;color:var(--text);width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer}
-  .notif-list{flex:1;overflow-y:auto;padding:8px}
-  .notif-item{padding:12px;background:var(--panel2);border-radius:12px;margin-bottom:6px;cursor:pointer;display:flex;gap:10px;position:relative}
-  .notif-item.unread{border-left:3px solid var(--accent)}
-  .notif-item .ni-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;color:#fff;font-weight:600;flex-shrink:0}
-  .notif-item .ni-avatar img{width:100%;height:100%;object-fit:cover}
-  .notif-item .ni-content{flex:1;min-width:0}
-  .notif-item .ni-title{font-size:13px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:4px}
-  .notif-item .ni-text{font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .notif-item .ni-time{font-size:10px;color:var(--text3);margin-top:3px}
-  .notif-empty{padding:40px 20px;text-align:center;color:var(--text2);font-size:13px}
-
-  .toast{position:fixed;top:calc(16px + var(--safe-top));left:50%;transform:translateX(-50%);background:var(--panel);color:var(--text);padding:11px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.5);border:1px solid var(--border);animation:toastIn .3s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px}
+  .toast{position:fixed;top:calc(16px + var(--safe-top));left:50%;transform:translateX(-50%);background:var(--panel);color:var(--text);padding:11px 18px;border-radius:22px;font-size:13px;font-weight:600;z-index:9000;box-shadow:0 8px 24px rgba(0,0,0,.5);border:1px solid var(--border);animation:toastIn .3s;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
   @keyframes toastIn{from{opacity:0;transform:translate(-50%,-20px)}to{opacity:1;transform:translate(-50%,0)}}
-  .toast.out{opacity:0;transform:translate(-50%,-20px);transition:.3s}
-  .toast.notif-toast{background:var(--accent-bg);color:#fff;border-color:var(--accent)}
 
-  /* ADMIN */
   .admin-panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:3000;overflow-y:auto}
   .admin-panel.active{display:block}
   @media(min-width:900px){.admin-panel{max-width:1100px;height:100vh;max-height:800px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}}
@@ -375,7 +350,6 @@
   .confirm-box h3{font-size:17px;margin-bottom:8px}
   .confirm-box p{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5}
   .confirm-box input{padding:11px 14px;border:2px solid transparent;border-radius:10px;background:var(--panel2);color:var(--text);outline:none;font-size:14px;width:100%;margin-bottom:10px}
-  .confirm-box input:focus{border-color:var(--red)}
   .confirm-box .btns{display:flex;gap:6px}
   .confirm-box .btns button{flex:1;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
   .confirm-box .btns button.confirm{background:var(--red);color:#fff}
@@ -387,7 +361,6 @@
   .admin-login.active{display:flex}
   .admin-login h2{font-size:24px;background:linear-gradient(135deg,#ffd700,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
   .admin-login input{width:100%;max-width:320px;padding:14px 16px;border:2px solid transparent;border-radius:12px;background:var(--panel2);color:var(--text);outline:none;font-size:15px;text-align:center;letter-spacing:2px}
-  .admin-login input:focus{border-color:var(--accent)}
   .admin-login button{width:100%;max-width:320px;padding:14px;border:none;border-radius:12px;background:var(--gold-grad);color:#000;font-size:15px;font-weight:700;cursor:pointer}
   .admin-login .err{color:var(--red);font-size:13px;min-height:16px;text-align:center}
 </style>
@@ -397,7 +370,7 @@
 <div class="app" id="app">
   <div class="loader" id="loader">
     <div class="spinner"></div>
-    <div style="color:var(--text2);font-size:13px">Загрузка Spacegram...</div>
+    <div style="color:var(--text2);font-size:13px" id="loaderText">Загрузка Spacegram...</div>
   </div>
 
   <div class="auth-screen" id="authScreen">
@@ -409,7 +382,7 @@
     <button id="loginBtn">Войти</button>
     <button class="ghost" id="registerBtn">Зарегистрироваться</button>
     <div class="hint">Username: 3-20 символов, только a-z 0-9 _</div>
-    <div class="hint" style="margin-top:6px;color:var(--yellow)">💡 Зарегистрируйся как @spacegram — получишь верификацию</div>
+    <div class="hint" style="margin-top:6px;color:var(--yellow)">💡 @spacegram — авто-верификация</div>
   </div>
 
   <div class="main-app" id="mainApp">
@@ -417,7 +390,6 @@
       <div class="sidebar-header">
         <h2 id="logo">💬 Spacegram</h2>
         <div class="header-actions">
-          <button class="header-btn" id="notifBtn" title="Уведомления">🔔<span class="notif-dot" id="notifDot" style="display:none"></span></button>
           <button class="header-btn" id="adminBtn" title="Админка" style="display:none">🔐</button>
           <button class="header-btn" id="plusBtn" title="Plus">👑</button>
           <button class="header-btn" id="newGroupBtn" title="Группа/канал">👥</button>
@@ -487,21 +459,6 @@
   </div>
 </div>
 
-<!-- NOTIFICATIONS PANEL -->
-<div class="notif-panel" id="notifPanel">
-  <div class="notif-content">
-    <div class="notif-header">
-      <h3>🔔 Уведомления</h3>
-      <div style="display:flex;gap:6px">
-        <button onclick="markAllRead()" title="Прочитать все" style="width:auto;padding:0 12px;border-radius:17px;font-size:11px;font-weight:600">✓ Все</button>
-        <button onclick="clearNotifications()" title="Очистить">🗑</button>
-        <button onclick="closeNotifPanel()">✕</button>
-      </div>
-    </div>
-    <div class="notif-list" id="notifList"></div>
-  </div>
-</div>
-
 <div class="img-viewer" id="imgViewer">
   <button class="close" onclick="document.getElementById('imgViewer').classList.remove('active')">✕</button>
   <img id="imgViewerImg" src="">
@@ -556,17 +513,9 @@
       <button data-wp="gradient3">Закат</button>
       <button data-wp="custom">Свои 👑</button>
     </div>
-    <div class="section-title">Уведомления</div>
-    <div class="setting-row"><div class="label">🔔 Пуши в браузере</div><label class="switch"><input type="checkbox" id="pushToggle"><span class="slider"></span></label></div>
-    <div class="setting-row"><div class="label">🔊 Звук</div><label class="switch"><input type="checkbox" id="soundToggle" checked><span class="slider"></span></label></div>
-    <div class="setting-row"><div class="label">📳 Вибрация</div><label class="switch"><input type="checkbox" id="vibrateToggle" checked><span class="slider"></span></label></div>
-    <div class="setting-row"><div class="label">📱 Badge на иконке</div><label class="switch"><input type="checkbox" id="badgeToggle" checked><span class="slider"></span></label></div>
-    <div class="setting-row"><div class="label">🍞 Всплывающие уведомления</div><label class="switch"><input type="checkbox" id="toastNotifToggle" checked><span class="slider"></span></label></div>
-    <div class="setting-row"><div class="label">💬 Показывать непрочитанные</div><label class="switch"><input type="checkbox" id="unreadToggle" checked><span class="slider"></span></label></div>
     <div class="section-title">Поведение</div>
     <div class="setting-row"><div class="label">✓✓ Отчёты о прочтении</div><label class="switch"><input type="checkbox" id="readReceiptsToggle" checked><span class="slider"></span></label></div>
     <div class="setting-row"><div class="label">⌨️ Enter отправить</div><label class="switch"><input type="checkbox" id="enterSendToggle" checked><span class="slider"></span></label></div>
-    <button class="ghost" id="testNotifBtn">🔔 Тест уведомления</button>
     <button class="ghost" id="clearChatsBtn">🗑 Очистить все чаты</button>
     <button class="ghost" id="closeSettingsBtn">Закрыть</button>
   </div>
@@ -640,7 +589,6 @@
       <button data-tab="users" class="active">👥 Юзеры</button>
       <button data-tab="bans">🚫 Баны</button>
       <button data-tab="logs">📋 Логи</button>
-      <button data-tab="settings">⚙️ Настройки</button>
     </div>
     <div class="admin-content" id="adminContent"></div>
   </div>
@@ -679,7 +627,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import "https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js";
 
 const SUPABASE_URL="https://qtuvtxbxtypvttfjiydv.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0dXZ0eGJ4dHlwdnR0ZmppeWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg1NzEsImV4cCI6MjEwNjg0NTczMX0.hxLhZNqjMoxJmGDgNdfb8eiFg3yGBKwwkioZJG74EpA";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0dXZ0eGJ4dHlwdnR0ZmppeWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg1NzEsImV4cCI6MjEwNjY4NDU3MX0.hxLhZNqjMoxJmGDgNdfb8eiFg3yGBKwwkioZJG74EpA";
 const ADMIN_SECRET="spacegram2026";
 const CREATOR_USERNAME="itzrealsaneghka";
 const OFFICIAL_USERNAME="spacegram";
@@ -713,11 +661,8 @@ let selectedPremiumEmoji=null;
 let allStories=[],currentStoryIndex=0,storyTimer;
 let settings=JSON.parse(localStorage.getItem('sg_settings')||'{}');
 let selectedGift=null,giftTargetId=null;
-let currentAdminTab='users';
 let adminSearchTimer=null;
-let unreadCounts={};      // { chatId: count }
-let lastSeenMessageTimes={}; // для дедупликации уведомлений
-let audioCtx=null;
+let unreadCounts={};
 let currentOpenChatId=null;
 
 function applyTheme(){
@@ -750,268 +695,49 @@ function renderBadges(p){
   return h;
 }
 function hideLoader(){$('loader').classList.add('hidden')}
-
-// ==================== УВЕДОМЛЕНИЯ ====================
-function initAudio(){
-  if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-}
-
-function playNotifSound(type='message'){
-  if(settings.sound===false)return;
-  try{
-    initAudio();
-    if(audioCtx.state==='suspended')audioCtx.resume();
-    const now=audioCtx.currentTime;
-    const o1=audioCtx.createOscillator();
-    const o2=audioCtx.createOscillator();
-    const g=audioCtx.createGain();
-    o1.connect(g);o2.connect(g);g.connect(audioCtx.destination);
-    if(type==='message'){
-      o1.type='sine';o1.frequency.value=880;
-      o2.type='sine';o2.frequency.value=1174;
-      g.gain.setValueAtTime(0,now);
-      g.gain.linearRampToValueAtTime(0.12,now+0.02);
-      g.gain.exponentialRampToValueAtTime(0.001,now+0.35);
-      o1.start(now);o2.start(now+0.05);
-      o1.stop(now+0.35);o2.stop(now+0.35);
-    }else if(type==='notif'){
-      o1.type='triangle';o1.frequency.value=659;
-      g.gain.setValueAtTime(0,now);
-      g.gain.linearRampToValueAtTime(0.1,now+0.02);
-      g.gain.exponentialRampToValueAtTime(0.001,now+0.25);
-      o1.start(now);o1.stop(now+0.25);
-    }else if(type==='sent'){
-      o1.type='sine';o1.frequency.value=523;
-      g.gain.setValueAtTime(0,now);
-      g.gain.linearRampToValueAtTime(0.06,now+0.01);
-      g.gain.exponentialRampToValueAtTime(0.001,now+0.12);
-      o1.start(now);o1.stop(now+0.12);
-    }
-  }catch(e){}
-}
-
-function vibrate(pattern=[50]){
-  if(settings.vibrate===false)return;
-  if(navigator.vibrate)try{navigator.vibrate(pattern)}catch(e){}
-}
-
-async function requestPushPermission(){
-  if(!('Notification' in window)){toast('❌ Браузер не поддерживает уведомления');return false}
-  if(Notification.permission==='granted')return true;
-  if(Notification.permission==='denied'){toast('❌ Уведомления запрещены в браузере');return false}
-  const perm=await Notification.requestPermission();
-  if(perm==='granted'){toast('🔔 Уведомления включены!');return true}
-  return false;
-}
-
-function showPushNotification(sender,text,avatarUrl){
-  if(settings.push!==true)return;
-  if(Notification.permission!=='granted')return;
-  if(document.visibilityState==='visible'&&currentOpenChatId)return;
-  try{
-    const notif=new Notification(sender,{
-      body:text,
-      icon:avatarUrl||'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🚀</text></svg>',
-      badge:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💬</text></svg>',
-      tag:'sg-msg-'+Date.now(),
-      renotify:true
-    });
-    notif.onclick=()=>{window.focus();notif.close()};
-    setTimeout(()=>{try{notif.close()}catch(e){}},8000);
-  }catch(e){console.warn('Notif error',e)}
-}
-
-function showToastNotif(sender,text){
-  if(settings.toastNotif===false)return;
-  const t=document.createElement('div');
-  t.className='toast notif-toast';
-  t.innerHTML=`<span>💬</span><span style="font-weight:700">${esc(sender)}</span><span style="opacity:.9;font-weight:400">${esc(text.slice(0,40))}${text.length>40?'…':''}</span>`;
-  document.body.appendChild(t);
-  t.onclick=()=>{t.remove()};
-  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300)},3500);
-}
-
-function updateBadge(){
-  if(settings.badge===false){
-    if(navigator.setAppBadge)try{navigator.setAppBadge(0)}catch(e){}
-    if(navigator.clearAppBadge)try{navigator.clearAppBadge()}catch(e){}
-    return;
-  }
-  const total=Object.values(unreadCounts).reduce((a,b)=>a+b,0);
-  if(navigator.setAppBadge)try{navigator.setAppBadge(total||0)}catch(e){}
-  if(navigator.clearAppBadge&&!total)try{navigator.clearAppBadge()}catch(e){}
-  // Favicon badge
-  const favicon=document.querySelector('link[rel="icon"]');
-  if(favicon&&total>0){
-    const canvas=document.createElement('canvas');
-    canvas.width=64;canvas.height=64;
-    const ctx=canvas.getContext('2d');
-    ctx.font='50px serif';
-    ctx.fillText('🚀',5,50);
-    ctx.beginPath();
-    ctx.arc(52,12,12,0,Math.PI*2);
-    ctx.fillStyle='#ef4444';
-    ctx.fill();
-    ctx.fillStyle='#fff';
-    ctx.font='bold 16px sans-serif';
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.fillText(total>99?'99+':total,52,12);
-    favicon.href=canvas.toDataURL('image/png');
-  }else if(favicon){
-    favicon.href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>";
-  }
-  // Notification dot
-  const dot=$('notifDot');
-  if(dot)dot.style.display=total>0?'block':'none';
-}
-
-// Список уведомлений (хранится в localStorage)
-function getNotifList(){return JSON.parse(localStorage.getItem('sg_notifs')||'[]')}
-function saveNotifList(list){localStorage.setItem('sg_notifs',JSON.stringify(list.slice(0,100)))}
-function addNotifToList(n){
-  const list=getNotifList();
-  list.unshift(n);
-  saveNotifList(list);
-  renderNotifList();
-}
-function renderNotifList(){
-  const list=getNotifList();
-  const el=$('notifList');
-  if(!el)return;
-  if(!list.length){el.innerHTML='<div class="notif-empty">Уведомлений нет<br><span style="font-size:32px">🔔</span></div>';return}
-  el.innerHTML=list.map((n,i)=>`
-    <div class="notif-item ${n.read?'':'unread'}" onclick="openNotifChat('${n.chatId||''}','${n.id}')">
-      <div class="ni-avatar">${n.avatar?`<img src="${n.avatar}">`:esc(n.sender[0]).toUpperCase()}</div>
-      <div class="ni-content">
-        <div class="ni-title">${esc(n.sender)} ${n.sender==='@'+OFFICIAL_USERNAME?'<span class="badge system" style="width:12px;height:12px;font-size:8px">✓</span>':''}</div>
-        <div class="ni-text">${esc(n.text)}</div>
-        <div class="ni-time">${fmtRelative(n.time)}</div>
-      </div>
-    </div>`).join('');
-}
-window.openNotifChat=(chatId,notifId)=>{
-  const list=getNotifList().map(n=>n.id===notifId?{...n,read:true}:n);
-  saveNotifList(list);
-  renderNotifList();
-  if(chatId){
-    const chat=list.find(n=>n.id===notifId);
-    if(chat){closeNotifPanel();openChat(chatId,chat.otherId)}
-  }
-};
-window.markAllRead=()=>{
-  const list=getNotifList().map(n=>({...n,read:true}));
-  saveNotifList(list);renderNotifList();
-  toast('✓ Все прочитаны');
-};
-window.clearNotifications=()=>{
-  if(!confirm('Очистить все уведомления?'))return;
-  saveNotifList([]);renderNotifList();
-};
-$('notifBtn').onclick=()=>{$('notifPanel').classList.add('active');renderNotifList();markAllRead()};
-window.closeNotifPanel=()=>$('notifPanel').classList.remove('active');
-$('notifPanel').onclick=e=>{if(e.target===$('notifPanel'))closeNotifPanel()};
-
-function fmtRelative(t){
-  const diff=Date.now()-t;
-  if(diff<60000)return 'сейчас';
-  if(diff<3600000)return Math.floor(diff/60000)+' мин';
-  if(diff<86400000)return Math.floor(diff/3600000)+' ч';
-  return new Date(t).toLocaleDateString('ru');
-}
-
-async function handleIncomingMessage(m){
-  // Уже видели?
-  const key=m.id;
-  if(lastSeenMessageTimes[key])return;
-  lastSeenMessageTimes[key]=Date.now();
-  // От нас?
-  if(m.sender===currentUser.id)return;
-  // Открыт этот чат?
-  const sender=await getUser(m.sender);
-  const senderName=sender?.display_name||'Кто-то';
-  if(currentOpenChatId===m.chat_id&&document.visibilityState==='visible'){
-    // Просто пометить прочитанным
-    sb.from('messages').update({is_read:true}).eq('id',m.id).then(()=>{});
-    return;
-  }
-  // Инкремент
-  unreadCounts[m.chat_id]=(unreadCounts[m.chat_id]||0)+1;
-  // Уведомление
-  playNotifSound('message');
-  vibrate([100,50,100]);
-  showPushNotification(senderName,m.text||'📎 Файл',sender?.avatar_url);
-  showToastNotif(senderName,m.text||'📎 Файл');
-  addNotifToList({
-    id:m.id,
-    chatId:m.chat_id,
-    otherId:m.sender,
-    sender:senderName,
-    avatar:sender?.avatar_url,
-    text:m.text||'📎 Файл',
-    time:Date.now(),
-    read:false
-  });
-  updateBadge();
-  renderChatsUnread();
-}
-
-async function loadUnreadCounts(){
-  const uid=currentUser.id;
-  const{data:chats}=await sb.from('chats').select('id').or(`user1.eq.${uid},user2.eq.${uid}`);
-  if(!chats?.length)return;
-  const chatIds=chats.map(c=>c.id);
-  const{data:msgs}=await sb.from('messages').select('chat_id').in('chat_id',chatIds).eq('is_read',false).neq('sender',uid);
-  unreadCounts={};
-  (msgs||[]).forEach(m=>{unreadCounts[m.chat_id]=(unreadCounts[m.chat_id]||0)+1});
-  updateBadge();
-  renderChatsUnread();
-}
-
-function renderChatsUnread(){
-  if(settings.unread===false)return;
-  document.querySelectorAll('.chat-item').forEach(el=>{
-    const id=el.dataset.chatId;
-    const count=unreadCounts[id]||0;
-    el.classList.toggle('unread',count>0);
-    const timeEl=el.querySelector('.chat-time');
-    if(!timeEl)return;
-    let badge=timeEl.querySelector('.unread-count');
-    if(count>0){
-      if(!badge){badge=document.createElement('div');badge.className='unread-count';timeEl.appendChild(badge)}
-      badge.textContent=count>99?'99+':count;
-    }else if(badge)badge.remove();
-  });
-}
+function dbg(msg){const el=$('loaderText');if(el)el.textContent='⏳ '+msg;console.log('[BOOT]',msg)}
 
 async function init(){
+  dbg('Старт');
   applyTheme();
-  const {data:{session}}=await sb.auth.getSession();
-  if(session){currentUser=session.user;await enterApp()}
-  else{$('authScreen').classList.add('show');hideLoader()}
+  dbg('Тема применена');
+  try{
+    const{data:{session},error}=await sb.auth.getSession();
+    if(error)throw error;
+    dbg('Сессия: '+(session?'есть':'нет'));
+    if(session){currentUser=session.user;await enterApp()}
+    else{$('authScreen').classList.add('show');hideLoader()}
+  }catch(e){
+    dbg('Ошибка: '+e.message);
+    setTimeout(()=>{
+      document.body.innerHTML='<div style="padding:40px;color:#fff;font-family:sans-serif;background:#0e1621;min-height:100vh"><h1 style="color:#e74c3c">⚠️ Ошибка запуска</h1><pre style="margin-top:20px;white-space:pre-wrap;color:#f88;font-size:13px">'+e.message+'</pre><button onclick="location.reload()" style="margin-top:20px;padding:12px 20px;background:#2b5278;color:#fff;border:none;border-radius:10px;font-size:16px;cursor:pointer">🔄 Перезагрузить</button></div>';
+    },1500);
+  }
 }
 
 async function enterApp(){
   $('authScreen').classList.remove('show');
   $('mainApp').classList.add('active');
   try{
+    dbg('Профиль');
     await loadProfile();
     if(currentProfile?.is_banned){await sb.auth.signOut();alert('🚫 Забанен: '+(currentProfile.ban_reason||''));location.reload();return}
+    dbg('Админ');
     await checkAdmin();
+    dbg('Стикеры');
     await loadStickers();
+    dbg('Чаты');
     await loadChats();
+    dbg('Подписки');
     subscribeChats();
-    subscribeAllMessages();
     loadStories();
+    dbg('Непрочитанные');
     await loadUnreadCounts();
-    renderNotifList();
-    // Инициализируем audio по первому взаимодействию
-    document.addEventListener('click',()=>{if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume()},{once:true});
-    // Разрешение на пуши при первом действии
-    if('Notification' in window&&Notification.permission==='default'&&settings.push!==false){
-      setTimeout(()=>{requestPushPermission()},3000);
-    }
-  }catch(e){console.error(e)}
+    dbg('Готово');
+  }catch(e){
+    dbg('Ошибка: '+e.message);
+    console.error(e);
+  }
   hideLoader();
 }
 
@@ -1029,13 +755,8 @@ $('registerBtn').onclick=async()=>{
   if(!data.user)return $('authError').textContent='Ошибка';
   const isCreator=uname===CREATOR_USERNAME;
   const isOfficial=uname===OFFICIAL_USERNAME;
-  await sb.from('profiles').insert({
-    id:data.user.id,username:uname,display_name:uname,
-    is_creator:isCreator,is_verified:isCreator||isOfficial,
-    is_plus:isCreator||isOfficial,last_seen:new Date().toISOString()
-  });
+  await sb.from('profiles').insert({id:data.user.id,username:uname,display_name:uname,is_creator:isCreator,is_verified:isCreator||isOfficial,is_plus:isCreator||isOfficial,last_seen:new Date().toISOString()});
   currentUser=data.user;await enterApp();
-  if(isOfficial)toast('🔵 Поздравляем! Верификация @spacegram активна');
 };
 
 $('loginBtn').onclick=async()=>{
@@ -1126,9 +847,11 @@ window.addStory=()=>{
 };
 
 async function loadStories(){
-  const{data}=await sb.from('stories').select('*').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(30);
-  allStories=data||[];
-  renderStoriesRow();
+  try{
+    const{data}=await sb.from('stories').select('*').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(30);
+    allStories=data||[];
+    renderStoriesRow();
+  }catch(e){console.warn('stories',e)}
 }
 function renderStoriesRow(){
   const row=$('storiesRow');
@@ -1177,14 +900,7 @@ window.nextStory=()=>{
 window.prevStory=()=>{if(currentStoryIndex>0)currentStoryIndex--;const uid=allStories[0]?.user_id;showStory(allStories.filter(s=>s.user_id===uid))};
 window.closeStoryViewer=()=>{$('storyViewer').classList.remove('active');clearTimeout(storyTimer)};
 
-// SETTINGS
 $('settingsBtn').onclick=()=>{
-  $('pushToggle').checked=settings.push===true;
-  $('soundToggle').checked=settings.sound!==false;
-  $('vibrateToggle').checked=settings.vibrate!==false;
-  $('badgeToggle').checked=settings.badge!==false;
-  $('toastNotifToggle').checked=settings.toastNotif!==false;
-  $('unreadToggle').checked=settings.unread!==false;
   $('readReceiptsToggle').checked=settings.readReceipts!==false;
   $('enterSendToggle').checked=settings.enterSend!==false;
   document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('active',(b.dataset.mode==='light')===(settings.mode==='light')));
@@ -1217,28 +933,8 @@ $('wallpaperToggle').onclick=e=>{
     };inp.click();
   }else{settings.wallpaper=wp;saveSettings();applyTheme();document.querySelectorAll('#wallpaperToggle button').forEach(b=>b.classList.toggle('active',b===e.target))}
 };
-$('pushToggle').onchange=async e=>{
-  if(e.target.checked){
-    const ok=await requestPushPermission();
-    settings.push=ok;
-    if(!ok)e.target.checked=false;
-  }else settings.push=false;
-  saveSettings();
-};
-$('soundToggle').onchange=e=>{settings.sound=e.target.checked;saveSettings()};
-$('vibrateToggle').onchange=e=>{settings.vibrate=e.target.checked;saveSettings()};
-$('badgeToggle').onchange=e=>{settings.badge=e.target.checked;saveSettings();updateBadge()};
-$('toastNotifToggle').onchange=e=>{settings.toastNotif=e.target.checked;saveSettings()};
-$('unreadToggle').onchange=e=>{settings.unread=e.target.checked;saveSettings();renderChatsUnread()};
 $('readReceiptsToggle').onchange=e=>{settings.readReceipts=e.target.checked;saveSettings()};
 $('enterSendToggle').onchange=e=>{settings.enterSend=e.target.checked;saveSettings()};
-$('testNotifBtn').onclick=async()=>{
-  playNotifSound('message');
-  vibrate([100,50,100]);
-  showPushNotification('Spacegram','Тестовое уведомление 🔔','');
-  showToastNotif('Spacegram','Тест уведомления');
-  toast('🔔 Тест отправлен!');
-};
 $('clearChatsBtn').onclick=async()=>{
   if(!confirm('Удалить все чаты?'))return;
   const uid=currentUser.id;
@@ -1256,8 +952,10 @@ $('folders').onclick=e=>{
 
 async function getUser(uid){
   if(userCache[uid])return userCache[uid];
-  const{data}=await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_creator,is_plus,premium_emoji,last_seen,is_banned,messages_count,gifts_received,bio,phone').eq('id',uid).single();
-  if(data)userCache[uid]=data;return data;
+  try{
+    const{data}=await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_creator,is_plus,premium_emoji,last_seen,is_banned,messages_count,gifts_received,bio,phone').eq('id',uid).single();
+    if(data)userCache[uid]=data;return data;
+  }catch(e){return null}
 }
 
 async function loadChats(){
@@ -1295,18 +993,37 @@ async function loadChats(){
   renderChatsUnread();
 }
 
+function renderChatsUnread(){
+  document.querySelectorAll('.chat-item').forEach(el=>{
+    const id=el.dataset.chatId;
+    const count=unreadCounts[id]||0;
+    el.classList.toggle('unread',count>0);
+    const timeEl=el.querySelector('.chat-time');
+    if(!timeEl)return;
+    let badge=timeEl.querySelector('.unread-count');
+    if(count>0){
+      if(!badge){badge=document.createElement('div');badge.className='unread-count';timeEl.appendChild(badge)}
+      badge.textContent=count>99?'99+':count;
+    }else if(badge)badge.remove();
+  });
+}
+
+async function loadUnreadCounts(){
+  try{
+    const uid=currentUser.id;
+    const{data:chats}=await sb.from('chats').select('id').or(`user1.eq.${uid},user2.eq.${uid}`);
+    if(!chats?.length)return;
+    const chatIds=chats.map(c=>c.id);
+    const{data:msgs}=await sb.from('messages').select('chat_id').in('chat_id',chatIds).eq('is_read',false).neq('sender',uid);
+    unreadCounts={};
+    (msgs||[]).forEach(m=>{unreadCounts[m.chat_id]=(unreadCounts[m.chat_id]||0)+1});
+    renderChatsUnread();
+  }catch(e){}
+}
+
 function subscribeChats(){
   if(chatsChannel)sb.removeChannel(chatsChannel);
   chatsChannel=sb.channel('chats_ch').on('postgres_changes',{event:'*',schema:'public',table:'chats'},()=>{loadChats()}).subscribe();
-}
-
-function subscribeAllMessages(){
-  // Глобальная подписка на ВСЕ новые сообщения для уведомлений
-  sb.channel('all_messages')
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},async payload=>{
-      await handleIncomingMessage(payload.new);
-    })
-    .subscribe();
 }
 
 $('searchInput').oninput=(()=>{
@@ -1361,9 +1078,7 @@ async function openChat(chatId,otherId){
     $('headerStatus').textContent=isOnline?'в сети':'был(а) недавно';
     $('headerAvatar').innerHTML=prof?.avatar_url?`<img src="${prof.avatar_url}">`:(prof?.display_name||'?')[0].toUpperCase();
   }
-  // Сбросить unread для этого чата
   delete unreadCounts[chatId];
-  updateBadge();
   renderChatsUnread();
   await loadMessages(chatId);
   if(messagesChannel)sb.removeChannel(messagesChannel);
@@ -1376,8 +1091,6 @@ async function openChat(chatId,otherId){
 async function loadMessages(chatId){
   const{data}=await sb.from('messages').select('*').eq('chat_id',chatId).order('created_at').limit(200);
   allMessages=data||[];
-  // Запоминаем что видели (чтобы не было уведомлений)
-  allMessages.forEach(m=>{if(m.sender!==currentUser.id)lastSeenMessageTimes[m.id]=Date.now()});
   const msgs=$('messages');msgs.innerHTML='';
   let lastDate='';
   allMessages.forEach(m=>{
@@ -1387,11 +1100,13 @@ async function loadMessages(chatId){
   });
   const msgIds=allMessages.map(m=>m.id);
   if(msgIds.length){
-    const{data:rx}=await sb.from('reactions').select('*').in('message_id',msgIds);
-    allReactions=rx||[];renderReactions();
-    const{data:polls}=await sb.from('polls').select('*').in('message_id',msgIds);
-    allPolls={};(polls||[]).forEach(p=>allPolls[p.message_id]=p);
-    allMessages.forEach(m=>{if(allPolls[m.id])updatePollDisplay(allPolls[m.id].id)});
+    try{
+      const{data:rx}=await sb.from('reactions').select('*').in('message_id',msgIds);
+      allReactions=rx||[];renderReactions();
+      const{data:polls}=await sb.from('polls').select('*').in('message_id',msgIds);
+      allPolls={};(polls||[]).forEach(p=>allPolls[p.message_id]=p);
+      allMessages.forEach(m=>{if(allPolls[m.id])updatePollDisplay(allPolls[m.id].id)});
+    }catch(e){}
   }
   msgs.scrollTop=msgs.scrollHeight;
   if(settings.readReceipts!==false){
@@ -1517,6 +1232,7 @@ window.showSidebar=()=>{
   $('gifPanel').classList.remove('show');
   if(messagesChannel){sb.removeChannel(messagesChannel);messagesChannel=null}
   currentChatId=null;currentOpenChatId=null;
+  loadChats();
 };
 
 window.openUserProfile=async uid=>{
@@ -1553,7 +1269,7 @@ function openGroupInfo(){
   $('userProfileModal').classList.add('active');
 }
 
-$('gifBtn').onclick=e=>{e.stopPropagation();$('gifPanel').classList.toggle('show');$('stickerPanel').classList.remove('show');$('emojiPicker').style.display='none';if($('gifPanel').classList.contains('show')&&!$('gifGrid').children.length){$('gifSearch').value='hello';$('gifSearch').dispatchEvent(new Event('input'))}};
+$('gifBtn').onclick=e=>{e.stopPropagation();$('gifPanel').classList.toggle('show');$('stickerPanel').classList.remove('show');$('emojiPicker').style.display='none'};
 $('gifSearch').oninput=(()=>{let t;return e=>{clearTimeout(t);t=setTimeout(async()=>{const q=e.target.value.trim()||'hello';try{const res=await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(q)}&key=${TENOR_KEY}&limit=12`);const data=await res.json();$('gifGrid').innerHTML=(data.results||[]).map(g=>`<div class="gif-item" data-full="${g.media[0].gif.url}"><img src="${g.media[0].tinygif.url}" loading="lazy"></div>`).join('');document.querySelectorAll('.gif-item').forEach(el=>{el.onclick=async()=>{await sb.from('messages').insert({chat_id:currentChatId,sender:currentUser.id,text:'',is_read:false,file_url:el.dataset.full,file_type:'gif',file_name:'GIF'});await sb.from('chats').update({last_message:'🎬 GIF'}).eq('id',currentChatId);$('gifPanel').classList.remove('show')}})}catch(err){$('gifGrid').innerHTML='<div style="color:#888;text-align:center;padding:20px;grid-column:1/-1">Не удалось</div>'}},400)}})();
 
 async function sendMessage(){
@@ -1563,7 +1279,6 @@ async function sendMessage(){
   $('messageInput').value='';
   const{error}=await sb.from('messages').insert({chat_id:currentChatId,sender:currentUser.id,text,is_read:false,reply_to:replyTo?.id||null});
   if(error)return alert(error.message);
-  playNotifSound('sent');
   replyTo=null;$('replyPreview').classList.remove('show');
   sb.from('chats').update({last_message:text.slice(0,50)}).eq('id',currentChatId).then(()=>{});
 }
@@ -1611,8 +1326,10 @@ $('emojiBtn').onclick=e=>{e.stopPropagation();const p=$('emojiPicker');p.style.d
 $('emojiPicker').addEventListener('emoji-click',e=>{$('messageInput').value+=e.detail.unicode;$('messageInput').focus()});
 
 async function loadStickers(){
-  const{data}=await sb.from('stickers').select('*');
-  allStickers=data||[];
+  try{
+    const{data}=await sb.from('stickers').select('*');
+    allStickers=data||[];
+  }catch(e){allStickers=[]}
 }
 $('stickerBtn').onclick=e=>{e.stopPropagation();$('stickerPanel').classList.toggle('show');$('emojiPicker').style.display='none';$('gifPanel').classList.remove('show');if($('stickerPanel').classList.contains('show'))renderStickers()};
 function renderStickers(){
@@ -1689,11 +1406,10 @@ $('createGroupBtn').onclick=async()=>{
 
 $('chatMenuBtn').onclick=e=>{
   e.stopPropagation();if(!currentChatId)return;
-  const c=prompt('1 - Очистить\n2 - Удалить\n3 - Опрос\n4 - Уведомления чата\n5 - Отмена');
+  const c=prompt('1 - Очистить\n2 - Удалить\n3 - Опрос\n4 - Отмена');
   if(c==='1'){if(confirm('Очистить?'))sb.from('messages').delete().eq('chat_id',currentChatId).then(()=>loadMessages(currentChatId))}
   else if(c==='2'){if(confirm('Удалить чат?'))sb.from('messages').delete().eq('chat_id',currentChatId).then(()=>sb.from('chats').delete().eq('id',currentChatId).then(()=>{showSidebar();loadChats()}))}
   else if(c==='3')$('pollModal').classList.add('active');
-  else if(c==='4')toast('🔔 Уведомления для чата: '+(settings.mutedChats?.includes(currentChatId)?'выключены':'включены'));
 };
 $('searchMsgBtn').onclick=()=>{
   const q=prompt('Поиск:');if(!q)return;
@@ -1716,7 +1432,6 @@ $('sendGiftBtn').onclick=async()=>{
   alert('🎁 Отправлено!');$('giftModal').classList.remove('active');
 };
 
-// ==================== ADMIN ====================
 $('adminBtn').onclick=openAdminGate;
 $('logo').onclick=(()=>{let c=0;return()=>{c++;if(c>=5){openAdminGate();c=0}}})();
 function openAdminGate(){
@@ -1732,12 +1447,14 @@ $('adminLoginBtn').onclick=async()=>{
   const{error}=await sb.from('admins').insert({id:currentUser.id});
   if(error&&!error.message.includes('duplicate'))return $('adminError').textContent=error.message;
   isAdmin=true;$('adminBtn').style.display='flex';document.body.style.border='3px solid gold';
-  closeAdminLogin();openAdminPanel();logAdminAction('login','','');
+  closeAdminLogin();openAdminPanel();
 };
 async function checkAdmin(){
-  const{data}=await sb.from('admins').select('id').eq('id',currentUser.id).maybeSingle();
-  isAdmin=!!data;
-  if(isAdmin){$('adminBtn').style.display='flex';document.body.style.border='3px solid gold'}
+  try{
+    const{data}=await sb.from('admins').select('id').eq('id',currentUser.id).maybeSingle();
+    isAdmin=!!data;
+    if(isAdmin){$('adminBtn').style.display='flex';document.body.style.border='3px solid gold'}
+  }catch(e){}
 }
 window.closeAdmin=()=>{$('adminPanel').classList.remove('active');loadChats()};
 function openAdminPanel(){$('adminPanel').classList.add('active');renderAdminStats();loadAdminTab('users')}
@@ -1747,23 +1464,24 @@ $('adminTabs').onclick=e=>{
   loadAdminTab(b.dataset.tab);
 };
 async function renderAdminStats(){
-  const[{count:uc},{count:mc},{count:cc},{count:bc}]=await Promise.all([
-    sb.from('profiles').select('*',{count:'exact',head:true}),
-    sb.from('messages').select('*',{count:'exact',head:true}),
-    sb.from('chats').select('*',{count:'exact',head:true}),
-    sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true)
-  ]);
-  $('adminStats').innerHTML=`
-    <div class="admin-stat"><div class="n">${uc||0}</div><div class="l">Юзеры</div></div>
-    <div class="admin-stat"><div class="n">${mc||0}</div><div class="l">Сообщ</div></div>
-    <div class="admin-stat"><div class="n">${cc||0}</div><div class="l">Чаты</div></div>
-    <div class="admin-stat"><div class="n" style="color:var(--red)">${bc||0}</div><div class="l">Баны</div></div>`;
+  try{
+    const[{count:uc},{count:mc},{count:cc},{count:bc}]=await Promise.all([
+      sb.from('profiles').select('*',{count:'exact',head:true}),
+      sb.from('messages').select('*',{count:'exact',head:true}),
+      sb.from('chats').select('*',{count:'exact',head:true}),
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true)
+    ]);
+    $('adminStats').innerHTML=`
+      <div class="admin-stat"><div class="n">${uc||0}</div><div class="l">Юзеры</div></div>
+      <div class="admin-stat"><div class="n">${mc||0}</div><div class="l">Сообщ</div></div>
+      <div class="admin-stat"><div class="n">${cc||0}</div><div class="l">Чаты</div></div>
+      <div class="admin-stat"><div class="n" style="color:var(--red)">${bc||0}</div><div class="l">Баны</div></div>`;
+  }catch(e){}
 }
 async function loadAdminTab(tab){
   const el=$('adminContent');
   if(tab==='users'){
-    el.innerHTML=`<input type="text" class="admin-search" id="adminSearch" placeholder="🔍 Поиск @username или имя...">
-      <div id="adminList"></div>`;
+    el.innerHTML=`<input type="text" class="admin-search" id="adminSearch" placeholder="🔍 Поиск @username или имя..."><div id="adminList"></div>`;
     $('adminSearch').oninput=e=>{clearTimeout(adminSearchTimer);adminSearchTimer=setTimeout(()=>loadAdminUsers(e.target.value.trim().toLowerCase()),350)};
     loadAdminUsers('');
   }else if(tab==='bans'){
@@ -1772,17 +1490,6 @@ async function loadAdminTab(tab){
   }else if(tab==='logs'){
     el.innerHTML='<div id="logsList"></div>';
     loadAdminLogs();
-  }else if(tab==='settings'){
-    el.innerHTML=`
-      <div class="admin-card" style="display:block">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">🎛 Глобальные настройки</div>
-        <div class="setting-row" style="margin-bottom:6px"><div class="label">Регистрация открыта</div><label class="switch"><input type="checkbox" id="regOpenToggle" checked><span class="slider"></span></label></div>
-        <div class="setting-row" style="margin-bottom:6px"><div class="label">Режим обслуживания</div><label class="switch"><input type="checkbox" id="maintenanceToggle"><span class="slider"></span></label></div>
-        <button class="ac-btn gold" id="exportDataBtn" style="width:100%;margin-top:8px;padding:10px">📥 Экспорт данных (JSON)</button>
-        <button class="ac-btn red" id="clearOldMessagesBtn" style="width:100%;margin-top:6px;padding:10px">🗑 Удалить сообщения старше 30 дней</button>
-        <button class="ac-btn blue" id="testNotifAdminBtn" style="width:100%;margin-top:6px;padding:10px">🔔 Тест уведомления</button>
-      </div>`;
-    loadAppSettings();
   }
 }
 async function loadAdminUsers(search){
@@ -1823,33 +1530,28 @@ async function adminUserAction(act,u,btn){
     await sb.from('profiles').update({is_verified:nv}).eq('id',u.id);
     btn.classList.toggle('off',!nv);btn.textContent=nv?'🔵':'✓';
     userCache={};
-    logAdminAction(nv?'verify_grant':'verify_revoke',u.id,u.username);
     toast(nv?'🔵 Галочка выдана':'Галочка снята');
   }else if(act==='plus'){
     const nv=!u.is_plus;
     await sb.from('profiles').update({is_plus:nv}).eq('id',u.id);
     btn.classList.toggle('off',!nv);
     userCache={};
-    logAdminAction(nv?'plus_grant':'plus_revoke',u.id,u.username);
     toast(nv?'👑 Plus выдан':'Plus снят');
   }else if(act==='ban'){
     if(u.is_banned){
       await sb.from('profiles').update({is_banned:false,ban_reason:null,banned_at:null,banned_by:null}).eq('id',u.id);
       btn.classList.add('off');userCache={};
-      logAdminAction('unban',u.id,u.username);
       toast('✓ Разбанен');
     }else{
       openConfirm('🚫 Забанить '+u.username,'Пользователь не сможет войти:',async(reason)=>{
         await sb.from('profiles').update({is_banned:true,ban_reason:reason||'Нарушение правил',banned_at:new Date().toISOString(),banned_by:currentUser.id}).eq('id',u.id);
         btn.classList.remove('off');userCache={};
-        logAdminAction('ban',u.id,u.username+' | '+(reason||''));
         toast('🚫 Забанен');
       });
     }
   }else if(act==='gift'){
     const{data:cur}=await sb.from('profiles').select('gifts_received').eq('id',u.id).single();
     await sb.from('profiles').update({gifts_received:(cur?.gifts_received||0)+1}).eq('id',u.id);
-    logAdminAction('gift',u.id,u.username);
     toast('🎁 Подарок выдан');
   }
 }
@@ -1870,7 +1572,7 @@ async function loadBannedUsers(){
       <button class="ac-btn green">✓ Разбан</button>`;
     div.querySelector('button').onclick=async()=>{
       await sb.from('profiles').update({is_banned:false,ban_reason:null,banned_at:null,banned_by:null}).eq('id',u.id);
-      logAdminAction('unban',u.id,u.username);loadBannedUsers();renderAdminStats();
+      loadBannedUsers();renderAdminStats();
     };
     list.appendChild(div);
   });
@@ -1881,36 +1583,6 @@ async function loadAdminLogs(){
   if(!data?.length){list.innerHTML='<div class="admin-empty">Логов нет</div>';return}
   const names={login:'🔐 Вход',ban:'🚫 Бан',unban:'✓ Разбан',verify_grant:'🔵 Выдал галочку',verify_revoke:'⚪ Снял галочку',plus_grant:'👑 Выдал Plus',plus_revoke:'⚪ Снял Plus',gift:'🎁 Выдал подарок'};
   list.innerHTML=data.map(l=>`<div class="admin-log"><div class="a">${names[l.action]||l.action}</div><div>${esc(l.details||'')}</div><div class="t">${new Date(l.created_at).toLocaleString('ru')}</div></div>`).join('');
-}
-async function logAdminAction(action,target_id,details){
-  try{await sb.from('admin_logs').insert({admin_id:currentUser.id,action,target_id:target_id||null,details})}catch(e){}
-}
-async function loadAppSettings(){
-  const{data}=await sb.from('app_settings').select('*');
-  const s={};(data||[]).forEach(x=>s[x.key]=x.value);
-  $('regOpenToggle').checked=s.registration_open!==false;
-  $('maintenanceToggle').checked=s.maintenance===true;
-  $('regOpenToggle').onchange=async e=>{await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','registration_open');toast('✓')};
-  $('maintenanceToggle').onchange=async e=>{await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','maintenance');toast('✓')};
-  $('exportDataBtn').onclick=async()=>{
-    const{data:users}=await sb.from('profiles').select('*');
-    const blob=new Blob([JSON.stringify(users,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');a.href=url;a.download='spacegram_users.json';a.click();
-  };
-  $('clearOldMessagesBtn').onclick=()=>{
-    openConfirm('🗑 Удалить старые','Удалить сообщения старше 30 дней?',async()=>{
-      const d=new Date();d.setDate(d.getDate()-30);
-      await sb.from('messages').delete().lt('created_at',d.toISOString());
-      toast('✓ Удалено');
-    });
-  };
-  $('testNotifAdminBtn').onclick=()=>{
-    playNotifSound('message');vibrate([100,50,100]);
-    showPushNotification('Spacegram','Тест от админа','');
-    showToastNotif('Spacegram','Тест от админа');
-    toast('🔔 Тест отправлен');
-  };
 }
 
 let confirmCallback=null;
@@ -1929,9 +1601,9 @@ $('confirmOk').onclick=async()=>{
 function toast(msg){
   const t=document.createElement('div');
   t.className='toast';
-  t.innerHTML=`<span>${msg}</span>`;
+  t.textContent=msg;
   document.body.appendChild(t);
-  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300)},2200);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},2000);
 }
 
 window.openPlusPage=()=>{$('plusStatus').innerHTML=currentProfile?.is_plus?'<span class="plus-badge" style="font-size:13px;padding:5px 14px">✅ АКТИВЕН</span>':'';$('plusPage').classList.add('active')};
@@ -1944,21 +1616,9 @@ document.addEventListener('click',e=>{
   if(!e.target.closest('.msg-wrap'))document.querySelectorAll('.msg-wrap.show-toolbar').forEach(x=>x.classList.remove('show-toolbar'));
 });
 
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'){
-    if(currentOpenChatId)loadMessages(currentOpenChatId);
-    loadUnreadCounts();
-  }
-});
-
-window.addEventListener('focus',()=>{if(currentOpenChatId)loadMessages(currentOpenChatId)});
-
 function esc(t){const d=document.createElement('div');d.textContent=t??'';return d.innerHTML}
-
-// Диагностика сервис-воркера для PWA badge
-if('serviceWorker' in navigator)navigator.serviceWorker.register('data:text/javascript,self.addEventListener("install",e=>self.skipWaiting());self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()))').catch(()=>{});
 
 init();
 </script>
 </body>
-     </html>
+ </html>
