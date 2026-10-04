@@ -1804,15 +1804,20 @@ function debounce(fn, ms){
 }
 
 // ============ BOOT ============
-start();
-setTimeout(() => {
-  // Fallback если что-то подвисло
-  if(!$('loader').classList.contains('hidden')){
-    console.warn('Fallback: loader не скрылся за 15 сек');
-    hideLoader();
-    if(!me) $('auth').classList.add('show');
-  }
-}, 15000);
+// ДИАГНОСТИКА
+window.addEventListener('error', e => {
+  document.body.innerHTML = '<div style="padding:20px;color:#fff;background:#0e1621;min-height:100vh;font-family:monospace;font-size:13px"><h2 style="color:#f55">❌ Ошибка JS</h2><pre style="white-space:pre-wrap;margin-top:20px;color:#faa">' + 
+  (e.message || '') + '\n\n' + (e.filename || '') + ':' + (e.lineno || '') + '</pre></div>';
+});
+window.addEventListener('unhandledrejection', e => {
+  document.body.innerHTML = '<div style="padding:20px;color:#fff;background:#0e1621;min-height:100vh;font-family:monospace;font-size:13px"><h2 style="color:#f55">❌ Async ошибка</h2><pre style="white-space:pre-wrap;margin-top:20px;color:#faa">' + 
+  (e.reason?.message || e.reason || JSON.stringify(e.reason)) + '</pre></div>';
+});
+
+start().catch(e => {
+  document.body.innerHTML = '<div style="padding:20px;color:#fff;background:#0e1621;min-height:100vh;font-family:monospace;font-size:13px"><h2 style="color:#f55">❌ Ошибка старта</h2><pre style="white-space:pre-wrap;margin-top:20px;color:#faa">' + 
+  (e.message || e) + '\n\n' + (e.stack || '') + '</pre><button onclick="location.reload()" style="margin-top:20px;padding:12px 20px;background:#2b5278;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer">Перезагрузить</button></div>';
+});
 </script>
 </body>
  </html>
