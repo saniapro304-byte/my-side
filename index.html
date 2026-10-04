@@ -7,182 +7,131 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
   body { background: #0e1621; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-
-  .app {
-    width: 100%; max-width: 960px; height: 100vh; max-height: 700px;
-    display: flex; overflow: hidden; background: #17212b;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  }
+  .app { width: 100%; max-width: 960px; height: 100vh; max-height: 700px; display: flex; overflow: hidden; background: #17212b; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
   @media (min-width: 768px) { .app { border-radius: 16px; height: 700px; } }
 
-  .auth-screen {
-    width: 100%; display: flex; flex-direction: column; justify-content: center;
-    align-items: center; padding: 30px; gap: 14px; background: #17212b;
-  }
+  .auth-screen { width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 30px; gap: 14px; background: #17212b; }
   .auth-screen h1 { color: #64b5ef; font-size: 32px; margin-bottom: 10px; }
-  .auth-screen input {
-    width: 100%; max-width: 320px; padding: 14px 18px; border: none; border-radius: 12px;
-    background: #242f3d; color: #fff; outline: none; font-size: 15px;
-  }
+  .auth-screen input { width: 100%; max-width: 320px; padding: 14px 18px; border: none; border-radius: 12px; background: #242f3d; color: #fff; outline: none; font-size: 15px; }
   .auth-screen input::placeholder { color: #5d7285; }
-  .auth-screen button {
-    width: 100%; max-width: 320px; padding: 14px; border: none; border-radius: 12px;
-    background: #2b5278; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
-    transition: 0.2s;
-  }
+  .auth-screen button { width: 100%; max-width: 320px; padding: 14px; border: none; border-radius: 12px; background: #2b5278; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
   .auth-screen button:hover { background: #3a6a94; }
-  .auth-screen .error { color: #e74c3c; font-size: 13px; min-height: 18px; text-align: center; }
+  .auth-screen button.ghost { background: #242f3d; }
+  .auth-screen .error { color: #e74c3c; font-size: 13px; min-height: 18px; text-align: center; max-width: 320px; }
   .auth-screen .hint { color: #5d7285; font-size: 12px; text-align: center; max-width: 320px; }
 
   .main-app { display: none; width: 100%; height: 100%; }
   .main-app.active { display: flex; }
 
-  .sidebar {
-    width: 300px; background: #17212b; border-right: 1px solid #242f3d;
-    display: flex; flex-direction: column; flex-shrink: 0;
-  }
+  .sidebar { width: 300px; background: #17212b; border-right: 1px solid #242f3d; display: flex; flex-direction: column; flex-shrink: 0; }
   @media (max-width: 600px) {
     .sidebar { width: 100%; position: absolute; z-index: 10; height: 100%; }
     .sidebar.hidden { display: none; }
   }
-
-  .sidebar-header {
-    padding: 14px 16px; border-bottom: 1px solid #242f3d; display: flex;
-    justify-content: space-between; align-items: center;
-  }
+  .sidebar-header { padding: 14px 16px; border-bottom: 1px solid #242f3d; display: flex; justify-content: space-between; align-items: center; }
   .sidebar-header h2 { color: #fff; font-size: 20px; font-weight: 700; cursor: pointer; user-select: none; }
-  .user-avatar-small {
-    width: 36px; height: 36px; border-radius: 50%; background: #2b5278;
-    display: flex; align-items: center; justify-content: center; font-size: 16px;
-    cursor: pointer; overflow: hidden; color: #fff; font-weight: 600;
-  }
+  .user-avatar-small { width: 36px; height: 36px; border-radius: 50%; background: #2b5278; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; overflow: hidden; color: #fff; font-weight: 600; }
   .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
 
   .search-box { padding: 10px 16px; }
-  .search-box input {
-    width: 100%; padding: 10px 14px; border: none; border-radius: 10px;
-    background: #242f3d; color: #fff; outline: none; font-size: 14px;
-  }
+  .search-box input { width: 100%; padding: 10px 14px; border: none; border-radius: 10px; background: #242f3d; color: #fff; outline: none; font-size: 14px; }
   .search-box input::placeholder { color: #5d7285; }
 
   .chat-list { flex: 1; overflow-y: auto; }
   .chat-list::-webkit-scrollbar { width: 5px; }
   .chat-list::-webkit-scrollbar-thumb { background: #2b3a4a; border-radius: 3px; }
-
-  .chat-item {
-    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-    cursor: pointer; transition: 0.15s;
-  }
+  .chat-item { padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: 0.15s; }
   .chat-item:hover { background: #1c2733; }
   .chat-item.active { background: #2b5278; }
-  .chat-avatar {
-    width: 48px; height: 48px; border-radius: 50%; background: #2b5278;
-    display: flex; align-items: center; justify-content: center; font-size: 20px;
-    flex-shrink: 0; overflow: hidden; color: #fff; font-weight: 600;
-  }
+  .chat-avatar { width: 48px; height: 48px; border-radius: 50%; background: #2b5278; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; overflow: hidden; color: #fff; font-weight: 600; }
   .chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .chat-info { flex: 1; min-width: 0; }
-  .chat-name { color: #fff; font-weight: 600; font-size: 15px; }
+  .chat-name { color: #fff; font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 4px; }
   .chat-preview { color: #7d8b99; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 
-  .chat-area { flex: 1; display: flex; flex-direction: column; background: #0e1621; position: relative; }
+  /* ГАЛОЧКИ */
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+    font-size: 10px; font-weight: bold; color: #fff;
+    box-shadow: 0 0 6px rgba(0,0,0,0.4);
+  }
+  .badge.verified { background: linear-gradient(135deg, #4a9eff, #2b7fff); }
+  .badge.creator  { background: linear-gradient(135deg, #ff4a4a, #e60000); animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(255,74,74,0.6); }
+    50%      { box-shadow: 0 0 14px rgba(255,74,74,1); }
+  }
 
-  .chat-header {
-    padding: 12px 16px; background: #17212b; border-bottom: 1px solid #242f3d;
-    display: flex; align-items: center; gap: 12px;
-  }
-  .back-btn {
-    display: none; background: none; border: none; color: #64b5ef; font-size: 24px;
-    cursor: pointer; padding: 0 8px;
-  }
+  .chat-area { flex: 1; display: flex; flex-direction: column; background: #0e1621; position: relative; }
+  .chat-header { padding: 12px 16px; background: #17212b; border-bottom: 1px solid #242f3d; display: flex; align-items: center; gap: 12px; }
+  .back-btn { display: none; background: none; border: none; color: #64b5ef; font-size: 24px; cursor: pointer; padding: 0 8px; }
   @media (max-width: 600px) { .back-btn { display: block; } }
-  .header-avatar {
-    width: 42px; height: 42px; border-radius: 50%; background: #2b5278;
-    display: flex; align-items: center; justify-content: center; font-size: 18px;
-    overflow: hidden; color: #fff; font-weight: 600;
-  }
+  .header-avatar { width: 42px; height: 42px; border-radius: 50%; background: #2b5278; display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden; color: #fff; font-weight: 600; }
   .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
-  .header-info h3 { color: #fff; font-size: 16px; font-weight: 600; }
+  .header-info h3 { color: #fff; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
   .header-info .status { color: #64b5ef; font-size: 12px; }
 
-  .messages {
-    flex: 1; padding: 16px; overflow-y: auto; display: flex;
-    flex-direction: column; gap: 8px;
-  }
+  .messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
   .messages::-webkit-scrollbar { width: 5px; }
   .messages::-webkit-scrollbar-thumb { background: #2b3a4a; border-radius: 3px; }
-
-  .msg {
-    max-width: 75%; padding: 8px 14px; border-radius: 14px; font-size: 14px;
-    line-height: 1.4; word-wrap: break-word; color: #fff; animation: pop 0.15s ease;
-  }
+  .msg { max-width: 75%; padding: 8px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; word-wrap: break-word; color: #fff; animation: pop 0.15s ease; }
   @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .msg.me { align-self: flex-end; background: #2b5278; border-bottom-right-radius: 4px; }
   .msg.you { align-self: flex-start; background: #182533; border-bottom-left-radius: 4px; }
   .msg .time { font-size: 10px; opacity: 0.6; margin-top: 4px; text-align: right; }
 
   .input-area { padding: 10px 16px; background: #17212b; display: flex; gap: 8px; align-items: center; }
-  .input-area input {
-    flex: 1; padding: 12px 16px; border: none; border-radius: 22px;
-    background: #242f3d; color: #fff; outline: none; font-size: 14px;
-  }
+  .input-area input { flex: 1; padding: 12px 16px; border: none; border-radius: 22px; background: #242f3d; color: #fff; outline: none; font-size: 14px; }
   .input-area input::placeholder { color: #5d7285; }
-  .icon-btn {
-    width: 42px; height: 42px; border: none; border-radius: 50%;
-    background: #242f3d; color: #64b5ef; font-size: 18px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; transition: 0.2s;
-  }
+  .icon-btn { width: 42px; height: 42px; border: none; border-radius: 50%; background: #242f3d; color: #64b5ef; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
   .icon-btn:hover { background: #2b5278; }
   .send-btn { background: #2b5278; color: #fff; }
   .send-btn:hover { background: #3a6a94; }
 
   .emoji-picker-container { position: relative; }
-  emoji-picker {
-    position: absolute; bottom: 50px; right: 0; z-index: 100;
-    --background: #17212b; --border-color: #242f3d; --indicator-color: #64b5ef;
-    --input-border-color: #242f3d; --input-background: #242f3d;
-    --input-color: #fff;
-  }
+  emoji-picker { position: absolute; bottom: 50px; right: 0; z-index: 100; --background: #17212b; --border-color: #242f3d; --indicator-color: #64b5ef; --input-border-color: #242f3d; --input-background: #242f3d; --input-color: #fff; }
 
-  .empty-state {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    color: #5d7285; font-size: 15px; text-align: center; padding: 20px;
-  }
+  .empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: #5d7285; font-size: 15px; text-align: center; padding: 20px; }
 
-  /* Profile modal */
-  .modal {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    z-index: 1000; justify-content: center; align-items: center; padding: 20px;
-  }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
   .modal.active { display: flex; }
-  .modal-content {
-    background: #17212b; padding: 24px; border-radius: 16px; width: 100%; max-width: 380px;
-    color: #fff; display: flex; flex-direction: column; gap: 12px;
-  }
+  .modal-content { background: #17212b; padding: 24px; border-radius: 16px; width: 100%; max-width: 420px; color: #fff; display: flex; flex-direction: column; gap: 12px; margin: auto; }
   .modal-content h2 { font-size: 20px; margin-bottom: 4px; }
-  .modal-content input {
-    padding: 12px; border: none; border-radius: 10px; background: #242f3d;
-    color: #fff; outline: none; font-size: 14px; width: 100%;
-  }
-  .modal-content button {
-    padding: 12px; border: none; border-radius: 10px; background: #2b5278;
-    color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
-  }
+  .modal-content input { padding: 12px; border: none; border-radius: 10px; background: #242f3d; color: #fff; outline: none; font-size: 14px; width: 100%; }
+  .modal-content button { padding: 12px; border: none; border-radius: 10px; background: #2b5278; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
   .modal-content button.danger { background: #e74c3c; }
   .modal-content button.ghost { background: #242f3d; }
-  .modal-content .avatar-preview {
-    width: 80px; height: 80px; border-radius: 50%; background: #2b5278;
-    display: flex; align-items: center; justify-content: center; font-size: 32px;
-    margin: 0 auto; overflow: hidden; font-weight: 600;
-  }
+  .modal-content button.blue { background: linear-gradient(135deg, #4a9eff, #2b7fff); }
+  .modal-content button.red { background: linear-gradient(135deg, #ff4a4a, #e60000); }
+  .modal-content .avatar-preview { width: 80px; height: 80px; border-radius: 50%; background: #2b5278; display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto; overflow: hidden; font-weight: 600; }
   .modal-content .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
-  .modal-content .info { color: #7d8b99; font-size: 13px; text-align: center; }
+
+  .admin-user {
+    display: flex; align-items: center; gap: 10px; padding: 10px;
+    background: #242f3d; border-radius: 10px; margin-top: 6px;
+  }
+  .admin-user .info { flex: 1; min-width: 0; }
+  .admin-user .uname { color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  .admin-user .nick { color: #7d8b99; font-size: 12px; }
+  .admin-user .btn-mini {
+    padding: 6px 10px; border: none; border-radius: 6px; font-size: 12px;
+    font-weight: 600; cursor: pointer; color: #fff;
+  }
+  .admin-user .btn-blue { background: #2b7fff; }
+  .admin-user .btn-blue.off { background: #444; }
+  .admin-user .btn-red { background: #e60000; }
+  .admin-user .btn-red.off { background: #444; }
+
+  .admin-tabs { display: flex; gap: 6px; }
+  .admin-tabs button { flex: 1; padding: 8px; background: #242f3d; font-size: 13px; }
+  .admin-tabs button.active { background: #2b5278; }
 </style>
 </head>
 <body>
 
 <div class="app" id="app">
-  <!-- Auth -->
+  <!-- AUTH -->
   <div class="auth-screen" id="authScreen">
     <h1>🚀 Spacegram</h1>
     <input type="email" id="email" placeholder="Email">
@@ -190,11 +139,11 @@
     <input type="text" id="usernameInput" placeholder="@username (латиница, цифры)">
     <div class="error" id="authError"></div>
     <button id="loginBtn">Войти</button>
-    <button id="registerBtn" style="background:#242f3d">Зарегистрироваться</button>
-    <div class="hint">При регистрации username обязателен. Пароль минимум 6 символов.</div>
+    <button class="ghost" id="registerBtn">Зарегистрироваться</button>
+    <div class="hint">Username: только a-z, 0-9, _ (мин. 3 символа)</div>
   </div>
 
-  <!-- Main -->
+  <!-- MAIN -->
   <div class="main-app" id="mainApp">
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
@@ -225,12 +174,12 @@
         <input type="text" id="messageInput" placeholder="Напиши сообщение...">
         <button class="icon-btn send-btn" id="sendBtn">➤</button>
       </div>
-      <div class="empty-state" id="emptyState">Выбери чат или найди пользователя через поиск 🔍</div>
+      <div class="empty-state" id="emptyState">Выбери чат или найди пользователя 🔍</div>
     </div>
   </div>
 </div>
 
-<!-- Profile modal -->
+<!-- PROFILE MODAL -->
 <div class="modal" id="profileModal">
   <div class="modal-content">
     <h2>Профиль</h2>
@@ -244,134 +193,150 @@
   </div>
 </div>
 
-<!-- Admin modal -->
+<!-- ADMIN MODAL -->
 <div class="modal" id="adminModal">
   <div class="modal-content">
     <h2>🔐 Админ-панель</h2>
-    <input type="password" id="adminSecret" placeholder="Секретный пароль">
-    <div class="error" id="adminError" style="color:#e74c3c;font-size:13px;min-height:18px"></div>
-    <button id="adminLoginBtn">Войти как админ</button>
+    <div id="adminLoginSection">
+      <input type="password" id="adminSecret" placeholder="Секретный пароль">
+      <div class="error" id="adminError" style="color:#e74c3c;font-size:13px;min-height:18px;text-align:center;margin-top:8px"></div>
+      <button id="adminLoginBtn" style="width:100%;margin-top:8px">Войти как админ</button>
+    </div>
+
+    <div id="adminPanelSection" style="display:none">
+      <input type="text" id="adminSearchUser" placeholder="Поиск @username для выдачи галочки...">
+      <div id="adminUserList" style="max-height:300px;overflow-y:auto;margin-top:10px"></div>
+      <button class="ghost" id="adminLogoutBtn" style="margin-top:12px">Выйти из админки</button>
+    </div>
+
     <button class="ghost" id="adminCloseBtn">Закрыть</button>
   </div>
 </div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, query, where, onSnapshot, addDoc, orderBy, serverTimestamp, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-storage.js";
-import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js';
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import "https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA55MfeW65RKKFCWXDou_9w9GPNTEH2Ans",
-  authDomain: "spaceweb-f0110.firebaseapp.com",
-  projectId: "spaceweb-f0110",
-  storageBucket: "spaceweb-f0110.firebasestorage.app",
-  messagingSenderId: "1094229332741",
-  appId: "1:1094229332741:web:7d6410733b2c2742691d6c"
-};
+const SUPABASE_URL = "https://qtuvtxbxtypvttfjiydv.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0dXZ0eGJ4dHlwdnR0ZmppeWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg1NzEsImV4cCI6MjEwNjY4NDU3MX0.hxLhZNqjMoxJmGDgNdfb8eiFg3yGBKwwkioZJG74EpA";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-// 🔐 СЕКРЕТНЫЙ ПАРОЛЬ АДМИНА — поменяй на свой
 const ADMIN_SECRET = "spacegram2026";
+const CREATOR_USERNAME = "itzrealsaneghka"; // красная галочка
+
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
+let currentProfile = null;
 let currentChatId = null;
 let currentChatUser = null;
-let unsubscribeMessages = null;
-let unsubscribeChats = null;
+let messagesChannel = null;
+let chatsChannel = null;
+let isAdmin = false;
 
-const $ = (id) => document.getElementById(id);
-const authScreen = $('authScreen');
-const mainApp = $('mainApp');
+const $ = id => document.getElementById(id);
+
+// ============ ГАЛОЧКИ ============
+function renderBadges(profile) {
+  let html = '';
+  if (profile.is_creator) html += '<span class="badge creator" title="Создатель">★</span>';
+  else if (profile.is_verified) html += '<span class="badge verified" title="Подтверждён">✓</span>';
+  return html;
+}
 
 // ============ AUTH ============
-$('loginBtn').onclick = async () => {
-  $('authError').textContent = '';
-  try {
-    await signInWithEmailAndPassword(auth, $('email').value, $('password').value);
-  } catch (e) { $('authError').textContent = translateError(e.code); }
-};
+async function initAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await enterApp();
+  } else {
+    showAuth();
+  }
+}
+
+function showAuth() {
+  $('authScreen').style.display = 'flex';
+  $('mainApp').classList.remove('active');
+}
+
+async function enterApp() {
+  $('authScreen').style.display = 'none';
+  $('mainApp').classList.add('active');
+  await loadProfile();
+  await checkAdmin();
+  await loadChats();
+  subscribeChats();
+}
 
 $('registerBtn').onclick = async () => {
   $('authError').textContent = '';
   const email = $('email').value.trim();
   const pass = $('password').value;
-  let username = $('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+  let uname = $('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
   if (!email || !pass) { $('authError').textContent = 'Заполни email и пароль'; return; }
   if (pass.length < 6) { $('authError').textContent = 'Пароль минимум 6 символов'; return; }
-  if (!username || username.length < 3) { $('authError').textContent = 'Username минимум 3 символа (a-z, 0-9, _)'; return; }
-  try {
-    // Проверка что username свободен
-    const unameCheck = await getDocs(query(collection(db, 'users'), where('username', '==', '@' + username)));
-    if (!unameCheck.empty) { $('authError').textContent = 'Этот @username уже занят'; return; }
+  if (uname.length < 3) { $('authError').textContent = 'Username минимум 3 символа'; return; }
 
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    await updateProfile(cred.user, { displayName: username });
-    await setDoc(doc(db, 'users', cred.user.uid), {
-      email: cred.user.email,
-      username: '@' + username,
-      displayName: username,
-      avatar: '',
-      createdAt: serverTimestamp()
-    });
-  } catch (e) { $('authError').textContent = translateError(e.code); }
+  const { data: existing } = await sb.from('profiles').select('id').eq('username', uname).maybeSingle();
+  if (existing) { $('authError').textContent = 'Этот @username занят'; return; }
+
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if (error) { $('authError').textContent = translateError(error.message); return; }
+  if (!data.user) { $('authError').textContent = 'Ошибка регистрации'; return; }
+
+  const isCreator = uname === CREATOR_USERNAME;
+  const { error: profErr } = await sb.from('profiles').insert({
+    id: data.user.id,
+    username: uname,
+    display_name: uname,
+    avatar_url: null,
+    is_creator: isCreator,
+    is_verified: isCreator
+  });
+  if (profErr) { $('authError').textContent = 'Ошибка профиля: ' + profErr.message; return; }
+
+  currentUser = data.user;
+  await enterApp();
 };
 
-function translateError(code) {
-  const map = {
-    'auth/email-already-in-use': 'Этот email уже зарегистрирован',
-    'auth/invalid-email': 'Неверный email',
-    'auth/weak-password': 'Слабый пароль (мин. 6 символов)',
-    'auth/user-not-found': 'Пользователь не найден',
-    'auth/wrong-password': 'Неверный пароль',
-    'auth/invalid-credential': 'Неверный email или пароль',
-    'auth/network-request-failed': 'Нет соединения с интернетом',
-    'auth/operation-not-allowed': 'Email/Password не включён в Firebase Console',
-    'permission-denied': 'Нет доступа (проверь Rules в Firestore)'
-  };
-  return map[code] || ('Ошибка: ' + code);
+$('loginBtn').onclick = async () => {
+  $('authError').textContent = '';
+  const email = $('email').value.trim();
+  const pass = $('password').value;
+  if (!email || !pass) { $('authError').textContent = 'Заполни email и пароль'; return; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) { $('authError').textContent = translateError(error.message); return; }
+  currentUser = data.user;
+  await enterApp();
+};
+
+function translateError(msg) {
+  if (msg.includes('Invalid login')) return 'Неверный email или пароль';
+  if (msg.includes('already registered')) return 'Этот email уже зарегистрирован';
+  if (msg.includes('Password should be')) return 'Слабый пароль';
+  if (msg.includes('Unable to validate')) return 'Неверный email';
+  if (msg.includes('Email not confirmed')) return 'Подтверди email или отключи Confirm email';
+  if (msg.includes('row-level security')) return 'Нет доступа (проверь RLS)';
+  return msg;
 }
 
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUser = user;
-    authScreen.style.display = 'none';
-    mainApp.classList.add('active');
-    await loadMyProfile();
-    listenToChats();
-  } else {
-    currentUser = null;
-    authScreen.style.display = 'flex';
-    mainApp.classList.remove('active');
-    if (unsubscribeChats) unsubscribeChats();
-  }
-});
-
 // ============ PROFILE ============
-let myProfileCache = null;
-
-async function loadMyProfile() {
-  const snap = await getDoc(doc(db, 'users', currentUser.uid));
-  if (snap.exists()) {
-    myProfileCache = snap.data();
-    const a = $('myAvatar');
-    if (myProfileCache.avatar) a.innerHTML = `<img src="${myProfileCache.avatar}">`;
-    else a.textContent = (myProfileCache.displayName || '?')[0].toUpperCase();
-  }
+async function loadProfile() {
+  const { data, error } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (error) { console.error(error); return; }
+  currentProfile = data;
+  const a = $('myAvatar');
+  if (data.avatar_url) a.innerHTML = `<img src="${data.avatar_url}">`;
+  else a.textContent = (data.display_name || '?')[0].toUpperCase();
 }
 
 window.openProfileModal = () => {
-  if (!myProfileCache) return;
-  $('profileName').value = myProfileCache.displayName || '';
-  $('profileUsername').value = myProfileCache.username || '';
+  if (!currentProfile) return;
+  $('profileName').value = currentProfile.display_name || '';
+  $('profileUsername').value = '@' + currentProfile.username;
   const prev = $('avatarPreview');
-  if (myProfileCache.avatar) prev.innerHTML = `<img src="${myProfileCache.avatar}">`;
-  else prev.textContent = (myProfileCache.displayName || '?')[0].toUpperCase();
+  if (currentProfile.avatar_url) prev.innerHTML = `<img src="${currentProfile.avatar_url}">`;
+  else prev.textContent = (currentProfile.display_name || '?')[0].toUpperCase();
   $('profileModal').classList.add('active');
 };
 
@@ -384,13 +349,15 @@ $('changeAvatarBtn').onclick = () => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { alert('Файл больше 2 МБ'); return; }
-    const r = storageRef(storage, `avatars/${currentUser.uid}`);
-    await uploadBytes(r, file);
-    const url = await getDownloadURL(r);
-    await updateDoc(doc(db, 'users', currentUser.uid), { avatar: url });
-    myProfileCache.avatar = url;
+    const path = `${currentUser.id}/avatar_${Date.now()}.jpg`;
+    const { error } = await sb.storage.from('avatars').upload(path, file, { upsert: true });
+    if (error) { alert('Ошибка: ' + error.message); return; }
+    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
+    const url = urlData.publicUrl;
+    await sb.from('profiles').update({ avatar_url: url }).eq('id', currentUser.id);
+    currentProfile.avatar_url = url;
     $('avatarPreview').innerHTML = `<img src="${url}">`;
-    await loadMyProfile();
+    await loadProfile();
   };
   inp.click();
 };
@@ -398,88 +365,89 @@ $('changeAvatarBtn').onclick = () => {
 $('saveProfileBtn').onclick = async () => {
   const name = $('profileName').value.trim();
   if (!name) return;
-  await updateProfile(currentUser, { displayName: name });
-  await updateDoc(doc(db, 'users', currentUser.uid), { displayName: name });
-  myProfileCache.displayName = name;
-  await loadMyProfile();
+  await sb.from('profiles').update({ display_name: name }).eq('id', currentUser.id);
+  currentProfile.display_name = name;
+  await loadProfile();
   $('profileModal').classList.remove('active');
 };
 
-$('logoutBtn').onclick = async () => { await signOut(auth); location.reload(); };
+$('logoutBtn').onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
 // ============ CHATS ============
-function listenToChats() {
-  if (unsubscribeChats) unsubscribeChats();
-  const q = query(collection(db, 'chats'), where('members', 'array-contains', currentUser.uid));
-  unsubscribeChats = onSnapshot(q, (snap) => {
-    const list = $('chatList');
-    list.innerHTML = '';
-    if (snap.empty) {
-      list.innerHTML = '<div style="padding:20px;color:#5d7285;text-align:center;font-size:14px">Нет чатов. Найди пользователя через поиск 🔍</div>';
-      return;
-    }
-    snap.forEach(d => {
-      const chat = d.data();
-      const otherId = chat.members.find(m => m !== currentUser.uid);
-      const div = document.createElement('div');
-      div.className = 'chat-item' + (d.id === currentChatId ? ' active' : '');
-      div.onclick = () => openChat(d.id, otherId);
-      div.innerHTML = `<div class="chat-avatar">?</div>
-        <div class="chat-info"><div class="chat-name">…</div>
-        <div class="chat-preview">${chat.lastMessage || 'Начни общение'}</div></div>`;
-      list.appendChild(div);
-      getDoc(doc(db, 'users', otherId)).then(u => {
-        const ud = u.data();
-        if (!ud) return;
-        div.querySelector('.chat-avatar').innerHTML = ud.avatar ? `<img src="${ud.avatar}">` : (ud.displayName || '?')[0].toUpperCase();
-        div.querySelector('.chat-name').textContent = ud.displayName || 'Пользователь';
-      });
-    });
-  });
+async function loadChats() {
+  const uid = currentUser.id;
+  const { data: chats } = await sb.from('chats').select('*').or(`user1.eq.${uid},user2.eq.${uid}`).order('created_at', { ascending: false });
+  const list = $('chatList');
+  list.innerHTML = '';
+  if (!chats || chats.length === 0) {
+    list.innerHTML = '<div style="padding:20px;color:#5d7285;text-align:center;font-size:14px">Нет чатов. Найди пользователя 🔍</div>';
+    return;
+  }
+  for (const chat of chats) {
+    const otherId = chat.user1 === uid ? chat.user2 : chat.user1;
+    const { data: prof } = await sb.from('profiles').select('*').eq('id', otherId).single();
+    if (!prof) continue;
+    const div = document.createElement('div');
+    div.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
+    div.onclick = () => openChat(chat.id, otherId);
+    div.innerHTML = `
+      <div class="chat-avatar">${prof.avatar_url ? `<img src="${prof.avatar_url}">` : (prof.display_name||'?')[0].toUpperCase()}</div>
+      <div class="chat-info">
+        <div class="chat-name">${escapeHtml(prof.display_name)} ${renderBadges(prof)}</div>
+        <div class="chat-preview">${escapeHtml(chat.last_message || 'Начни общение')}</div>
+      </div>`;
+    list.appendChild(div);
+  }
+}
+
+function subscribeChats() {
+  if (chatsChannel) sb.removeChannel(chatsChannel);
+  chatsChannel = sb.channel('chats_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => loadChats())
+    .subscribe();
 }
 
 // ============ SEARCH ============
 $('searchInput').oninput = async (e) => {
   const val = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
   const list = $('chatList');
-  if (!val || val.length < 2) { listenToChats(); return; }
-  const username = '@' + val;
-  const snap = await getDocs(query(collection(db, 'users'), where('username', '==', username)));
+  if (!val || val.length < 2) { loadChats(); return; }
+  const { data } = await sb.from('profiles').select('*').eq('username', val);
   list.innerHTML = '';
-  if (snap.empty) {
-    list.innerHTML = '<div style="padding:20px;color:#5d7285;text-align:center;font-size:14px">Пользователь не найден</div>';
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div style="padding:20px;color:#5d7285;text-align:center;font-size:14px">Не найден</div>';
     return;
   }
-  snap.forEach(d => {
-    if (d.id === currentUser.uid) {
+  data.forEach(u => {
+    if (u.id === currentUser.id) {
       list.innerHTML += '<div style="padding:20px;color:#5d7285;text-align:center;font-size:14px">Это ты 🙂</div>';
       return;
     }
-    const u = d.data();
     const div = document.createElement('div');
     div.className = 'chat-item';
-    div.innerHTML = `<div class="chat-avatar">${u.avatar ? `<img src="${u.avatar}">` : (u.displayName||'?')[0].toUpperCase()}</div>
-      <div class="chat-info"><div class="chat-name">${u.displayName}</div>
-      <div class="chat-preview">${u.username}</div></div>`;
-    div.onclick = () => startChat(d.id);
+    div.innerHTML = `
+      <div class="chat-avatar">${u.avatar_url ? `<img src="${u.avatar_url}">` : (u.display_name||'?')[0].toUpperCase()}</div>
+      <div class="chat-info">
+        <div class="chat-name">${escapeHtml(u.display_name)} ${renderBadges(u)}</div>
+        <div class="chat-preview">@${escapeHtml(u.username)}</div>
+      </div>`;
+    div.onclick = () => startChat(u.id);
     list.appendChild(div);
   });
 };
 
 async function startChat(otherId) {
-  const chatId = [currentUser.uid, otherId].sort().join('_');
-  const chatRef = doc(db, 'chats', chatId);
-  const snap = await getDoc(chatRef);
-  if (!snap.exists()) {
-    await setDoc(chatRef, {
-      members: [currentUser.uid, otherId],
-      createdAt: serverTimestamp(),
-      lastMessage: ''
-    });
+  const uid = currentUser.id;
+  const [u1, u2] = [uid, otherId].sort();
+  let { data: existing } = await sb.from('chats').select('*').eq('user1', u1).eq('user2', u2).maybeSingle();
+  if (!existing) {
+    const { data, error } = await sb.from('chats').insert({ user1: u1, user2: u2 }).select().single();
+    if (error) { alert(error.message); return; }
+    existing = data;
   }
   $('searchInput').value = '';
-  listenToChats();
-  openChat(chatId, otherId);
+  await loadChats();
+  openChat(existing.id, otherId);
 }
 
 // ============ OPEN CHAT ============
@@ -492,34 +460,37 @@ async function openChat(chatId, otherId) {
   $('inputArea').style.display = 'flex';
   $('emptyState').style.display = 'none';
 
-  const u = await getDoc(doc(db, 'users', otherId));
-  const ud = u.data();
-  $('headerName').textContent = ud?.displayName || 'Пользователь';
-  $('headerStatus').textContent = ud?.username || '';
+  const { data: prof } = await sb.from('profiles').select('*').eq('id', otherId).single();
+  $('headerName').innerHTML = `${escapeHtml(prof?.display_name || 'Пользователь')} ${renderBadges(prof || {})}`;
+  $('headerStatus').textContent = '@' + (prof?.username || '');
   const ha = $('headerAvatar');
-  ha.innerHTML = ud?.avatar ? `<img src="${ud.avatar}">` : (ud?.displayName||'?')[0].toUpperCase();
+  ha.innerHTML = prof?.avatar_url ? `<img src="${prof.avatar_url}">` : (prof?.display_name||'?')[0].toUpperCase();
 
-  if (unsubscribeMessages) unsubscribeMessages();
-  const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('createdAt'));
-  unsubscribeMessages = onSnapshot(q, (snap) => {
-    const msgs = $('messages');
-    msgs.innerHTML = '';
-    snap.forEach(d => {
-      const m = d.data();
-      const div = document.createElement('div');
-      div.className = 'msg ' + (m.sender === currentUser.uid ? 'me' : 'you');
-      const time = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleTimeString('ru', {hour:'2-digit',minute:'2-digit'}) : '';
-      div.innerHTML = `${escapeHtml(m.text)}<div class="time">${time}</div>`;
-      msgs.appendChild(div);
-    });
-    msgs.scrollTop = msgs.scrollHeight;
-  });
+  await loadMessages(chatId);
+  if (messagesChannel) sb.removeChannel(messagesChannel);
+  messagesChannel = sb.channel('msgs_' + chatId)
+    .on('postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'messages', filter: `chat_id=eq.${chatId}` },
+      (payload) => appendMessage(payload.new))
+    .subscribe();
 }
 
-function escapeHtml(t) {
-  const d = document.createElement('div');
-  d.textContent = t;
-  return d.innerHTML;
+async function loadMessages(chatId) {
+  const { data } = await sb.from('messages').select('*').eq('chat_id', chatId).order('created_at');
+  const msgs = $('messages');
+  msgs.innerHTML = '';
+  (data || []).forEach(appendMessage);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendMessage(m) {
+  const msgs = $('messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + (m.sender === currentUser.id ? 'me' : 'you');
+  const t = new Date(m.created_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+  div.innerHTML = `${escapeHtml(m.text)}<div class="time">${t}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
 }
 
 window.showSidebar = () => {
@@ -529,17 +500,21 @@ window.showSidebar = () => {
   $('inputArea').style.display = 'none';
   $('emptyState').style.display = 'flex';
   currentChatId = null;
+  if (messagesChannel) { sb.removeChannel(messagesChannel); messagesChannel = null; }
 };
 
-// ============ SEND MESSAGE ============
+// ============ SEND ============
 async function sendMessage() {
   const text = $('messageInput').value.trim();
   if (!text || !currentChatId) return;
-  await addDoc(collection(db, 'chats', currentChatId, 'messages'), {
-    text, sender: currentUser.uid, createdAt: serverTimestamp()
-  });
-  await updateDoc(doc(db, 'chats', currentChatId), { lastMessage: text.slice(0, 40) });
   $('messageInput').value = '';
+  const { error } = await sb.from('messages').insert({
+    chat_id: currentChatId,
+    sender: currentUser.id,
+    text
+  });
+  if (error) { alert(error.message); return; }
+  await sb.from('chats').update({ last_message: text.slice(0, 50) }).eq('id', currentChatId);
 }
 
 $('sendBtn').onclick = sendMessage;
@@ -556,19 +531,34 @@ $('emojiPicker').addEventListener('emoji-click', (e) => {
   $('messageInput').focus();
 });
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('.emoji-picker-container')) {
-    $('emojiPicker').style.display = 'none';
-  }
+  if (!e.target.closest('.emoji-picker-container')) $('emojiPicker').style.display = 'none';
 });
 
 // ============ ADMIN ============
 let logoClicks = 0;
 $('logo').onclick = () => {
   logoClicks++;
-  if (logoClicks >= 5) { $('adminModal').classList.add('active'); logoClicks = 0; }
+  if (logoClicks >= 5) {
+    $('adminModal').classList.add('active');
+    if (isAdmin) showAdminPanel();
+    else {
+      $('adminLoginSection').style.display = 'block';
+      $('adminPanelSection').style.display = 'none';
+    }
+    logoClicks = 0;
+  }
 };
-
 $('adminCloseBtn').onclick = () => $('adminModal').classList.remove('active');
+
+async function checkAdmin() {
+  if (!currentUser) return;
+  const { data } = await sb.from('admins').select('id').eq('id', currentUser.id).maybeSingle();
+  isAdmin = !!data;
+  if (isAdmin) {
+    console.log('👑 Ты админ!');
+    document.body.style.border = '3px solid gold';
+  }
+}
 
 $('adminLoginBtn').onclick = async () => {
   const secret = $('adminSecret').value;
@@ -577,26 +567,91 @@ $('adminLoginBtn').onclick = async () => {
     $('adminError').textContent = '❌ Неверный пароль';
     return;
   }
-  // Записываем в Firestore флаг админа
-  await setDoc(doc(db, 'admins', currentUser.uid), {
-    email: currentUser.email,
-    grantedAt: serverTimestamp()
-  });
+  const { error } = await sb.from('admins').insert({ id: currentUser.id });
+  if (error && !error.message.includes('duplicate')) {
+    $('adminError').textContent = 'Ошибка: ' + error.message;
+    return;
+  }
+  isAdmin = true;
   $('adminError').style.color = '#2ecc71';
-  $('adminError').textContent = '✅ Права админа выданы';
-  setTimeout(() => location.reload(), 1200);
+  $('adminError').textContent = '✅ Ты админ!';
+  setTimeout(() => { $('adminSecret').value = ''; showAdminPanel(); }, 800);
 };
 
-// Проверка админ-статуса
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    const a = await getDoc(doc(db, 'admins', user.uid)).catch(() => null);
-    if (a && a.exists()) {
-      console.log('👑 Ты админ!');
-      document.body.style.border = '3px solid gold';
-    }
+async function showAdminPanel() {
+  $('adminLoginSection').style.display = 'none';
+  $('adminPanelSection').style.display = 'block';
+  await loadAdminUsers('');
+}
+
+$('adminSearchUser').oninput = (e) => {
+  const val = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+  loadAdminUsers(val);
+};
+
+async function loadAdminUsers(search) {
+  const list = $('adminUserList');
+  list.innerHTML = '<div style="padding:10px;color:#7d8b99;font-size:13px">Загрузка...</div>';
+
+  let q = sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(50);
+  if (search.length >= 2) q = q.ilike('username', `%${search}%`);
+  const { data, error } = await q;
+  if (error) { list.innerHTML = `<div style="color:#e74c3c;font-size:13px">${error.message}</div>`; return; }
+
+  list.innerHTML = '';
+  if (!data || data.length === 0) {
+    list.innerHTML = '<div style="padding:10px;color:#7d8b99;font-size:13px;text-align:center">Никого не найдено</div>';
+    return;
   }
-});
+
+  data.forEach(u => {
+    const div = document.createElement('div');
+    div.className = 'admin-user';
+    const isCreator = u.username === CREATOR_USERNAME;
+    div.innerHTML = `
+      <div class="info">
+        <div class="uname">${escapeHtml(u.display_name || u.username)} ${renderBadges(u)}</div>
+        <div class="nick">@${escapeHtml(u.username)}${isCreator ? ' • создатель' : ''}</div>
+      </div>
+      <button class="btn-mini btn-blue ${u.is_verified ? '' : 'off'}" data-uid="${u.id}" data-field="is_verified">
+        ${u.is_verified ? '🔵 ✓' : '✓'}
+      </button>
+      ${isCreator ? '<button class="btn-mini btn-red" disabled title="Красная галочка только у создателя">🔴 ★</button>' : ''}
+    `;
+    list.appendChild(div);
+  });
+
+  list.querySelectorAll('.btn-blue').forEach(btn => {
+    btn.onclick = async () => {
+      const uid = btn.dataset.uid;
+      const { data: cur } = await sb.from('profiles').select('is_verified').eq('id', uid).single();
+      const newVal = !cur.is_verified;
+      const { error } = await sb.from('profiles').update({ is_verified: newVal }).eq('id', uid);
+      if (error) { alert(error.message); return; }
+      btn.classList.toggle('off', !newVal);
+      btn.textContent = newVal ? '🔵 ✓' : '✓';
+      await loadChats();
+    };
+  });
+}
+
+$('adminLogoutBtn').onclick = async () => {
+  if (!confirm('Снять с себя права админа?')) return;
+  await sb.from('admins').delete().eq('id', currentUser.id);
+  isAdmin = false;
+  $('adminModal').classList.remove('active');
+  location.reload();
+};
+
+// ============ HELPERS ============
+function escapeHtml(t) {
+  const d = document.createElement('div');
+  d.textContent = t;
+  return d.innerHTML;
+}
+
+// ============ START ============
+initAuth();
 </script>
 </body>
 </html>
