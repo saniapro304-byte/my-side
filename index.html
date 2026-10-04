@@ -2,10 +2,13 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#17212b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Spacegram</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,-apple-system,sans-serif; -webkit-tap-highlight-color:transparent; }
   :root {
     --bg:#0e1621; --panel:#17212b; --panel2:#242f3d; --hover:#1c2733; --border:#242f3d;
     --accent:#64b5ef; --accent-bg:#2b5278; --accent-hover:#3a6a94;
@@ -17,6 +20,10 @@
     --red-grad:linear-gradient(135deg,#ff4a4a,#e60000);
     --shadow:0 20px 60px rgba(0,0,0,0.6);
     --wallpaper:radial-gradient(circle at 20% 30%, rgba(100,181,239,0.05), transparent 50%), radial-gradient(circle at 80% 70%, rgba(43,82,120,0.08), transparent 50%);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --header-h: 56px;
+    --input-h: 62px;
   }
   body.light {
     --bg:#e8eef5; --panel:#ffffff; --panel2:#f0f3f7; --hover:#e8eef5; --border:#e0e6ed;
@@ -24,105 +31,129 @@
     --msg-in:#ffffff; --msg-out:#64b5ef;
     --shadow:0 20px 60px rgba(0,0,0,0.15);
   }
-  body { background:var(--bg); display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; transition:background 0.3s; color:var(--text); }
-  button { font-family:inherit; }
-
-  /* PLUS THEME */
+  html, body { height:100%; overflow:hidden; overscroll-behavior:none; }
+  body { background:var(--bg); color:var(--text); transition:background 0.3s; user-select:none; }
+  button, input, textarea { font-family:inherit; }
   body.plus-active { --accent:#ffd700; --accent-bg:#8b6914; --accent-hover:#b8860b; }
 
-  .app { width:100%; max-width:1000px; height:100vh; max-height:750px; display:flex; overflow:hidden; background:var(--panel); box-shadow:var(--shadow); transition:background 0.3s; }
-  @media (min-width:768px){ .app{ border-radius:20px; height:750px; } }
+  /* APP SHELL */
+  .app {
+    position:fixed; inset:0; display:flex; overflow:hidden;
+    background:var(--panel);
+  }
+  @media (min-width:900px) {
+    .app { max-width:1100px; height:100vh; max-height:800px; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%); border-radius:20px; box-shadow:var(--shadow); }
+  }
 
-  /* === AUTH === */
-  .auth-screen { width:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:30px; gap:14px; background:var(--panel); position:relative; overflow:hidden; }
-  .auth-screen::before { content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%; background:radial-gradient(circle at 30% 20%, rgba(100,181,239,0.15), transparent 40%), radial-gradient(circle at 70% 80%, rgba(43,82,120,0.3), transparent 40%); animation:bgFloat 20s ease-in-out infinite; }
+  /* AUTH */
+  .auth-screen { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:24px; gap:12px; background:var(--panel); overflow-y:auto; padding-top:calc(24px + var(--safe-top)); padding-bottom:calc(24px + var(--safe-bottom)); }
+  .auth-screen::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 20%, rgba(100,181,239,0.15), transparent 40%), radial-gradient(circle at 70% 80%, rgba(43,82,120,0.3), transparent 40%); animation:bgFloat 20s ease-in-out infinite; pointer-events:none; }
   @keyframes bgFloat { 0%,100%{transform:translate(0,0) rotate(0);} 50%{transform:translate(5%,5%) rotate(180deg);} }
   .auth-screen > * { position:relative; z-index:1; }
-  .auth-screen h1 { font-size:40px; margin-bottom:20px; letter-spacing:-1px; background:linear-gradient(135deg,#64b5ef,#4a9eff,#7dd3fc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-weight:800; }
-  .auth-screen input { width:100%; max-width:340px; padding:16px 20px; border:2px solid transparent; border-radius:14px; background:var(--panel2); color:var(--text); outline:none; font-size:15px; transition:0.2s; }
+  .auth-screen h1 { font-size:clamp(28px,8vw,40px); margin-bottom:12px; letter-spacing:-1px; background:linear-gradient(135deg,#64b5ef,#4a9eff,#7dd3fc); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-weight:800; }
+  .auth-screen input { width:100%; max-width:340px; padding:15px 18px; border:2px solid transparent; border-radius:14px; background:var(--panel2); color:var(--text); outline:none; font-size:16px; transition:0.2s; }
   .auth-screen input:focus { border-color:var(--accent); }
   .auth-screen input::placeholder { color:var(--text3); }
-  .auth-screen button { width:100%; max-width:340px; padding:16px; border:none; border-radius:14px; background:var(--accent-bg); color:#fff; font-size:16px; font-weight:600; cursor:pointer; transition:0.2s; }
-  .auth-screen button:hover { background:var(--accent-hover); transform:translateY(-1px); }
+  .auth-screen button { width:100%; max-width:340px; padding:15px; border:none; border-radius:14px; background:var(--accent-bg); color:#fff; font-size:16px; font-weight:600; cursor:pointer; transition:0.2s; }
+  .auth-screen button:active { transform:scale(0.98); }
   .auth-screen button.ghost { background:var(--panel2); color:var(--text); }
   .auth-screen .error { color:var(--red); font-size:13px; min-height:18px; text-align:center; max-width:340px; }
   .auth-screen .hint { color:var(--text3); font-size:12px; text-align:center; max-width:340px; }
 
-  /* === MAIN === */
+  /* MAIN */
   .main-app { display:none; width:100%; height:100%; }
   .main-app.active { display:flex; }
 
-  /* === SIDEBAR === */
-  .sidebar { width:340px; background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; transition:background 0.3s; }
-  @media (max-width:700px){ .sidebar{ width:100%; position:absolute; z-index:10; height:100%; } .sidebar.hidden{ display:none; } }
-  .sidebar-header { padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .sidebar-header h2 { font-size:20px; font-weight:700; cursor:pointer; user-select:none; background:linear-gradient(135deg,#64b5ef,#4a9eff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  /* SIDEBAR */
+  .sidebar { width:100%; max-width:100%; height:100%; background:var(--panel); display:flex; flex-direction:column; flex-shrink:0; position:absolute; inset:0; transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),background 0.3s; z-index:5; }
+  .sidebar.hidden { transform:translateX(-100%); }
+  @media (min-width:700px) {
+    .sidebar { width:340px; max-width:none; position:relative; inset:auto; transform:none !important; border-right:1px solid var(--border); }
+    .sidebar.hidden { transform:none !important; }
+  }
+  .sidebar-header { padding:calc(12px + var(--safe-top)) 14px 12px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .sidebar-header h2 { font-size:19px; font-weight:700; cursor:pointer; user-select:none; background:linear-gradient(135deg,#64b5ef,#4a9eff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
   body.plus-active .sidebar-header h2 { background:var(--gold-grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-  .header-actions { display:flex; gap:6px; align-items:center; }
-  .header-btn { width:38px; height:38px; border-radius:50%; background:var(--panel2); border:none; color:var(--accent); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; }
-  .header-btn:hover { background:var(--accent-bg); color:#fff; transform:scale(1.05); }
-  .user-avatar-small { width:38px; height:38px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; overflow:hidden; color:#fff; font-weight:600; transition:0.2s; border:2px solid transparent; }
-  .user-avatar-small:hover { border-color:var(--accent); }
+  .header-actions { display:flex; gap:5px; align-items:center; }
+  .header-btn { width:38px; height:38px; border-radius:50%; background:var(--panel2); border:none; color:var(--accent); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; }
+  .header-btn:active { transform:scale(0.92); background:var(--accent-bg); color:#fff; }
+  .user-avatar-small { width:38px; height:38px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer; overflow:hidden; color:#fff; font-weight:600; border:2px solid transparent; transition:0.2s; flex-shrink:0; }
+  .user-avatar-small:active { transform:scale(0.92); }
   .user-avatar-small img { width:100%; height:100%; object-fit:cover; }
 
+  /* STORIES ROW */
+  .stories-row { display:flex; gap:10px; padding:8px 14px 12px; overflow-x:auto; border-bottom:1px solid var(--border); }
+  .stories-row::-webkit-scrollbar { display:none; }
+  .story-item { display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; flex-shrink:0; }
+  .story-avatar { width:56px; height:56px; border-radius:50%; padding:3px; background:linear-gradient(135deg,#64b5ef,#4a9eff,#f5b041); position:relative; }
+  .story-avatar.me { background:linear-gradient(135deg,#5d7285,#3a4a5a); }
+  .story-avatar.plus { background:var(--gold-grad); animation:pulse 2s infinite; }
+  .story-avatar .inner { width:100%; height:100%; border-radius:50%; background:var(--panel); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:600; overflow:hidden; border:2px solid var(--panel); }
+  .story-avatar .inner img { width:100%; height:100%; object-fit:cover; }
+  .story-avatar .add { position:absolute; bottom:-2px; right:-2px; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; font-size:14px; display:flex; align-items:center; justify-content:center; border:2px solid var(--panel); }
+  .story-name { font-size:11px; color:var(--text2); max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
   /* FOLDERS */
-  .folders { display:flex; gap:6px; padding:0 16px 10px; overflow-x:auto; }
+  .folders { display:flex; gap:6px; padding:0 14px 10px; overflow-x:auto; }
   .folders::-webkit-scrollbar { display:none; }
   .folder-btn { padding:7px 14px; border-radius:18px; background:var(--panel2); border:none; color:var(--text); font-size:13px; cursor:pointer; white-space:nowrap; transition:0.2s; font-weight:500; }
-  .folder-btn:hover { background:var(--hover); }
   .folder-btn.active { background:var(--accent-bg); color:#fff; font-weight:600; }
 
-  .search-box { padding:0 16px 12px; }
-  .search-box input { width:100%; padding:11px 16px; border:2px solid transparent; border-radius:12px; background:var(--panel2); color:var(--text); outline:none; font-size:14px; transition:0.2s; }
+  .search-box { padding:0 14px 12px; }
+  .search-box input { width:100%; padding:11px 16px; border:2px solid transparent; border-radius:12px; background:var(--panel2); color:var(--text); outline:none; font-size:15px; transition:0.2s; }
   .search-box input:focus { border-color:var(--accent); }
-  .search-box input::placeholder { color:var(--text3); }
 
-  .chat-list { flex:1; overflow-y:auto; padding:0 6px 6px; }
+  .chat-list { flex:1; overflow-y:auto; padding:0 6px 6px; -webkit-overflow-scrolling:touch; }
   .chat-list::-webkit-scrollbar { width:5px; }
   .chat-list::-webkit-scrollbar-thumb { background:#2b3a4a; border-radius:3px; }
-  .chat-item { padding:11px 14px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:0.15s; border-radius:12px; margin:2px 0; position:relative; }
-  .chat-item:hover { background:var(--hover); }
+  .chat-item { padding:11px 14px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:0.15s; border-radius:12px; margin:2px 0; }
+  .chat-item:active { background:var(--hover); }
   .chat-item.active { background:var(--accent-bg); }
   .chat-avatar { width:50px; height:50px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; overflow:hidden; color:#fff; font-weight:600; position:relative; }
   .chat-avatar img { width:100%; height:100%; object-fit:cover; }
-  .online-dot { position:absolute; bottom:1px; right:1px; width:13px; height:13px; border-radius:50%; background:var(--green); border:2.5px solid var(--panel); box-shadow:0 0 6px rgba(74,222,128,0.6); }
+  .online-dot { position:absolute; bottom:1px; right:1px; width:13px; height:13px; border-radius:50%; background:var(--green); border:2.5px solid var(--panel); }
   .chat-info { flex:1; min-width:0; }
   .chat-name { font-weight:600; font-size:15px; display:flex; align-items:center; gap:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .chat-preview { color:var(--text2); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; display:flex; align-items:center; gap:4px; }
-  .chat-time { color:var(--text3); font-size:11px; }
-  .unread-badge { background:var(--accent); color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:10px; min-width:22px; text-align:center; }
+  .chat-preview { color:var(--text2); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px; }
+  .chat-time { color:var(--text3); font-size:11px; flex-shrink:0; }
 
-  /* === BADGES === */
+  /* BADGES */
   .badge { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; flex-shrink:0; font-size:10px; font-weight:bold; color:#fff; }
   .badge.verified { background:var(--blue-grad); }
   .badge.creator { background:var(--red-grad); animation:pulse 2s infinite; }
-  .badge.plus { background:var(--gold-grad); color:#000; box-shadow:0 0 8px rgba(255,215,0,0.7); }
+  .badge.plus { background:var(--gold-grad); color:#000; }
+  .badge.banned { background:#444; }
   @keyframes pulse { 0%,100%{box-shadow:0 0 6px rgba(255,74,74,0.6);} 50%{box-shadow:0 0 14px rgba(255,74,74,1);} }
 
-  /* === CHAT AREA === */
-  .chat-area { flex:1; display:flex; flex-direction:column; background:var(--bg); position:relative; transition:background 0.3s; }
-  .chat-header { padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; transition:background 0.3s; }
-  .back-btn { display:none; background:none; border:none; color:var(--accent); font-size:24px; cursor:pointer; padding:0 8px; }
-  @media (max-width:700px){ .back-btn{ display:block; } }
-  .header-avatar { width:44px; height:44px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:18px; overflow:hidden; color:#fff; font-weight:600; position:relative; cursor:pointer; }
+  /* CHAT AREA */
+  .chat-area { flex:1; display:flex; flex-direction:column; background:var(--bg); position:absolute; inset:0; transform:translateX(100%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1),background 0.3s; z-index:6; }
+  .chat-area.open { transform:translateX(0); }
+  @media (min-width:700px) {
+    .chat-area { position:relative; inset:auto; transform:none !important; }
+  }
+  .chat-header { padding:calc(10px + var(--safe-top)) 12px 10px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; min-height:var(--header-h); }
+  .back-btn { display:flex; background:none; border:none; color:var(--accent); font-size:24px; cursor:pointer; padding:6px 8px; margin-left:-6px; }
+  @media (min-width:700px) { .back-btn { display:none; } }
+  .header-avatar { width:42px; height:42px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:18px; overflow:hidden; color:#fff; font-weight:600; flex-shrink:0; cursor:pointer; }
   .header-avatar img { width:100%; height:100%; object-fit:cover; }
   .header-info { cursor:pointer; flex:1; min-width:0; }
-  .header-info h3 { font-size:16px; font-weight:600; display:flex; align-items:center; gap:5px; }
+  .header-info h3 { font-size:16px; font-weight:600; display:flex; align-items:center; gap:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .header-info .status { color:var(--accent); font-size:12px; margin-top:1px; }
-  .chat-actions { display:flex; gap:4px; }
-  .chat-actions button { background:none; border:none; color:var(--accent); font-size:18px; cursor:pointer; padding:8px; border-radius:50%; transition:0.2s; }
-  .chat-actions button:hover { background:var(--panel2); }
+  .chat-actions { display:flex; gap:2px; }
+  .chat-actions button { background:none; border:none; color:var(--accent); font-size:18px; cursor:pointer; padding:9px; border-radius:50%; }
+  .chat-actions button:active { background:var(--panel2); }
 
-  .messages { flex:1; padding:16px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; position:relative; background-image:var(--wallpaper); }
+  .messages { flex:1; padding:14px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; background-image:var(--wallpaper); -webkit-overflow-scrolling:touch; }
   .messages::-webkit-scrollbar { width:6px; }
   .messages::-webkit-scrollbar-thumb { background:#2b3a4a; border-radius:3px; }
 
   .date-divider { align-self:center; padding:4px 12px; background:var(--panel); color:var(--text2); border-radius:12px; font-size:12px; margin:12px 0 6px; box-shadow:0 2px 6px rgba(0,0,0,0.2); }
 
-  .msg-wrap { display:flex; flex-direction:column; max-width:75%; position:relative; }
+  .msg-wrap { display:flex; flex-direction:column; max-width:82%; position:relative; }
+  @media (min-width:700px) { .msg-wrap { max-width:70%; } }
   .msg-wrap.me { align-self:flex-end; }
   .msg-wrap.you { align-self:flex-start; }
-  .msg { padding:8px 14px; border-radius:16px; font-size:14.5px; line-height:1.4; word-wrap:break-word; animation:pop 0.2s ease; position:relative; cursor:pointer; }
+  .msg { padding:8px 12px; border-radius:16px; font-size:15px; line-height:1.35; word-wrap:break-word; animation:pop 0.2s; position:relative; cursor:pointer; }
   @keyframes pop { from{transform:scale(0.95);opacity:0;} to{transform:scale(1);opacity:1;} }
   .msg.me { background:var(--msg-out); color:#fff; border-bottom-right-radius:5px; }
   .msg.you { background:var(--msg-in); color:var(--text); border-bottom-left-radius:5px; }
@@ -135,59 +166,55 @@
   .msg.edited::after { content:' (изм.)'; font-size:10px; opacity:0.5; }
   .msg .reply-to { border-left:3px solid var(--accent); padding:4px 8px; margin-bottom:6px; background:rgba(100,181,239,0.1); border-radius:6px; font-size:12px; }
   .msg .reply-to .author { color:var(--accent); font-weight:600; }
-  .msg img.msg-img { max-width:100%; border-radius:10px; margin:-4px -8px; display:block; cursor:pointer; }
+  .msg img.msg-img { max-width:100%; border-radius:10px; margin:-2px -6px; display:block; cursor:pointer; }
   .msg .file-box { display:flex; align-items:center; gap:10px; padding:6px 0; }
   .msg .file-box .file-icon { font-size:28px; }
   .msg .file-box .file-info { flex:1; min-width:0; }
   .msg .file-box .file-name { font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .msg .forwarded { font-size:11px; color:var(--accent); margin-bottom:4px; font-style:italic; }
   .msg .mention { color:var(--accent); font-weight:600; cursor:pointer; }
+  .msg audio { max-width:220px; height:36px; }
 
-  .msg-toolbar { position:absolute; top:50%; transform:translateY(-50%); display:none; gap:4px; background:var(--panel); border-radius:20px; padding:4px; box-shadow:0 4px 14px rgba(0,0,0,0.3); z-index:20; }
-  .msg-wrap.me .msg-toolbar { left:-140px; }
-  .msg-wrap.you .msg-toolbar { right:-140px; }
+  .msg-toolbar { position:absolute; top:50%; transform:translateY(-50%); display:none; gap:2px; background:var(--panel); border-radius:20px; padding:3px; box-shadow:0 4px 14px rgba(0,0,0,0.4); z-index:20; }
+  .msg-wrap.me .msg-toolbar { left:-115px; }
+  .msg-wrap.you .msg-toolbar { right:-115px; }
   .msg-wrap.show-toolbar .msg-toolbar { display:flex; animation:pop 0.15s; }
-  .msg-toolbar button { background:none; border:none; cursor:pointer; padding:6px 9px; border-radius:50%; font-size:15px; transition:0.15s; }
-  .msg-toolbar button:hover { background:var(--panel2); transform:scale(1.15); }
+  .msg-toolbar button { background:none; border:none; cursor:pointer; padding:6px 7px; border-radius:50%; font-size:14px; }
+  .msg-toolbar button:active { background:var(--panel2); }
 
   .reactions { display:flex; gap:4px; margin-top:4px; flex-wrap:wrap; }
-  .reaction { background:var(--panel); border-radius:12px; padding:3px 8px; font-size:12px; cursor:pointer; border:1px solid var(--border); display:flex; align-items:center; gap:3px; transition:0.15s; }
-  .reaction:hover { transform:scale(1.1); background:var(--accent-bg); border-color:var(--accent); }
+  .reaction { background:var(--panel); border-radius:12px; padding:3px 8px; font-size:12px; cursor:pointer; border:1px solid var(--border); display:flex; align-items:center; gap:3px; }
   .reaction.mine { background:var(--accent-bg); border-color:var(--accent); }
 
-  /* POLLS */
-  .poll { padding:6px 0; min-width:250px; }
-  .poll-question { font-weight:600; margin-bottom:8px; }
-  .poll-option { padding:8px 12px; background:rgba(255,255,255,0.08); border-radius:8px; margin-bottom:5px; cursor:pointer; position:relative; overflow:hidden; transition:0.2s; font-size:13px; }
-  .poll-option:hover { background:rgba(255,255,255,0.15); }
+  .poll { padding:6px 0; min-width:220px; }
+  .poll-question { font-weight:600; margin-bottom:8px; font-size:14px; }
+  .poll-option { padding:8px 12px; background:rgba(255,255,255,0.08); border-radius:8px; margin-bottom:5px; cursor:pointer; position:relative; overflow:hidden; font-size:13px; }
   .poll-option.voted { border:1px solid var(--accent); }
   .poll-bar { position:absolute; inset:0; background:rgba(100,181,239,0.25); z-index:0; }
   .poll-option span { position:relative; z-index:1; }
   .poll-count { float:right; color:var(--text2); font-size:12px; }
 
-  .typing-indicator { padding:6px 16px 0; color:var(--accent); font-size:13px; font-style:italic; min-height:0; overflow:hidden; transition:0.2s; }
-  .typing-indicator.show { min-height:22px; padding-bottom:6px; }
+  .typing-indicator { padding:0 16px; color:var(--accent); font-size:13px; font-style:italic; min-height:0; overflow:hidden; transition:0.2s; }
+  .typing-indicator.show { min-height:22px; padding:4px 16px 6px; }
 
-  .pinned-banner { padding:8px 16px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; }
+  .pinned-banner { padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; }
   .pinned-banner .pin-icon { color:var(--accent); font-size:16px; }
   .pinned-banner .pin-text { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text2); }
   .pinned-banner .pin-text b { color:var(--text); }
-  .pinned-banner button { background:none; border:none; color:var(--text2); font-size:16px; cursor:pointer; }
+  .pinned-banner button { background:none; border:none; color:var(--text2); font-size:16px; cursor:pointer; padding:4px; }
 
-  .input-area { padding:10px 14px; background:var(--panel); display:flex; gap:8px; align-items:center; transition:background 0.3s; }
-  .input-area input { flex:1; padding:12px 18px; border:none; border-radius:24px; background:var(--panel2); color:var(--text); outline:none; font-size:14.5px; }
-  .input-area input::placeholder { color:var(--text3); }
-  .icon-btn { width:44px; height:44px; border:none; border-radius:50%; background:var(--panel2); color:var(--accent); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s; flex-shrink:0; }
-  .icon-btn:hover { background:var(--accent-bg); color:#fff; transform:scale(1.05); }
+  .input-area { padding:8px 10px calc(8px + var(--safe-bottom)); background:var(--panel); display:flex; gap:6px; align-items:center; min-height:var(--input-h); }
+  .input-area input { flex:1; padding:11px 14px; border:none; border-radius:22px; background:var(--panel2); color:var(--text); outline:none; font-size:15px; min-width:0; }
+  .icon-btn { width:42px; height:42px; border:none; border-radius:50%; background:var(--panel2); color:var(--accent); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.15s; flex-shrink:0; }
+  .icon-btn:active { transform:scale(0.9); }
   .send-btn { background:var(--accent-bg); color:#fff; }
-  .send-btn:hover { background:var(--accent-hover); }
   .send-btn.recording { background:var(--red); animation:pulse 1s infinite; }
 
   .emoji-picker-container { position:relative; }
-  emoji-picker { position:absolute; bottom:54px; right:0; z-index:100; --background:var(--panel); --border-color:var(--border); --indicator-color:var(--accent); --input-border-color:var(--border); --input-background:var(--panel2); --input-color:var(--text); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,0.4); }
+  emoji-picker { position:absolute; bottom:54px; right:0; z-index:100; --background:var(--panel); --border-color:var(--border); --indicator-color:var(--accent); --input-border-color:var(--border); --input-background:var(--panel2); --input-color:var(--text); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,0.4); max-width:calc(100vw - 20px); }
 
   .empty-state { flex:1; display:flex; align-items:center; justify-content:center; color:var(--text3); font-size:15px; text-align:center; padding:20px; flex-direction:column; gap:12px; }
-  .empty-state .icon { font-size:64px; opacity:0.4; }
+  .empty-state .icon { font-size:56px; opacity:0.4; }
 
   .reply-preview { padding:8px 14px; background:var(--panel); border-top:1px solid var(--border); display:none; align-items:center; gap:10px; font-size:13px; }
   .reply-preview.show { display:flex; }
@@ -198,104 +225,123 @@
   .reply-preview button { background:none; border:none; color:var(--text2); font-size:20px; cursor:pointer; }
 
   /* MODALS */
-  .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:1000; justify-content:center; align-items:center; padding:20px; overflow-y:auto; }
+  .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:1000; justify-content:center; align-items:center; padding:16px; overflow-y:auto; }
   .modal.active { display:flex; animation:fadeIn 0.2s; }
   @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
-  .modal-content { background:var(--panel); padding:26px; border-radius:20px; width:100%; max-width:460px; color:var(--text); display:flex; flex-direction:column; gap:12px; margin:auto; animation:slideUp 0.25s; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto; }
+  .modal-content { background:var(--panel); padding:22px; border-radius:20px; width:100%; max-width:460px; color:var(--text); display:flex; flex-direction:column; gap:11px; margin:auto; animation:slideUp 0.25s; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto; padding-top:calc(22px + var(--safe-top)); padding-bottom:calc(22px + var(--safe-bottom)); }
   @keyframes slideUp { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
   .modal-content::-webkit-scrollbar { width:5px; }
   .modal-content::-webkit-scrollbar-thumb { background:#2b3a4a; border-radius:3px; }
-  .modal-content h2 { font-size:22px; margin-bottom:6px; font-weight:700; }
-  .modal-content input, .modal-content textarea, .modal-content select { padding:13px 16px; border:2px solid transparent; border-radius:12px; background:var(--panel2); color:var(--text); outline:none; font-size:14px; width:100%; font-family:inherit; resize:vertical; transition:0.2s; }
+  .modal-content h2 { font-size:20px; margin-bottom:4px; font-weight:700; }
+  .modal-content input, .modal-content textarea, .modal-content select { padding:13px 16px; border:2px solid transparent; border-radius:12px; background:var(--panel2); color:var(--text); outline:none; font-size:16px; width:100%; font-family:inherit; resize:vertical; }
   .modal-content input:focus, .modal-content textarea:focus { border-color:var(--accent); }
-  .modal-content button { padding:13px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:14px; font-weight:600; cursor:pointer; transition:0.2s; }
-  .modal-content button:hover { background:var(--accent-hover); transform:translateY(-1px); }
+  .modal-content button { padding:13px; border:none; border-radius:12px; background:var(--accent-bg); color:#fff; font-size:15px; font-weight:600; cursor:pointer; transition:0.15s; }
+  .modal-content button:active { transform:scale(0.98); }
   .modal-content button.danger { background:var(--red); }
   .modal-content button.ghost { background:var(--panel2); color:var(--text); }
   .modal-content button.blue { background:var(--blue-grad); }
   .modal-content button.gold { background:var(--gold-grad); color:#000; }
-  .modal-content .avatar-preview { width:110px; height:110px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:42px; margin:0 auto; overflow:hidden; font-weight:600; position:relative; cursor:pointer; }
-  .modal-content .avatar-preview img { width:100%; height:100%; object-fit:cover; }
-  .avatar-preview .edit-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; opacity:0; cursor:pointer; transition:0.2s; font-size:28px; }
-  .avatar-preview:hover .edit-overlay { opacity:1; }
-
-  .modal-content .section-title { font-size:11px; color:var(--accent); text-transform:uppercase; font-weight:700; margin-top:8px; letter-spacing:1px; }
-  .modal-content .setting-row { display:flex; justify-content:space-between; align-items:center; padding:13px 16px; background:var(--panel2); border-radius:12px; cursor:pointer; transition:0.2s; }
-  .modal-content .setting-row:hover { background:var(--hover); }
+  .modal-content .section-title { font-size:11px; color:var(--accent); text-transform:uppercase; font-weight:700; margin-top:6px; letter-spacing:1px; }
+  .modal-content .setting-row { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:var(--panel2); border-radius:12px; cursor:pointer; }
   .setting-row .label { font-size:14px; display:flex; align-items:center; gap:10px; }
-  .setting-row .value { font-size:13px; color:var(--text2); }
+
+  .avatar-preview { width:100px; height:100px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:38px; margin:0 auto; overflow:hidden; font-weight:600; position:relative; cursor:pointer; }
+  .avatar-preview img { width:100%; height:100%; object-fit:cover; }
+  .avatar-preview .edit-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; opacity:0; transition:0.2s; font-size:26px; }
+  .avatar-preview:active .edit-overlay { opacity:1; }
 
   .switch { position:relative; width:46px; height:26px; flex-shrink:0; }
-  .switch input { opacity:0; width:0; height:0; }
+  .switch input { opacity:0; width:0; height:0; position:absolute; }
   .switch .slider { position:absolute; inset:0; background:#444; border-radius:26px; cursor:pointer; transition:0.3s; }
   .switch .slider::before { content:''; position:absolute; width:20px; height:20px; background:#fff; border-radius:50%; left:3px; top:3px; transition:0.3s; }
   .switch input:checked + .slider { background:#2b7fff; }
   .switch input:checked + .slider::before { transform:translateX(20px); }
 
-  .admin-user { display:flex; align-items:center; gap:10px; padding:12px; background:var(--panel2); border-radius:12px; margin-top:6px; transition:0.15s; }
-  .admin-user:hover { background:var(--hover); }
+  .admin-user { display:flex; align-items:center; gap:10px; padding:11px; background:var(--panel2); border-radius:12px; margin-top:6px; }
   .admin-user .info { flex:1; min-width:0; }
   .admin-user .uname { font-size:14px; font-weight:600; display:flex; align-items:center; gap:4px; }
   .admin-user .nick { color:var(--text2); font-size:12px; }
-  .admin-user .btn-mini { padding:7px 12px; border:none; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; color:#fff; transition:0.2s; }
-  .admin-user .btn-mini:hover { transform:scale(1.05); }
+  .admin-user .btn-mini { padding:7px 10px; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; color:#fff; flex-shrink:0; }
   .admin-user .btn-blue { background:var(--blue-grad); }
   .admin-user .btn-blue.off { background:#444; }
   .admin-user .btn-gold { background:var(--gold-grad); color:#000; }
   .admin-user .btn-gold.off { background:#444; color:#fff; }
+  .admin-user .btn-red { background:var(--red-grad); }
+  .admin-user .btn-red.off { background:#444; }
 
-  .user-profile-view { display:flex; flex-direction:column; align-items:center; gap:12px; text-align:center; padding:10px 0; }
-  .user-profile-view .avatar-lg { width:120px; height:120px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:48px; overflow:hidden; font-weight:600; box-shadow:0 8px 24px rgba(100,181,239,0.3); position:relative; }
+  .user-profile-view { display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; padding:8px 0; }
+  .user-profile-view .avatar-lg { width:110px; height:110px; border-radius:50%; background:var(--accent-bg); display:flex; align-items:center; justify-content:center; font-size:44px; overflow:hidden; font-weight:600; position:relative; }
   .user-profile-view .avatar-lg img { width:100%; height:100%; object-fit:cover; }
-  .user-profile-view .avatar-lg.plus-border { border:4px solid transparent; background-clip:padding-box; box-shadow:0 0 0 4px transparent, 0 0 20px rgba(255,215,0,0.5); background-image:linear-gradient(var(--panel),var(--panel)),var(--gold-grad); background-origin:border-box; background-clip:padding-box,border-box; }
-  .user-profile-view .name-lg { font-size:22px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .user-profile-view .avatar-lg.plus-border { background:linear-gradient(var(--panel),var(--panel)) padding-box,var(--gold-grad) border-box; border:4px solid transparent; box-shadow:0 0 20px rgba(255,215,0,0.5); }
+  .user-profile-view .name-lg { font-size:20px; font-weight:700; display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center; }
   .user-profile-view .nick-lg { color:var(--accent); font-size:14px; }
   .user-profile-view .bio-lg { color:var(--text2); font-size:14px; margin-top:6px; max-width:320px; }
   .user-profile-view .status-lg { color:var(--text2); font-size:12px; }
-  .user-profile-view .actions { display:flex; gap:8px; width:100%; margin-top:8px; }
+  .user-profile-view .stats { display:flex; gap:16px; margin:8px 0; }
+  .user-profile-view .stats > div { text-align:center; }
+  .user-profile-view .stats .num { font-size:20px; font-weight:700; color:var(--accent); }
+  .user-profile-view .stats .lbl { font-size:11px; color:var(--text2); text-transform:uppercase; }
+  .user-profile-view .actions { display:flex; gap:8px; width:100%; margin-top:6px; }
 
-  .toggle-group { display:flex; gap:8px; }
-  .toggle-group button { flex:1; padding:11px; background:var(--panel2); border-radius:10px; border:2px solid transparent; color:var(--text); font-size:13px; cursor:pointer; transition:0.2s; }
-  .toggle-group button:hover { background:var(--hover); }
+  .toggle-group { display:flex; gap:6px; flex-wrap:wrap; }
+  .toggle-group button { flex:1; min-width:80px; padding:10px; background:var(--panel2); border-radius:10px; border:2px solid transparent; color:var(--text); font-size:13px; cursor:pointer; }
   .toggle-group button.active { background:var(--accent-bg); border-color:var(--accent); color:#fff; }
 
   .img-viewer { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; justify-content:center; align-items:center; padding:20px; }
   .img-viewer.active { display:flex; }
   .img-viewer img { max-width:100%; max-height:100%; border-radius:8px; }
-  .img-viewer .close { position:absolute; top:20px; right:20px; color:#fff; font-size:32px; cursor:pointer; background:rgba(0,0,0,0.5); border:none; width:44px; height:44px; border-radius:50%; }
+  .img-viewer .close { position:absolute; top:calc(20px + var(--safe-top)); right:20px; color:#fff; font-size:28px; background:rgba(0,0,0,0.5); border:none; width:42px; height:42px; border-radius:50%; cursor:pointer; }
 
-  /* STICKER PANEL */
-  .sticker-panel { display:none; position:absolute; bottom:70px; left:14px; right:14px; background:var(--panel); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,0.4); padding:12px; max-height:280px; overflow-y:auto; z-index:100; }
+  .sticker-panel { display:none; position:absolute; bottom:calc(var(--input-h) + var(--safe-bottom)); left:10px; right:10px; background:var(--panel); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,0.4); padding:12px; max-height:280px; overflow-y:auto; z-index:100; }
   .sticker-panel.show { display:block; animation:slideUp 0.2s; }
-  .sticker-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
-  .sticker-item { background:var(--panel2); border-radius:10px; padding:8px; text-align:center; cursor:pointer; transition:0.2s; border:2px solid transparent; }
-  .sticker-item:hover { border-color:var(--accent); transform:scale(1.05); }
-  .sticker-item img { width:100%; height:50px; object-fit:contain; }
+  .sticker-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(60px,1fr)); gap:8px; }
+  .sticker-item { background:var(--panel2); border-radius:10px; padding:6px; text-align:center; cursor:pointer; border:2px solid transparent; }
   .sticker-item.premium { border-color:var(--yellow); }
-  .sticker-item.premium:hover { border-color:#ffd700; box-shadow:0 0 12px rgba(255,215,0,0.5); }
-  .sticker-item .lock { position:absolute; font-size:14px; }
+  .sticker-item img { width:100%; height:48px; object-fit:contain; }
 
-  /* PLUS PAGE */
   .plus-page { display:none; position:fixed; inset:0; background:var(--bg); z-index:1500; overflow-y:auto; }
   .plus-page.active { display:block; }
-  .plus-content { max-width:500px; margin:0 auto; padding:40px 20px; text-align:center; }
-  .plus-crown { font-size:80px; filter:drop-shadow(0 0 20px rgba(255,215,0,0.8)); animation:float 3s ease-in-out infinite; }
+  .plus-content { max-width:500px; margin:0 auto; padding:30px 20px; padding-top:calc(30px + var(--safe-top)); text-align:center; }
+  .plus-crown { font-size:70px; filter:drop-shadow(0 0 20px rgba(255,215,0,0.8)); animation:float 3s ease-in-out infinite; }
   @keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
-  .plus-title { font-size:36px; font-weight:800; background:var(--gold-grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin:16px 0; letter-spacing:-1px; }
-  .plus-sub { color:var(--text2); font-size:15px; margin-bottom:32px; }
-  .plus-feature { display:flex; align-items:center; gap:14px; padding:16px; background:var(--panel); border-radius:14px; margin-bottom:10px; text-align:left; }
-  .plus-feature .fi { font-size:28px; }
-  .plus-feature .ft { flex:1; }
-  .plus-feature .ft .t1 { font-weight:600; margin-bottom:2px; }
-  .plus-feature .ft .t2 { color:var(--text2); font-size:13px; }
+  .plus-title { font-size:32px; font-weight:800; background:var(--gold-grad); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin:12px 0; }
+  .plus-sub { color:var(--text2); font-size:14px; margin-bottom:24px; }
+  .plus-feature { display:flex; align-items:center; gap:12px; padding:14px; background:var(--panel); border-radius:12px; margin-bottom:8px; text-align:left; }
+  .plus-feature .fi { font-size:26px; }
+  .plus-feature .ft .t1 { font-weight:600; }
+  .plus-feature .ft .t2 { color:var(--text2); font-size:12px; }
   .plus-badge { display:inline-block; padding:4px 12px; background:var(--gold-grad); color:#000; border-radius:20px; font-weight:700; font-size:12px; }
-  .plus-close { position:fixed; top:20px; right:20px; width:44px; height:44px; border-radius:50%; background:var(--panel2); border:none; color:var(--text); font-size:22px; cursor:pointer; z-index:10; }
+  .plus-close { position:fixed; top:calc(16px + var(--safe-top)); right:16px; width:42px; height:42px; border-radius:50%; background:var(--panel2); border:none; color:var(--text); font-size:20px; cursor:pointer; z-index:10; }
 
-  .premium-emoji-row { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
-  .premium-emoji { width:44px; height:44px; border-radius:10px; background:var(--panel2); display:flex; align-items:center; justify-content:center; font-size:22px; cursor:pointer; border:2px solid transparent; transition:0.2s; }
-  .premium-emoji:hover { transform:scale(1.15); border-color:var(--yellow); }
+  .premium-emoji-row { display:flex; gap:6px; flex-wrap:wrap; margin:6px 0; justify-content:center; }
+  .premium-emoji { width:42px; height:42px; border-radius:10px; background:var(--panel2); display:flex; align-items:center; justify-content:center; font-size:20px; cursor:pointer; border:2px solid transparent; }
   .premium-emoji.selected { border-color:#ffd700; box-shadow:0 0 12px rgba(255,215,0,0.6); }
-  .premium-emoji.locked { opacity:0.4; cursor:not-allowed; }
+  .premium-emoji.locked { opacity:0.4; }
+
+  /* STORY VIEWER */
+  .story-viewer { display:none; position:fixed; inset:0; background:#000; z-index:2500; flex-direction:column; }
+  .story-viewer.active { display:flex; }
+  .story-progress { display:flex; gap:4px; padding:10px 12px; padding-top:calc(10px + var(--safe-top)); }
+  .story-progress .bar { flex:1; height:3px; background:rgba(255,255,255,0.3); border-radius:2px; overflow:hidden; }
+  .story-progress .bar.active .fill { height:100%; background:#fff; width:0; animation:storyProgress 5s linear forwards; }
+  @keyframes storyProgress { to { width:100%; } }
+  .story-viewer .head { display:flex; align-items:center; gap:10px; padding:10px 14px; color:#fff; }
+  .story-viewer .head .ava { width:36px; height:36px; border-radius:50%; overflow:hidden; background:#333; display:flex; align-items:center; justify-content:center; }
+  .story-viewer .head .ava img { width:100%; height:100%; object-fit:cover; }
+  .story-viewer .head .close { margin-left:auto; background:none; border:none; color:#fff; font-size:24px; cursor:pointer; }
+  .story-viewer .content { flex:1; display:flex; align-items:center; justify-content:center; padding:10px; }
+  .story-viewer .content img { max-width:100%; max-height:100%; object-fit:contain; }
+  .story-viewer .nav { position:absolute; top:0; bottom:0; width:30%; cursor:pointer; z-index:5; }
+  .story-viewer .nav.left { left:0; }
+  .story-viewer .nav.right { right:0; }
+
+  /* GIF panel */
+  .gif-panel { display:none; position:absolute; bottom:calc(var(--input-h) + var(--safe-bottom)); left:10px; right:10px; background:var(--panel); border-radius:14px; padding:10px; z-index:100; max-height:300px; overflow-y:auto; }
+  .gif-panel.show { display:block; }
+  .gif-search { width:100%; padding:10px 14px; border-radius:10px; border:none; background:var(--panel2); color:var(--text); outline:none; margin-bottom:8px; font-size:14px; }
+  .gif-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:6px; }
+  .gif-item { cursor:pointer; border-radius:8px; overflow:hidden; }
+  .gif-item img { width:100%; height:100px; object-fit:cover; display:block; }
 </style>
 </head>
 <body>
@@ -305,7 +351,7 @@
   <!-- AUTH -->
   <div class="auth-screen" id="authScreen">
     <h1>🚀 Spacegram</h1>
-    <input type="email" id="email" placeholder="Email">
+    <input type="email" id="email" placeholder="Email" autocomplete="email">
     <input type="password" id="password" placeholder="Пароль (мин. 6 символов)">
     <input type="text" id="usernameInput" placeholder="@username (латиница, цифры)">
     <div class="error" id="authError"></div>
@@ -326,6 +372,9 @@
           <div class="user-avatar-small" id="myAvatar" onclick="openProfileModal()">?</div>
         </div>
       </div>
+
+      <div class="stories-row" id="storiesRow"></div>
+
       <div class="folders" id="folders">
         <button class="folder-btn active" data-folder="all">Все</button>
         <button class="folder-btn" data-folder="private">Личные</button>
@@ -371,8 +420,13 @@
       </div>
 
       <div class="sticker-panel" id="stickerPanel">
-        <div class="section-title" style="color:var(--accent);font-size:11px;font-weight:700;margin-bottom:8px">СТИКЕРЫ</div>
+        <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:8px">СТИКЕРЫ</div>
         <div class="sticker-grid" id="stickerGrid"></div>
+      </div>
+
+      <div class="gif-panel" id="gifPanel">
+        <input type="text" class="gif-search" id="gifSearch" placeholder="Поиск GIF...">
+        <div class="gif-grid" id="gifGrid"></div>
       </div>
 
       <div class="input-area" id="inputArea" style="display:none">
@@ -382,7 +436,8 @@
           <emoji-picker id="emojiPicker" locale="ru" style="display:none"></emoji-picker>
         </div>
         <button class="icon-btn" id="attachBtn" title="Прикрепить">📎</button>
-        <input type="text" id="messageInput" placeholder="Напиши сообщение...">
+        <input type="text" id="messageInput" placeholder="Сообщение...">
+        <button class="icon-btn" id="gifBtn" title="GIF">🎬</button>
         <button class="icon-btn" id="micBtn" title="Голосовое">🎤</button>
         <button class="icon-btn send-btn" id="sendBtn">➤</button>
       </div>
@@ -401,6 +456,19 @@
   <img id="imgViewerImg" src="">
 </div>
 
+<!-- STORY VIEWER -->
+<div class="story-viewer" id="storyViewer">
+  <div class="story-progress" id="storyProgress"></div>
+  <div class="head">
+    <div class="ava" id="storyAva"></div>
+    <div style="color:#fff;font-weight:600" id="storyName"></div>
+    <button class="close" onclick="closeStoryViewer()">✕</button>
+  </div>
+  <div class="content" id="storyContent"></div>
+  <div class="nav left" onclick="prevStory()"></div>
+  <div class="nav right" onclick="nextStory()"></div>
+</div>
+
 <!-- PROFILE MODAL -->
 <div class="modal" id="profileModal">
   <div class="modal-content">
@@ -411,10 +479,11 @@
     <input type="text" id="profileName" placeholder="Имя">
     <input type="text" id="profileUsername" placeholder="@username" disabled style="opacity:0.6">
     <input type="text" id="profilePhone" placeholder="Телефон">
-    <textarea id="profileBio" placeholder="О себе..." rows="3"></textarea>
+    <textarea id="profileBio" placeholder="О себе..." rows="2"></textarea>
     <div class="section-title">Премиум эмодзи (Space Plus)</div>
     <div class="premium-emoji-row" id="premiumEmojiRow"></div>
     <button id="saveProfileBtn">💾 Сохранить</button>
+    <button class="ghost" id="addStoryBtn">📸 Добавить историю</button>
     <button class="danger" id="logoutBtn">🚪 Выйти</button>
     <button class="ghost" id="closeProfileBtn">Закрыть</button>
   </div>
@@ -434,7 +503,7 @@
       <button data-wp="default">Стандарт</button>
       <button data-wp="gradient1">Градиент</button>
       <button data-wp="gradient2">Космос</button>
-      <button data-wp="custom">Свои</button>
+      <button data-wp="custom">Свои 👑</button>
     </div>
     <div class="section-title">Язык</div>
     <select id="languageSelect">
@@ -442,20 +511,10 @@
       <option value="en">🇬🇧 English</option>
       <option value="uk">🇺🇦 Українська</option>
     </select>
-    <div class="section-title">Уведомления</div>
-    <div class="setting-row">
-      <div class="label">🔔 Уведомления</div>
-      <label class="switch"><input type="checkbox" id="notifToggle" checked><span class="slider"></span></label>
-    </div>
-    <div class="setting-row">
-      <div class="label">✓✓ Отчёты о прочтении</div>
-      <label class="switch"><input type="checkbox" id="readReceiptsToggle" checked><span class="slider"></span></label>
-    </div>
-    <div class="setting-row">
-      <div class="label">⌨️ Отправка по Enter</div>
-      <label class="switch"><input type="checkbox" id="enterSendToggle" checked><span class="slider"></span></label>
-    </div>
-    <div class="section-title">Данные</div>
+    <div class="section-title">Настройки</div>
+    <div class="setting-row"><div class="label">🔔 Уведомления</div><label class="switch"><input type="checkbox" id="notifToggle" checked><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">✓✓ Отчёты о прочтении</div><label class="switch"><input type="checkbox" id="readReceiptsToggle" checked><span class="slider"></span></label></div>
+    <div class="setting-row"><div class="label">⌨️ Отправка по Enter</div><label class="switch"><input type="checkbox" id="enterSendToggle" checked><span class="slider"></span></label></div>
     <button class="ghost" id="clearChatsBtn">🗑 Очистить все чаты</button>
     <button class="ghost" id="closeSettingsBtn">Закрыть</button>
   </div>
@@ -466,7 +525,7 @@
   <div class="modal-content" id="userProfileContent"></div>
 </div>
 
-<!-- GROUP/CREATE MODAL -->
+<!-- GROUP MODAL -->
 <div class="modal" id="groupModal">
   <div class="modal-content">
     <h2 id="groupModalTitle">👥 Новая группа</h2>
@@ -483,17 +542,36 @@
   </div>
 </div>
 
-<!-- CREATE POLL MODAL -->
+<!-- POLL MODAL -->
 <div class="modal" id="pollModal">
   <div class="modal-content">
     <h2>📊 Новый опрос</h2>
     <input type="text" id="pollQuestion" placeholder="Вопрос">
     <input type="text" class="poll-opt-inp" placeholder="Вариант 1">
     <input type="text" class="poll-opt-inp" placeholder="Вариант 2">
-    <input type="text" class="poll-opt-inp" placeholder="Вариант 3 (необязательно)">
-    <input type="text" class="poll-opt-inp" placeholder="Вариант 4 (необязательно)">
-    <button id="createPollBtn">Создать опрос</button>
+    <input type="text" class="poll-opt-inp" placeholder="Вариант 3">
+    <input type="text" class="poll-opt-inp" placeholder="Вариант 4">
+    <button id="createPollBtn">Создать</button>
     <button class="ghost" onclick="document.getElementById('pollModal').classList.remove('active')">Отмена</button>
+  </div>
+</div>
+
+<!-- GIFT MODAL -->
+<div class="modal" id="giftModal">
+  <div class="modal-content">
+    <h2>🎁 Подарить</h2>
+    <p style="color:var(--text2);font-size:13px">Подарок будет виден в профиле получателя</p>
+    <div class="toggle-group" id="giftPicker" style="flex-wrap:wrap">
+      <button data-gift="🌹">🌹 Роза</button>
+      <button data-gift="🧸">🧸 Мишка</button>
+      <button data-gift="💎">💎 Алмаз</button>
+      <button data-gift="👑">👑 Корона</button>
+      <button data-gift="🚀">🚀 Ракета</button>
+      <button data-gift="🍰">🍰 Торт</button>
+    </div>
+    <input type="text" id="giftMessage" placeholder="Сообщение (необязательно)">
+    <button class="gold" id="sendGiftBtn">🎁 Отправить подарок</button>
+    <button class="ghost" onclick="document.getElementById('giftModal').classList.remove('active')">Отмена</button>
   </div>
 </div>
 
@@ -507,8 +585,12 @@
       <button id="adminLoginBtn" style="width:100%;margin-top:8px">Войти как админ</button>
     </div>
     <div id="adminPanelSection" style="display:none">
-      <input type="text" id="adminSearchUser" placeholder="Поиск @username...">
-      <div id="adminUserList" style="max-height:300px;overflow-y:auto;margin-top:10px"></div>
+      <div class="toggle-group" id="adminTabs">
+        <button data-tab="users" class="active">👥 Юзеры</button>
+        <button data-tab="bans">🚫 Баны</button>
+        <button data-tab="stats">📊 Стата</button>
+      </div>
+      <div id="adminTabContent"></div>
       <button class="ghost" id="adminLogoutBtn" style="margin-top:12px">Выйти из админки</button>
     </div>
     <button class="ghost" id="adminCloseBtn">Закрыть</button>
@@ -523,12 +605,12 @@
     <div class="plus-title">Space Plus</div>
     <div class="plus-sub">Премиум-возможности для настоящих звёзд</div>
     <div id="plusStatus"></div>
-    <div class="plus-feature"><div class="fi">🎨</div><div class="ft"><div class="t1">Премиум эмодзи</div><div class="t2">Уникальные эмодзи в профиле и сообщениях</div></div></div>
-    <div class="plus-feature"><div class="fi">👑</div><div class="ft"><div class="t1">Золотая рамка</div><div class="t2">Особый аватар с золотой обводкой</div></div></div>
-    <div class="plus-feature"><div class="fi">⭐</div><div class="ft"><div class="t1">Эксклюзивные стикеры</div><div class="t2">Премиум-стикеры в чатах</div></div></div>
-    <div class="plus-feature"><div class="fi">🎭</div><div class="ft"><div class="t1">Кастомные обои</div><div class="t2">Свои обои для каждого чата</div></div></div>
-    <div class="plus-feature"><div class="fi">🚀</div><div class="ft"><div class="t1">Ранний доступ</div><div class="t2">Новые функции раньше всех</div></div></div>
-    <div id="plusAction" style="margin-top:24px"></div>
+    <div class="plus-feature"><div class="fi">🎨</div><div class="ft"><div class="t1">Премиум эмодзи</div><div class="t2">12 уникальных эмодзи в профиле</div></div></div>
+    <div class="plus-feature"><div class="fi">👑</div><div class="ft"><div class="t1">Золотая рамка аватара</div><div class="t2">Особый стиль профиля</div></div></div>
+    <div class="plus-feature"><div class="fi">⭐</div><div class="ft"><div class="t1">Премиум стикеры</div><div class="t2">Эксклюзивные стикеры (🚀👑💎)</div></div></div>
+    <div class="plus-feature"><div class="fi">🖼️</div><div class="ft"><div class="t1">Кастомные обои</div><div class="t2">Своя картинка для чата</div></div></div>
+    <div class="plus-feature"><div class="fi">🎁</div><div class="ft"><div class="t1">Отправка подарков</div><div class="t2">Дари подарки другим юзерам</div></div></div>
+    <div class="plus-feature"><div class="fi">📸</div><div class="ft"><div class="t1">Истории 24 часа</div><div class="t2">Расскажи что нового</div></div></div>
   </div>
 </div>
 
@@ -541,65 +623,52 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const ADMIN_SECRET = "spacegram2026";
 const CREATOR_USERNAME = "itzrealsaneghka";
 const PREMIUM_EMOJIS = ['😎','🔥','💎','👑','🚀','🌟','💫','⚡','🎯','🏆','🥇','💯'];
+const TENOR_KEY = "LIVDSRZULELA"; // публичный demo-ключ Tenor
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-let currentUser = null;
-let currentProfile = null;
-let currentChatId = null;
-let currentChatUser = null;
-let currentChatObj = null;
-let messagesChannel = null;
-let chatsChannel = null;
-let reactionsChannel = null;
-let isAdmin = false;
-let replyTo = null;
-let settings = JSON.parse(localStorage.getItem('spacegram_settings') || '{}');
-let allMessages = [];
-let allReactions = [];
-let userCache = {};
-let selectedMembers = [];
-let currentFolder = 'all';
-let allStickers = [];
-let allPolls = {};
-let mediaRecorder = null;
-let audioChunks = [];
-let isRecording = false;
-let selectedPremiumEmoji = null;
-
 const $ = id => document.getElementById(id);
 
-// ============ SETTINGS ============
+let currentUser, currentProfile, currentChatId, currentChatUser, currentChatObj;
+let messagesChannel, chatsChannel, reactionsChannel, storiesChannel;
+let isAdmin = false, replyTo = null, selectedMembers = [];
+let allMessages = [], allReactions = [], allStickers = [], allPolls = {};
+let userCache = {}, currentFolder = 'all';
+let mediaRecorder, audioChunks = [], isRecording = false;
+let selectedPremiumEmoji = null;
+let allStories = [], currentStoryIndex = 0, storyTimer;
+let settings = JSON.parse(localStorage.getItem('spacegram_settings') || '{}');
+let selectedGift = null, giftTargetId = null;
+
+// SETTINGS
 function applyTheme(t) {
   document.body.classList.toggle('light', t === 'light');
   document.querySelectorAll('#themeToggle button').forEach(b => b.classList.toggle('active', b.dataset.theme === t));
 }
 function applyWallpaper(wp) {
   const map = {
-    default: 'radial-gradient(circle at 20% 30%, rgba(100,181,239,0.05), transparent 50%), radial-gradient(circle at 80% 70%, rgba(43,82,120,0.08), transparent 50%)',
-    gradient1: 'linear-gradient(135deg, rgba(100,181,239,0.15), rgba(43,82,120,0.2))',
-    gradient2: 'radial-gradient(circle at 30% 40%, rgba(150,50,200,0.15), transparent 60%), radial-gradient(circle at 70% 80%, rgba(50,100,200,0.2), transparent 60%)'
+    default:'radial-gradient(circle at 20% 30%, rgba(100,181,239,0.05), transparent 50%), radial-gradient(circle at 80% 70%, rgba(43,82,120,0.08), transparent 50%)',
+    gradient1:'linear-gradient(135deg, rgba(100,181,239,0.15), rgba(43,82,120,0.2))',
+    gradient2:'radial-gradient(circle at 30% 40%, rgba(150,50,200,0.15), transparent 60%), radial-gradient(circle at 70% 80%, rgba(50,100,200,0.2), transparent 60%)'
   };
-  if (wp === 'custom' && settings.customWallpaper) {
-    document.querySelector('.messages')?.style.setProperty('background-image', `url(${settings.customWallpaper})`);
-  } else {
-    document.querySelector('.messages')?.style.setProperty('background-image', map[wp] || map.default);
-  }
+  if (wp === 'custom' && settings.customWallpaper) document.querySelector('.messages')?.style.setProperty('background-image', `url(${settings.customWallpaper})`);
+  else document.querySelector('.messages')?.style.setProperty('background-image', map[wp] || map.default);
   document.querySelectorAll('#wallpaperToggle button').forEach(b => b.classList.toggle('active', b.dataset.wp === wp));
 }
 function saveSettings() { localStorage.setItem('spacegram_settings', JSON.stringify(settings)); }
 
-// ============ BADGES ============
+// BADGES
 function renderBadges(p) {
+  if (!p) return '';
+  if (p.is_banned) return '<span class="badge banned" title="Забанен">🚫</span>';
   let h = '';
-  if (p?.is_creator) h += '<span class="badge creator" title="Создатель">★</span>';
-  else if (p?.is_verified) h += '<span class="badge verified" title="Подтверждён">✓</span>';
-  if (p?.is_plus) h += '<span class="badge plus" title="Space Plus">👑</span>';
-  if (p?.premium_emoji) h += `<span style="font-size:14px">${p.premium_emoji}</span>`;
+  if (p.is_creator) h += '<span class="badge creator" title="Создатель">★</span>';
+  else if (p.is_verified) h += '<span class="badge verified" title="Подтверждён">✓</span>';
+  if (p.is_plus) h += '<span class="badge plus" title="Space Plus">👑</span>';
+  if (p.premium_emoji) h += `<span style="font-size:14px">${p.premium_emoji}</span>`;
   return h;
 }
 
-// ============ AUTH ============
+// AUTH
 async function initAuth() {
   applyTheme(settings.theme || 'dark');
   applyWallpaper(settings.wallpaper || 'default');
@@ -614,15 +683,17 @@ async function enterApp() {
   await loadProfile();
   await checkAdmin();
   await loadStickers();
+  await loadStories();
   await loadChats();
   subscribeChats();
+  subscribeStories();
 }
 
 $('registerBtn').onclick = async () => {
   $('authError').textContent = '';
   const email = $('email').value.trim();
   const pass = $('password').value;
-  let uname = $('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+  const uname = $('usernameInput').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
   if (!email || !pass) return $('authError').textContent = 'Заполни email и пароль';
   if (pass.length < 6) return $('authError').textContent = 'Пароль мин. 6 символов';
   if (uname.length < 3) return $('authError').textContent = 'Username мин. 3 символа';
@@ -649,16 +720,21 @@ $('loginBtn').onclick = async () => {
   await enterApp();
 };
 
-// ============ PROFILE ============
+// PROFILE
 async function loadProfile() {
   const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
   if (!data) return;
+  if (data.is_banned) {
+    await sb.auth.signOut();
+    alert('🚫 Ты забанен.\nПричина: ' + (data.ban_reason || 'не указана'));
+    location.reload();
+    return;
+  }
   currentProfile = data;
   const a = $('myAvatar');
   if (data.avatar_url) a.innerHTML = `<img src="${data.avatar_url}">`;
   else a.textContent = (data.display_name || '?')[0].toUpperCase();
-  if (data.is_plus) document.body.classList.add('plus-active');
-  else document.body.classList.remove('plus-active');
+  document.body.classList.toggle('plus-active', data.is_plus);
   sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id);
   setInterval(() => sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('id', currentUser.id), 30000);
 }
@@ -674,7 +750,7 @@ window.openProfileModal = () => {
   prev.innerHTML = img + '<div class="edit-overlay">📷</div>';
   $('myPlusBadge').innerHTML = currentProfile.is_plus
     ? '<span class="plus-badge">👑 SPACE PLUS</span>'
-    : '<button class="gold" style="padding:8px 16px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer" onclick="openPlusPage()">👑 Оформить Space Plus</button>';
+    : '<button class="gold" style="padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700" onclick="openPlusPage()">👑 Оформить Space Plus</button>';
   renderPremiumEmojiRow();
   $('profileModal').classList.add('active');
 };
@@ -687,7 +763,7 @@ function renderPremiumEmojiRow() {
   }).join('');
   row.querySelectorAll('.premium-emoji').forEach(el => {
     el.onclick = () => {
-      if (!currentProfile.is_plus) { alert('👑 Только для Space Plus'); return; }
+      if (!currentProfile.is_plus) return alert('👑 Только для Space Plus');
       const e = el.dataset.e;
       selectedPremiumEmoji = currentProfile.premium_emoji === e ? null : e;
       renderPremiumEmojiRow();
@@ -696,56 +772,134 @@ function renderPremiumEmojiRow() {
 }
 
 $('closeProfileBtn').onclick = () => $('profileModal').classList.remove('active');
-
 $('avatarPreview').onclick = () => {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/*';
   inp.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     if (file.size > 3 * 1024 * 1024) return alert('Файл > 3 МБ');
     const path = `${currentUser.id}/avatar_${Date.now()}.jpg`;
     const { error } = await sb.storage.from('avatars').upload(path, file, { upsert: true });
     if (error) return alert(error.message);
     const { data: u } = sb.storage.from('avatars').getPublicUrl(path);
     await sb.from('profiles').update({ avatar_url: u.publicUrl }).eq('id', currentUser.id);
-    currentProfile.avatar_url = u.publicUrl;
     await loadProfile();
     $('avatarPreview').innerHTML = `<img src="${u.publicUrl}"><div class="edit-overlay">📷</div>`;
   };
   inp.click();
 };
-
 $('saveProfileBtn').onclick = async () => {
-  const name = $('profileName').value.trim();
-  if (!name) return;
-  const upd = {
-    display_name: name,
-    phone: $('profilePhone').value.trim(),
-    bio: $('profileBio').value.trim()
-  };
+  const name = $('profileName').value.trim(); if (!name) return;
+  const upd = { display_name: name, phone: $('profilePhone').value.trim(), bio: $('profileBio').value.trim() };
   if (currentProfile.is_plus) upd.premium_emoji = selectedPremiumEmoji;
   await sb.from('profiles').update(upd).eq('id', currentUser.id);
   await loadProfile();
   $('profileModal').classList.remove('active');
 };
-
 $('logoutBtn').onclick = async () => { await sb.auth.signOut(); location.reload(); };
 
-// ============ PLUS PAGE ============
-window.openPlusPage = () => {
-  const isPlus = currentProfile?.is_plus;
-  $('plusStatus').innerHTML = isPlus
-    ? '<span class="plus-badge" style="font-size:14px;padding:6px 16px">✅ АКТИВЕН ДО НАВСЕГДА</span>'
-    : '';
-  $('plusAction').innerHTML = isPlus
-    ? '<p style="color:var(--text2);font-size:14px">Спасибо за поддержку Spacegram! 👑</p>'
-    : '';
-  $('plusPage').classList.add('active');
-};
-$('plusBtn').onclick = openPlusPage;
+// STORIES
+async function loadStories() {
+  const { data } = await sb.from('stories').select('*').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false });
+  allStories = data || [];
+  renderStoriesRow();
+}
+function subscribeStories() {
+  if (storiesChannel) sb.removeChannel(storiesChannel);
+  storiesChannel = sb.channel('stories_ch').on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => loadStories()).subscribe();
+}
+function renderStoriesRow() {
+  const row = $('storiesRow');
+  const grouped = {};
+  allStories.forEach(s => { (grouped[s.user_id] = grouped[s.user_id] || []).push(s); });
+  let html = `
+    <div class="story-item" onclick="addStory()">
+      <div class="story-avatar me">
+        <div class="inner">${currentProfile?.avatar_url ? `<img src="${currentProfile.avatar_url}">` : (currentProfile?.display_name||'?')[0].toUpperCase()}</div>
+        <div class="add">+</div>
+      </div>
+      <div class="story-name">Моя</div>
+    </div>
+  `;
+  Object.entries(grouped).forEach(([uid, stories]) => {
+    const p = userCache[uid] || stories[0].__user;
+    html += `
+      <div class="story-item" onclick="openStoryViewer('${uid}')">
+        <div class="story-avatar">
+          <div class="inner" data-uid="${uid}">?</div>
+        </div>
+        <div class="story-name">Загрузка...</div>
+      </div>
+    `;
+  });
+  row.innerHTML = html;
+  row.querySelectorAll('.inner[data-uid]').forEach(async (el) => {
+    const uid = el.dataset.uid;
+    const p = await getUser(uid);
+    el.innerHTML = p?.avatar_url ? `<img src="${p.avatar_url}">` : (p?.display_name||'?')[0].toUpperCase();
+    el.closest('.story-item').querySelector('.story-name').textContent = p?.display_name || '?';
+  });
+}
 
-// ============ SETTINGS ============
+window.addStory = () => {
+  if (!currentProfile?.is_plus) return alert('👑 Истории только для Space Plus');
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*';
+  inp.onchange = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const path = `stories/${currentUser.id}/${Date.now()}.jpg`;
+    const { error } = await sb.storage.from('media').upload(path, file);
+    if (error) return alert(error.message);
+    const { data: u } = sb.storage.from('media').getPublicUrl(path);
+    await sb.from('stories').insert({ user_id: currentUser.id, media_url: u.publicUrl, media_type: 'image' });
+    await loadStories();
+  };
+  inp.click();
+};
+
+window.openStoryViewer = async (uid) => {
+  const stories = allStories.filter(s => s.user_id === uid);
+  if (!stories.length) return;
+  currentStoryIndex = 0;
+  $('storyViewer').classList.add('active');
+  const p = await getUser(uid);
+  $('storyAva').innerHTML = p?.avatar_url ? `<img src="${p.avatar_url}">` : (p?.display_name||'?')[0].toUpperCase();
+  $('storyName').textContent = p?.display_name || '';
+  showStory(stories);
+  clearTimeout(storyTimer);
+  storyTimer = setTimeout(() => nextStory(), 5000);
+};
+function showStory(stories) {
+  const s = stories[currentStoryIndex];
+  if (!s) return closeStoryViewer();
+  $('storyContent').innerHTML = `<img src="${s.media_url}">`;
+  $('storyProgress').innerHTML = stories.map((_, i) =>
+    `<div class="bar ${i < currentStoryIndex ? 'done' : ''} ${i === currentStoryIndex ? 'active' : ''}">
+      ${i < currentStoryIndex ? '<div class="fill" style="width:100%"></div>' : i === currentStoryIndex ? '<div class="fill"></div>' : ''}
+    </div>`
+  ).join('');
+}
+window.nextStory = () => {
+  const uid = allStories[currentStoryIndex]?.user_id;
+  const stories = allStories.filter(s => s.user_id === uid);
+  currentStoryIndex++;
+  if (currentStoryIndex >= stories.length) { closeStoryViewer(); return; }
+  showStory(stories);
+  clearTimeout(storyTimer);
+  storyTimer = setTimeout(() => nextStory(), 5000);
+};
+window.prevStory = () => {
+  if (currentStoryIndex > 0) currentStoryIndex--;
+  const uid = allStories[0]?.user_id;
+  const stories = allStories.filter(s => s.user_id === uid);
+  showStory(stories);
+};
+window.closeStoryViewer = () => {
+  $('storyViewer').classList.remove('active');
+  clearTimeout(storyTimer);
+};
+
+// SETTINGS MODAL
 $('settingsBtn').onclick = () => {
   $('notifToggle').checked = settings.notifications !== false;
   $('readReceiptsToggle').checked = settings.readReceipts !== false;
@@ -756,13 +910,10 @@ $('settingsBtn').onclick = () => {
   $('settingsModal').classList.add('active');
 };
 $('closeSettingsBtn').onclick = () => $('settingsModal').classList.remove('active');
-$('themeToggle').onclick = (e) => {
-  const btn = e.target.closest('button'); if (!btn) return;
-  settings.theme = btn.dataset.theme; applyTheme(settings.theme); saveSettings();
-};
+$('themeToggle').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; settings.theme = b.dataset.theme; applyTheme(b.dataset.theme); saveSettings(); };
 $('wallpaperToggle').onclick = (e) => {
-  const btn = e.target.closest('button'); if (!btn) return;
-  const wp = btn.dataset.wp;
+  const b = e.target.closest('button'); if (!b) return;
+  const wp = b.dataset.wp;
   if (wp === 'custom') {
     if (!currentProfile?.is_plus) return alert('👑 Только для Space Plus');
     const inp = document.createElement('input');
@@ -773,22 +924,18 @@ $('wallpaperToggle').onclick = (e) => {
       const { error } = await sb.storage.from('avatars').upload(path, file, { upsert: true });
       if (error) return alert(error.message);
       const { data: u } = sb.storage.from('avatars').getPublicUrl(path);
-      settings.customWallpaper = u.publicUrl;
-      settings.wallpaper = 'custom';
+      settings.customWallpaper = u.publicUrl; settings.wallpaper = 'custom';
       saveSettings(); applyWallpaper('custom');
     };
     inp.click();
-  } else {
-    settings.wallpaper = wp; saveSettings(); applyWallpaper(wp);
-  }
+  } else { settings.wallpaper = wp; saveSettings(); applyWallpaper(wp); }
 };
 $('notifToggle').onchange = e => { settings.notifications = e.target.checked; saveSettings(); };
 $('readReceiptsToggle').onchange = e => { settings.readReceipts = e.target.checked; saveSettings(); };
 $('enterSendToggle').onchange = e => { settings.enterSend = e.target.checked; saveSettings(); };
 $('languageSelect').onchange = e => { settings.language = e.target.value; saveSettings(); };
-
 $('clearChatsBtn').onclick = async () => {
-  if (!confirm('Удалить ВСЕ твои чаты и сообщения?')) return;
+  if (!confirm('Удалить все чаты?')) return;
   const uid = currentUser.id;
   const { data: chats } = await sb.from('chats').select('id').or(`user1.eq.${uid},user2.eq.${uid}`);
   for (const c of chats || []) {
@@ -799,7 +946,6 @@ $('clearChatsBtn').onclick = async () => {
   $('settingsModal').classList.remove('active');
 };
 
-// FOLDERS
 $('folders').onclick = (e) => {
   const btn = e.target.closest('.folder-btn'); if (!btn) return;
   currentFolder = btn.dataset.folder;
@@ -807,7 +953,7 @@ $('folders').onclick = (e) => {
   loadChats();
 };
 
-// ============ CHATS ============
+// CHATS
 async function getUser(uid) {
   if (userCache[uid]) return userCache[uid];
   const { data } = await sb.from('profiles').select('*').eq('id', uid).single();
@@ -824,16 +970,11 @@ async function loadChats() {
   if (currentFolder === 'private') filtered = filtered.filter(c => !c.is_group && !c.is_channel);
   else if (currentFolder === 'group') filtered = filtered.filter(c => c.is_group);
   else if (currentFolder === 'channel') filtered = filtered.filter(c => c.is_channel);
-
-  if (filtered.length === 0) {
-    list.innerHTML = '<div style="padding:30px 20px;color:var(--text2);text-align:center;font-size:14px">Нет чатов в этой папке</div>';
-    return;
-  }
+  if (filtered.length === 0) { list.innerHTML = '<div style="padding:30px 20px;color:var(--text2);text-align:center;font-size:14px">Нет чатов</div>'; return; }
   for (const chat of filtered) {
     let prof, otherId;
     if (chat.is_group || chat.is_channel) {
-      prof = { display_name: chat.group_name || 'Группа', avatar_url: chat.group_avatar, is_verified: false, is_creator: false, is_plus: false };
-      otherId = null;
+      prof = { display_name: chat.group_name || 'Группа', avatar_url: chat.group_avatar };
     } else {
       otherId = chat.user1 === uid ? chat.user2 : chat.user1;
       prof = await getUser(otherId);
@@ -846,10 +987,7 @@ async function loadChats() {
     const time = chat.created_at ? new Date(chat.created_at).toLocaleTimeString('ru', {hour:'2-digit',minute:'2-digit'}) : '';
     const icon = chat.is_channel ? '📢' : chat.is_group ? '👥' : '';
     div.innerHTML = `
-      <div class="chat-avatar">
-        ${prof.avatar_url ? `<img src="${prof.avatar_url}">` : (prof.display_name||'?')[0].toUpperCase()}
-        ${isOnline && !chat.is_group && !chat.is_channel ? '<div class="online-dot"></div>' : ''}
-      </div>
+      <div class="chat-avatar">${prof.avatar_url ? `<img src="${prof.avatar_url}">` : (prof.display_name||'?')[0].toUpperCase()}${isOnline && !chat.is_group && !chat.is_channel ? '<div class="online-dot"></div>' : ''}</div>
       <div class="chat-info">
         <div class="chat-name">${escapeHtml(prof.display_name)} ${renderBadges(prof)} ${icon}</div>
         <div class="chat-preview">${escapeHtml(chat.last_message || 'Начни общение')}</div>
@@ -861,32 +999,22 @@ async function loadChats() {
 
 function subscribeChats() {
   if (chatsChannel) sb.removeChannel(chatsChannel);
-  chatsChannel = sb.channel('chats_changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => loadChats())
-    .subscribe();
+  chatsChannel = sb.channel('chats_changes').on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => loadChats()).subscribe();
 }
 
-// ============ SEARCH ============
 $('searchInput').oninput = async (e) => {
   const val = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
   const list = $('chatList');
   if (!val || val.length < 2) { loadChats(); return; }
   const { data } = await sb.from('profiles').select('*').eq('username', val);
   list.innerHTML = '';
-  if (!data || data.length === 0) {
-    list.innerHTML = '<div style="padding:20px;color:var(--text2);text-align:center;font-size:14px">Не найден</div>';
-    return;
-  }
+  if (!data || data.length === 0) { list.innerHTML = '<div style="padding:20px;color:var(--text2);text-align:center">Не найден</div>'; return; }
   data.forEach(u => {
-    if (u.id === currentUser.id) { list.innerHTML += '<div style="padding:20px;color:var(--text2);text-align:center;font-size:14px">Это ты 🙂</div>'; return; }
+    if (u.id === currentUser.id) { list.innerHTML += '<div style="padding:20px;color:var(--text2);text-align:center">Это ты 🙂</div>'; return; }
     const div = document.createElement('div');
     div.className = 'chat-item';
-    div.innerHTML = `
-      <div class="chat-avatar">${u.avatar_url ? `<img src="${u.avatar_url}">` : (u.display_name||'?')[0].toUpperCase()}</div>
-      <div class="chat-info">
-        <div class="chat-name">${escapeHtml(u.display_name)} ${renderBadges(u)}</div>
-        <div class="chat-preview">@${escapeHtml(u.username)}</div>
-      </div>`;
+    div.innerHTML = `<div class="chat-avatar">${u.avatar_url ? `<img src="${u.avatar_url}">` : (u.display_name||'?')[0].toUpperCase()}</div>
+      <div class="chat-info"><div class="chat-name">${escapeHtml(u.display_name)} ${renderBadges(u)}</div><div class="chat-preview">@${escapeHtml(u.username)}</div></div>`;
     div.onclick = () => startChat(u.id);
     list.appendChild(div);
   });
@@ -906,13 +1034,12 @@ async function startChat(otherId) {
   openChat(ex.id, otherId);
 }
 
-// ============ OPEN CHAT ============
 async function openChat(chatId, otherId) {
   currentChatId = chatId;
   currentChatUser = otherId;
   const { data: chat } = await sb.from('chats').select('*').eq('id', chatId).single();
   currentChatObj = chat;
-  $('sidebar').classList.add('hidden');
+  $('chatArea').classList.add('open');
   $('chatHeader').style.display = 'flex';
   $('messages').style.display = 'flex';
   $('inputArea').style.display = 'flex';
@@ -941,11 +1068,9 @@ async function openChat(chatId, otherId) {
       (payload) => {
         if (payload.eventType === 'INSERT') appendMessage(payload.new);
         if (payload.eventType === 'UPDATE') loadMessages(chatId);
-      })
-    .subscribe();
+      }).subscribe();
   reactionsChannel = sb.channel('reactions_' + chatId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, () => loadAllReactions())
-    .subscribe();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, () => loadAllReactions()).subscribe();
 }
 
 async function loadMessages(chatId) {
@@ -966,6 +1091,14 @@ async function loadMessages(chatId) {
     appendMessage(m, false);
   });
   await loadAllReactions();
+  // загрузка опросов
+  const ids = allMessages.map(m => m.id);
+  if (ids.length) {
+    const { data: polls } = await sb.from('polls').select('*').in('message_id', ids);
+    allPolls = {};
+    (polls || []).forEach(p => allPolls[p.message_id] = p);
+    allMessages.forEach(m => { if (allPolls[m.id]) updatePollDisplay(allPolls[m.id].id); });
+  }
   msgs.scrollTop = msgs.scrollHeight;
   if (settings.readReceipts !== false) {
     await sb.from('messages').update({ is_read: true }).eq('chat_id', chatId).neq('sender', currentUser.id).eq('is_read', false);
@@ -973,8 +1106,7 @@ async function loadMessages(chatId) {
 }
 
 function formatDate(d) {
-  const today = new Date();
-  const y = new Date(today); y.setDate(y.getDate() - 1);
+  const today = new Date(); const y = new Date(today); y.setDate(y.getDate() - 1);
   if (d.toDateString() === today.toDateString()) return 'Сегодня';
   if (d.toDateString() === y.toDateString()) return 'Вчера';
   return d.toLocaleDateString('ru', { day: 'numeric', month: 'long' });
@@ -989,12 +1121,10 @@ function appendMessage(m, scroll = true) {
   const wrap = document.createElement('div');
   wrap.className = 'msg-wrap ' + (m.sender === currentUser.id ? 'me' : 'you');
   wrap.dataset.msgId = m.id;
-
   const div = document.createElement('div');
   div.className = 'msg ' + (m.sender === currentUser.id ? 'me' : 'you');
   if (m.deleted) div.classList.add('deleted');
   if (m.edited_at) div.classList.add('edited');
-
   let content = '';
   if (m.forwarded_from) {
     const fw = userCache[m.forwarded_from];
@@ -1004,26 +1134,21 @@ function appendMessage(m, scroll = true) {
     const rm = allMessages.find(x => x.id === m.reply_to);
     if (rm) content += `<div class="reply-to"><div class="author">${escapeHtml(rm.sender === currentUser.id ? 'Ты' : (userCache[rm.sender]?.display_name || 'Кто-то'))}</div>${escapeHtml(rm.text?.slice(0, 60) || '...')}</div>`;
   }
-
-  if (m.deleted) {
-    content += '<i>Сообщение удалено</i>';
-  } else if (m.is_sticker && m.file_url) {
+  if (m.deleted) content += '<i>Сообщение удалено</i>';
+  else if (m.is_sticker && m.file_url) {
     div.classList.add('sticker-msg');
     content += `<img src="${m.file_url}" alt="sticker">`;
   } else if (m.is_voice && m.file_url) {
-    content += `<audio controls style="max-width:220px"><source src="${m.file_url}"></audio>`;
+    content += `<audio controls preload="metadata"><source src="${m.file_url}"></audio>`;
   } else if (m.file_url) {
-    if (m.file_type?.startsWith('image')) {
-      content += `<img class="msg-img" src="${m.file_url}" onclick="viewImage('${m.file_url}')">`;
-    } else {
-      content += `<div class="file-box"><div class="file-icon">📎</div><div class="file-info"><div class="file-name">${escapeHtml(m.file_name || 'файл')}</div></div><a href="${m.file_url}" target="_blank" style="color:var(--accent);font-size:20px;text-decoration:none">⬇</a></div>`;
-    }
+    if (m.file_type?.startsWith('image')) content += `<img class="msg-img" src="${m.file_url}" onclick="viewImage('${m.file_url}')">`;
+    else if (m.file_type === 'gif') content += `<img class="msg-img" src="${m.file_url}">`;
+    else content += `<div class="file-box"><div class="file-icon">📎</div><div class="file-info"><div class="file-name">${escapeHtml(m.file_name || 'файл')}</div></div><a href="${m.file_url}" target="_blank" style="color:var(--accent);font-size:20px;text-decoration:none">⬇</a></div>`;
   } else if (allPolls[m.id]) {
     content += renderPoll(allPolls[m.id]);
   } else {
     content += formatTextWithMentions(m.text);
   }
-
   const t = new Date(m.created_at).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
   const isMine = m.sender === currentUser.id;
   const check = isMine ? `<span class="check ${m.is_read ? 'read' : ''}">${m.is_read ? '✓✓' : '✓'}</span>` : '';
@@ -1069,19 +1194,12 @@ function appendMessage(m, scroll = true) {
         renderPinned();
       } else if (act === 'edit') {
         const nt = prompt('Новое сообщение:', m.text);
-        if (nt && nt !== m.text) {
-          await sb.from('messages').update({ text: nt, edited_at: new Date().toISOString() }).eq('id', m.id);
-          loadMessages(currentChatId);
-        }
+        if (nt && nt !== m.text) { await sb.from('messages').update({ text: nt, edited_at: new Date().toISOString() }).eq('id', m.id); loadMessages(currentChatId); }
       } else if (act === 'delete') {
-        if (confirm('Удалить сообщение?')) {
-          await sb.from('messages').update({ deleted: true, text: '', file_url: null }).eq('id', m.id);
-          loadMessages(currentChatId);
-        }
+        if (confirm('Удалить?')) { await sb.from('messages').update({ deleted: true, text: '', file_url: null }).eq('id', m.id); loadMessages(currentChatId); }
       }
     };
   });
-
   msgs.appendChild(wrap);
   if (scroll) msgs.scrollTop = msgs.scrollHeight;
 }
@@ -1096,10 +1214,9 @@ function renderPoll(poll) {
 
 window.viewImage = (url) => { $('imgViewerImg').src = url; $('imgViewer').classList.add('active'); };
 
-// ============ FORWARD ============
 async function forwardMessage(m) {
   const { data: chats } = await sb.from('chats').select('*').or(`user1.eq.${currentUser.id},user2.eq.${currentUser.id}`);
-  if (!chats || chats.length === 0) return alert('Нет чатов для пересылки');
+  if (!chats || chats.length === 0) return alert('Нет чатов');
   const names = [];
   for (let i = 0; i < chats.length; i++) {
     const c = chats[i];
@@ -1108,7 +1225,7 @@ async function forwardMessage(m) {
     else { const p = await getUser(c.user1 === currentUser.id ? c.user2 : c.user1); n = p?.display_name || 'user'; }
     names.push(`${i + 1}. ${n}`);
   }
-  const pick = prompt('Переслать в:\n' + names.join('\n') + '\n\nВведи номер:');
+  const pick = prompt('Переслать в:\n' + names.join('\n') + '\n\nНомер:');
   const idx = parseInt(pick) - 1;
   if (isNaN(idx) || !chats[idx]) return;
   const target = chats[idx];
@@ -1121,7 +1238,6 @@ async function forwardMessage(m) {
   alert('✅ Переслано');
 }
 
-// ============ REACTIONS ============
 async function loadAllReactions() {
   const { data } = await sb.from('reactions').select('*');
   allReactions = data || [];
@@ -1132,13 +1248,11 @@ function renderReactions() {
     const msgId = el.dataset.msgId;
     const rs = allReactions.filter(r => r.message_id === msgId);
     const grouped = {};
-    rs.forEach(r => { grouped[r.emoji] = grouped[r.emoji] || []; grouped[r.emoji].push(r.user_id); });
+    rs.forEach(r => { (grouped[r.emoji] = grouped[r.emoji] || []).push(r.user_id); });
     el.innerHTML = Object.entries(grouped).map(([emoji, users]) =>
       `<div class="reaction ${users.includes(currentUser.id) ? 'mine' : ''}" data-msg="${msgId}" data-emoji="${emoji}">${emoji} ${users.length}</div>`
     ).join('');
-    el.querySelectorAll('.reaction').forEach(r => {
-      r.onclick = (e) => { e.stopPropagation(); toggleReaction(msgId, r.dataset.emoji); };
-    });
+    el.querySelectorAll('.reaction').forEach(r => { r.onclick = (e) => { e.stopPropagation(); toggleReaction(msgId, r.dataset.emoji); }; });
   });
 }
 async function toggleReaction(msgId, emoji) {
@@ -1148,55 +1262,40 @@ async function toggleReaction(msgId, emoji) {
   await loadAllReactions();
 }
 
-// ============ PINNED ============
 function renderPinned() {
   const banner = $('pinnedBanner');
   if (!currentChatObj?.pinned_message_id) { banner.style.display = 'none'; return; }
   const m = allMessages.find(x => x.id === currentChatObj.pinned_message_id);
   if (!m) { banner.style.display = 'none'; return; }
   banner.style.display = 'flex';
-  $('pinnedText').innerHTML = `<b>${m.sender === currentUser.id ? 'Ты' : (userCache[m.sender]?.display_name || 'Кто-то')}:</b> ${escapeHtml(m.text?.slice(0, 80) || '📎 файл')}`;
+  $('pinnedText').innerHTML = `<b>${m.sender === currentUser.id ? 'Ты' : (userCache[m.sender]?.display_name || 'Кто-то')}:</b> ${escapeHtml(m.text?.slice(0, 80) || '📎')}`;
 }
-$('unpinBtn').onclick = async (e) => {
-  e.stopPropagation();
-  await sb.from('chats').update({ pinned_message_id: null }).eq('id', currentChatId);
-  currentChatObj.pinned_message_id = null;
-  renderPinned();
-};
+$('unpinBtn').onclick = async (e) => { e.stopPropagation(); await sb.from('chats').update({ pinned_message_id: null }).eq('id', currentChatId); currentChatObj.pinned_message_id = null; renderPinned(); };
 
-// ============ REPLY ============
 function startReply(m) {
   replyTo = m;
   $('replyAuthor').textContent = m.sender === currentUser.id ? 'Ты' : (userCache[m.sender]?.display_name || 'Кто-то');
-  $('replyText').textContent = m.text?.slice(0, 60) || '📎 файл';
+  $('replyText').textContent = m.text?.slice(0, 60) || '📎';
   $('replyPreview').classList.add('show');
   $('messageInput').focus();
 }
 $('cancelReplyBtn').onclick = () => { replyTo = null; $('replyPreview').classList.remove('show'); };
 
 window.showSidebar = () => {
-  $('sidebar').classList.remove('hidden');
-  $('chatHeader').style.display = 'none';
-  $('messages').style.display = 'none';
-  $('inputArea').style.display = 'none';
-  $('emptyState').style.display = 'flex';
+  $('chatArea').classList.remove('open');
   $('pinnedBanner').style.display = 'none';
   $('stickerPanel').classList.remove('show');
-  currentChatId = null;
+  $('gifPanel').classList.remove('show');
   if (messagesChannel) { sb.removeChannel(messagesChannel); messagesChannel = null; }
   if (reactionsChannel) { sb.removeChannel(reactionsChannel); reactionsChannel = null; }
+  currentChatId = null;
 };
 
-// ============ USER PROFILE ============
 window.openUserProfile = async (uid) => {
-  if (!uid) {
-    if (currentChatObj?.is_group || currentChatObj?.is_channel) return openGroupInfo();
-    return;
-  }
+  if (!uid) { if (currentChatObj?.is_group || currentChatObj?.is_channel) return openGroupInfo(); return; }
   const prof = await getUser(uid);
   if (!prof) return;
   const isOnline = prof.last_seen && (Date.now() - new Date(prof.last_seen).getTime()) < 60000;
-  const lastSeen = prof.last_seen ? new Date(prof.last_seen).toLocaleString('ru') : 'неизвестно';
   const isMe = uid === currentUser.id;
   $('userProfileContent').innerHTML = `
     <div class="user-profile-view">
@@ -1205,14 +1304,18 @@ window.openUserProfile = async (uid) => {
       <div class="nick-lg">@${escapeHtml(prof.username)}</div>
       ${prof.bio ? `<div class="bio-lg">${escapeHtml(prof.bio)}</div>` : ''}
       ${prof.phone ? `<div class="status-lg">📱 ${escapeHtml(prof.phone)}</div>` : ''}
-      <div class="status-lg">${isOnline ? '🟢 в сети' : '⚫ ' + lastSeen}</div>
-      ${isMe ? '<button class="ghost" onclick="document.getElementById(\'userProfileModal\').classList.remove(\'active\'); openProfileModal()">✏️ Редактировать</button>' : ''}
+      <div class="stats">
+        <div><div class="num">${prof.messages_count || 0}</div><div class="lbl">Сообщений</div></div>
+        <div><div class="num">${prof.gifts_received || 0}</div><div class="lbl">Подарков</div></div>
+      </div>
+      <div class="status-lg">${isOnline ? '🟢 в сети' : '⚫ был(а) недавно'}</div>
+      ${!isMe ? `<div class="actions"><button class="gold" onclick="openGiftModal('${uid}')">🎁 Подарить</button></div>` : ''}
+      ${isMe ? `<button class="ghost" onclick="document.getElementById('userProfileModal').classList.remove('active'); openProfileModal()">✏️ Редактировать</button>` : ''}
     </div>
     <button class="ghost" onclick="document.getElementById('userProfileModal').classList.remove('active')">Закрыть</button>
   `;
   $('userProfileModal').classList.add('active');
 };
-
 $('headerInfoBtn').onclick = () => openUserProfile(currentChatUser);
 
 function openGroupInfo() {
@@ -1222,60 +1325,69 @@ function openGroupInfo() {
       <div class="name-lg">${escapeHtml(currentChatObj.group_name)}</div>
       <div class="status-lg">${currentChatObj.is_channel ? 'канал' : 'группа'}</div>
     </div>
-    <button class="ghost" onclick="document.getElementById('userProfileModal').classList.remove('active')">Закрыть</button>
-  `;
+    <button class="ghost" onclick="document.getElementById('userProfileModal').classList.remove('active')">Закрыть</button>`;
   $('userProfileModal').classList.add('active');
 }
 
-// ============ SEND ============
+// GIF
+$('gifBtn').onclick = (e) => { e.stopPropagation(); $('gifPanel').classList.toggle('show'); $('stickerPanel').classList.remove('show'); $('emojiPicker').style.display = 'none'; };
+$('gifSearch').oninput = async (e) => {
+  const q = e.target.value.trim() || 'hello';
+  try {
+    const res = await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(q)}&key=${TENOR_KEY}&limit=12`);
+    const data = await res.json();
+    $('gifGrid').innerHTML = (data.results || []).map(g => {
+      const url = g.media[0].tinygif.url;
+      const full = g.media[0].gif.url;
+      return `<div class="gif-item" data-full="${full}"><img src="${url}"></div>`;
+    }).join('');
+    document.querySelectorAll('.gif-item').forEach(el => {
+      el.onclick = async () => {
+        await sb.from('messages').insert({
+          chat_id: currentChatId, sender: currentUser.id,
+          text: '', is_read: false,
+          file_url: el.dataset.full, file_type: 'gif', file_name: 'GIF'
+        });
+        await sb.from('chats').update({ last_message: '🎬 GIF' }).eq('id', currentChatId);
+        $('gifPanel').classList.remove('show');
+      };
+    });
+  } catch (err) { $('gifGrid').innerHTML = '<div style="color:#888;text-align:center;padding:20px">Не удалось загрузить GIF</div>'; }
+};
+
+// SEND
 async function sendMessage() {
   const text = $('messageInput').value.trim();
   if (!text || !currentChatId) return;
-  // Проверка на /poll
-  if (text === '/poll') {
-    $('messageInput').value = '';
-    $('pollModal').classList.add('active');
-    return;
-  }
+  if (text === '/poll') { $('messageInput').value = ''; $('pollModal').classList.add('active'); return; }
   $('messageInput').value = '';
-  const payload = {
+  const { error } = await sb.from('messages').insert({
     chat_id: currentChatId, sender: currentUser.id, text, is_read: false,
     reply_to: replyTo?.id || null
-  };
-  replyTo = null; $('replyPreview').classList.remove('show');
-  const { error } = await sb.from('messages').insert(payload);
+  });
   if (error) return alert(error.message);
+  replyTo = null; $('replyPreview').classList.remove('show');
   await sb.from('chats').update({ last_message: text.slice(0, 50) }).eq('id', currentChatId);
 }
-
 $('sendBtn').onclick = sendMessage;
-$('messageInput').onkeydown = (e) => {
-  if (e.key === 'Enter' && !e.shiftKey && settings.enterSend !== false) { e.preventDefault(); sendMessage(); }
-};
+$('messageInput').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && settings.enterSend !== false) { e.preventDefault(); sendMessage(); } };
 
-// ============ ATTACH ============
 $('attachBtn').onclick = () => {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/*,.pdf,.doc,.docx,.txt,.zip';
   inp.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 20 * 1024 * 1024) return alert('Файл > 20 МБ');
+    const file = e.target.files[0]; if (!file) return;
+    if (file.size > 20 * 1024 * 1024) return alert('> 20 МБ');
     const path = `${currentChatId}/${Date.now()}_${file.name}`;
     const { error } = await sb.storage.from('media').upload(path, file);
     if (error) return alert(error.message);
     const { data: u } = sb.storage.from('media').getPublicUrl(path);
-    await sb.from('messages').insert({
-      chat_id: currentChatId, sender: currentUser.id,
-      text: '', is_read: false,
-      file_url: u.publicUrl, file_type: file.type, file_name: file.name
-    });
+    await sb.from('messages').insert({ chat_id: currentChatId, sender: currentUser.id, text: '', is_read: false, file_url: u.publicUrl, file_type: file.type, file_name: file.name });
     await sb.from('chats').update({ last_message: '📎 ' + file.name }).eq('id', currentChatId);
   };
   inp.click();
 };
 
-// ============ VOICE MESSAGES ============
 $('micBtn').onclick = async () => {
   if (!currentChatId) return;
   if (!isRecording) {
@@ -1291,126 +1403,80 @@ $('micBtn').onclick = async () => {
         const { error } = await sb.storage.from('media').upload(path, file);
         if (error) return alert(error.message);
         const { data: u } = sb.storage.from('media').getPublicUrl(path);
-        await sb.from('messages').insert({
-          chat_id: currentChatId, sender: currentUser.id,
-          text: '', is_read: false, is_voice: true,
-          file_url: u.publicUrl, file_type: 'audio/webm', file_name: 'Голосовое'
-        });
+        await sb.from('messages').insert({ chat_id: currentChatId, sender: currentUser.id, text: '', is_read: false, is_voice: true, file_url: u.publicUrl, file_type: 'audio/webm', file_name: 'Голосовое' });
         await sb.from('chats').update({ last_message: '🎤 Голосовое' }).eq('id', currentChatId);
         stream.getTracks().forEach(t => t.stop());
       };
-      mediaRecorder.start();
-      isRecording = true;
-      $('micBtn').classList.add('recording');
-      $('micBtn').textContent = '⏹';
+      mediaRecorder.start(); isRecording = true;
+      $('micBtn').classList.add('recording'); $('micBtn').textContent = '⏹';
     } catch (err) { alert('Микрофон недоступен: ' + err.message); }
   } else {
-    mediaRecorder.stop();
-    isRecording = false;
-    $('micBtn').classList.remove('recording');
-    $('micBtn').textContent = '🎤';
+    mediaRecorder.stop(); isRecording = false;
+    $('micBtn').classList.remove('recording'); $('micBtn').textContent = '🎤';
   }
 };
 
-// ============ EMOJI ============
-$('emojiBtn').onclick = (e) => {
-  e.stopPropagation();
-  const p = $('emojiPicker');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
-  $('stickerPanel').classList.remove('show');
-};
+$('emojiBtn').onclick = (e) => { e.stopPropagation(); const p = $('emojiPicker'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; $('stickerPanel').classList.remove('show'); $('gifPanel').classList.remove('show'); };
 $('emojiPicker').addEventListener('emoji-click', (e) => { $('messageInput').value += e.detail.unicode; $('messageInput').focus(); });
 
-// ============ STICKERS ============
 async function loadStickers() {
   const { data } = await sb.from('stickers').select('*');
   allStickers = data || [];
 }
-$('stickerBtn').onclick = (e) => {
-  e.stopPropagation();
-  const panel = $('stickerPanel');
-  panel.classList.toggle('show');
-  $('emojiPicker').style.display = 'none';
-  if (panel.classList.contains('show')) renderStickers();
-};
+$('stickerBtn').onclick = (e) => { e.stopPropagation(); $('stickerPanel').classList.toggle('show'); $('emojiPicker').style.display = 'none'; $('gifPanel').classList.remove('show'); if ($('stickerPanel').classList.contains('show')) renderStickers(); };
 function renderStickers() {
   const grid = $('stickerGrid');
   const isPlus = currentProfile?.is_plus;
   grid.innerHTML = allStickers.map(s => {
     const locked = s.is_premium && !isPlus;
-    return `<div class="sticker-item ${s.is_premium ? 'premium' : ''}" data-url="${s.url}" data-id="${s.id}" data-premium="${s.is_premium}">
-      <img src="${s.url}" alt="${s.name}">
-      ${locked ? '<div style="font-size:10px;color:#f5b041">👑 Plus</div>' : ''}
-    </div>`;
+    return `<div class="sticker-item ${s.is_premium ? 'premium' : ''}" data-url="${s.url}" data-premium="${s.is_premium}"><img src="${s.url}">${locked ? '<div style="font-size:9px;color:#f5b041">👑</div>' : ''}</div>`;
   }).join('');
   grid.querySelectorAll('.sticker-item').forEach(el => {
     el.onclick = async () => {
-      if (el.dataset.premium === 'true' && !currentProfile?.is_plus) {
-        alert('👑 Этот стикер только для Space Plus');
-        return;
-      }
-      await sb.from('messages').insert({
-        chat_id: currentChatId, sender: currentUser.id,
-        text: '', is_read: false, is_sticker: true,
-        file_url: el.dataset.url
-      });
+      if (el.dataset.premium === 'true' && !currentProfile?.is_plus) return alert('👑 Только для Space Plus');
+      await sb.from('messages').insert({ chat_id: currentChatId, sender: currentUser.id, text: '', is_read: false, is_sticker: true, file_url: el.dataset.url });
       await sb.from('chats').update({ last_message: '😊 Стикер' }).eq('id', currentChatId);
       $('stickerPanel').classList.remove('show');
     };
   });
 }
 
-// ============ POLL ============
 $('createPollBtn').onclick = async () => {
   const q = $('pollQuestion').value.trim();
   const opts = Array.from(document.querySelectorAll('.poll-opt-inp')).map(i => i.value.trim()).filter(Boolean);
-  if (!q || opts.length < 2) return alert('Нужен вопрос и минимум 2 варианта');
-  const { data: msg, error } = await sb.from('messages').insert({
-    chat_id: currentChatId, sender: currentUser.id, text: '📊 ' + q, is_read: false
-  }).select().single();
-  if (error) return alert(error.message);
+  if (!q || opts.length < 2) return alert('Нужен вопрос и 2+ варианта');
+  const { data: msg } = await sb.from('messages').insert({ chat_id: currentChatId, sender: currentUser.id, text: '📊 ' + q, is_read: false }).select().single();
   await sb.from('polls').insert({ message_id: msg.id, question: q, options: opts });
   await sb.from('chats').update({ last_message: '📊 Опрос' }).eq('id', currentChatId);
-  $('pollQuestion').value = '';
-  document.querySelectorAll('.poll-opt-inp').forEach(i => i.value = '');
+  $('pollQuestion').value = ''; document.querySelectorAll('.poll-opt-inp').forEach(i => i.value = '');
   $('pollModal').classList.remove('active');
 };
-
-// Обработка кликов по опросам
 document.addEventListener('click', async (e) => {
-  const opt = e.target.closest('.poll-option');
-  if (!opt) return;
-  const pollEl = opt.closest('.poll');
-  const pollId = pollEl.dataset.poll;
+  const opt = e.target.closest('.poll-option'); if (!opt) return;
+  const pollId = opt.closest('.poll').dataset.poll;
   const idx = parseInt(opt.dataset.idx);
   const { data: ex } = await sb.from('poll_votes').select('*').eq('poll_id', pollId).eq('user_id', currentUser.id).eq('option_index', idx).maybeSingle();
   if (ex) await sb.from('poll_votes').delete().eq('id', ex.id);
   else await sb.from('poll_votes').insert({ poll_id: pollId, user_id: currentUser.id, option_index: idx });
   await updatePollDisplay(pollId);
 });
-
 async function updatePollDisplay(pollId) {
   const { data: votes } = await sb.from('poll_votes').select('*').eq('poll_id', pollId);
   const el = document.querySelector(`.poll[data-poll="${pollId}"]`);
   if (!el) return;
   const total = votes.length || 1;
-  const opts = el.querySelectorAll('.poll-option');
-  opts.forEach((o, i) => {
+  el.querySelectorAll('.poll-option').forEach((o, i) => {
     const count = votes.filter(v => v.option_index === i).length;
     o.querySelector('.poll-bar').style.width = (count / total * 100) + '%';
     o.querySelector('.poll-count').textContent = count;
-    const mine = votes.find(v => v.user_id === currentUser.id && v.option_index === i);
-    o.classList.toggle('voted', !!mine);
+    o.classList.toggle('voted', !!votes.find(v => v.user_id === currentUser.id && v.option_index === i));
   });
 }
 
-// ============ GROUP/CHANNEL ============
 $('newGroupBtn').onclick = () => {
   selectedMembers = [];
-  $('groupNameInput').value = '';
-  $('groupSearchInput').value = '';
-  $('groupSearchResults').innerHTML = '';
-  $('groupSelected').innerHTML = '';
+  $('groupNameInput').value = ''; $('groupSearchInput').value = '';
+  $('groupSearchResults').innerHTML = ''; $('groupSelected').innerHTML = '';
   $('groupModal').classList.add('active');
 };
 $('chatTypeToggle').onclick = (e) => {
@@ -1418,7 +1484,6 @@ $('chatTypeToggle').onclick = (e) => {
   document.querySelectorAll('#chatTypeToggle button').forEach(b => b.classList.toggle('active', b === btn));
   $('groupModalTitle').textContent = btn.dataset.type === 'channel' ? '📢 Новый канал' : '👥 Новая группа';
 };
-
 $('groupSearchInput').oninput = async (e) => {
   const val = e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
   const box = $('groupSearchResults');
@@ -1428,31 +1493,21 @@ $('groupSearchInput').oninput = async (e) => {
   (data || []).filter(u => u.id !== currentUser.id).forEach(u => {
     const div = document.createElement('div');
     div.className = 'admin-user';
-    div.innerHTML = `
-      <div class="chat-avatar" style="width:36px;height:36px;font-size:14px">${u.avatar_url ? `<img src="${u.avatar_url}">` : (u.display_name||'?')[0].toUpperCase()}</div>
+    div.innerHTML = `<div class="chat-avatar" style="width:36px;height:36px;font-size:14px">${u.avatar_url ? `<img src="${u.avatar_url}">` : (u.display_name||'?')[0].toUpperCase()}</div>
       <div class="info"><div class="uname">${escapeHtml(u.display_name)} ${renderBadges(u)}</div><div class="nick">@${escapeHtml(u.username)}</div></div>
       <button class="btn-mini btn-blue">+</button>`;
-    div.querySelector('button').onclick = () => {
-      if (selectedMembers.find(m => m.id === u.id)) return;
-      selectedMembers.push(u);
-      renderSelectedMembers();
-    };
+    div.querySelector('button').onclick = () => { if (selectedMembers.find(m => m.id === u.id)) return; selectedMembers.push(u); renderSelectedMembers(); };
     box.appendChild(div);
   });
 };
-
 function renderSelectedMembers() {
   $('groupSelected').innerHTML = selectedMembers.map(u =>
     `<div style="background:var(--panel2);padding:5px 10px;border-radius:20px;font-size:12px;display:flex;align-items:center;gap:6px">${escapeHtml(u.display_name)} <span data-uid="${u.id}" style="cursor:pointer;color:var(--red)">✕</span></div>`
   ).join('');
   $('groupSelected').querySelectorAll('span[data-uid]').forEach(s => {
-    s.onclick = () => {
-      selectedMembers = selectedMembers.filter(m => m.id !== s.dataset.uid);
-      renderSelectedMembers();
-    };
+    s.onclick = () => { selectedMembers = selectedMembers.filter(m => m.id !== s.dataset.uid); renderSelectedMembers(); };
   });
 }
-
 $('createGroupBtn').onclick = async () => {
   const name = $('groupNameInput').value.trim();
   const typeBtn = document.querySelector('#chatTypeToggle button.active');
@@ -1460,8 +1515,7 @@ $('createGroupBtn').onclick = async () => {
   if (!name) return alert('Введи название');
   const uid = currentUser.id;
   const { data, error } = await sb.from('chats').insert({
-    user1: uid, user2: uid,
-    is_group: !isChannel, is_channel: isChannel,
+    user1: uid, user2: uid, is_group: !isChannel, is_channel: isChannel,
     group_name: name, created_by: uid, last_message: isChannel ? 'Канал создан' : 'Группа создана'
   }).select().single();
   if (error) return alert(error.message);
@@ -1472,25 +1526,17 @@ $('createGroupBtn').onclick = async () => {
   openChat(data.id, null);
 };
 
-// ============ CHAT MENU ============
 $('chatMenuBtn').onclick = (e) => {
   e.stopPropagation();
   if (!currentChatId) return;
-  const choice = prompt('Действие:\n1 - Очистить чат\n2 - Удалить чат\n3 - Создать опрос\n4 - Отмена');
-  if (choice === '1') {
-    if (confirm('Очистить сообщения?')) sb.from('messages').delete().eq('chat_id', currentChatId).then(() => loadMessages(currentChatId));
-  } else if (choice === '2') {
-    if (confirm('Удалить чат?')) {
-      sb.from('messages').delete().eq('chat_id', currentChatId).then(() => sb.from('chats').delete().eq('id', currentChatId).then(() => { showSidebar(); loadChats(); }));
-    }
-  } else if (choice === '3') {
-    $('pollModal').classList.add('active');
-  }
+  const choice = prompt('1 - Очистить\n2 - Удалить\n3 - Опрос\n4 - Отмена');
+  if (choice === '1') { if (confirm('Очистить?')) sb.from('messages').delete().eq('chat_id', currentChatId).then(() => loadMessages(currentChatId)); }
+  else if (choice === '2') { if (confirm('Удалить чат?')) sb.from('messages').delete().eq('chat_id', currentChatId).then(() => sb.from('chats').delete().eq('id', currentChatId).then(() => { showSidebar(); loadChats(); })); }
+  else if (choice === '3') $('pollModal').classList.add('active');
 };
 
-// ============ SEARCH IN MESSAGES ============
 $('searchMsgBtn').onclick = () => {
-  const q = prompt('Поиск по сообщениям:');
+  const q = prompt('Поиск:');
   if (!q) return;
   document.querySelectorAll('.msg-wrap').forEach(w => {
     const t = w.querySelector('.msg')?.textContent.toLowerCase() || '';
@@ -1498,16 +1544,36 @@ $('searchMsgBtn').onclick = () => {
   });
 };
 
-// ============ ADMIN ============
+// GIFTS
+window.openGiftModal = (uid) => {
+  if (!currentProfile?.is_plus) return alert('👑 Подарки только для Space Plus');
+  if (uid === currentUser.id) return alert('Нельзя себе');
+  giftTargetId = uid;
+  selectedGift = null;
+  $('giftMessage').value = '';
+  document.querySelectorAll('#giftPicker button').forEach(b => b.classList.remove('active'));
+  $('userProfileModal').classList.remove('active');
+  $('giftModal').classList.add('active');
+};
+$('giftPicker').onclick = (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  document.querySelectorAll('#giftPicker button').forEach(b => b.classList.toggle('active', b === btn));
+  selectedGift = btn.dataset.gift;
+};
+$('sendGiftBtn').onclick = async () => {
+  if (!selectedGift) return alert('Выбери подарок');
+  await sb.from('gifts').insert({ from_user: currentUser.id, to_user: giftTargetId, gift_type: 'emoji', gift_emoji: selectedGift, message: $('giftMessage').value.trim() });
+  const { data: cur } = await sb.from('profiles').select('gifts_received').eq('id', giftTargetId).single();
+  await sb.from('profiles').update({ gifts_received: (cur?.gifts_received || 0) + 1 }).eq('id', giftTargetId);
+  alert('🎁 Подарок отправлен!');
+  $('giftModal').classList.remove('active');
+};
+
+// ADMIN
 let logoClicks = 0;
 $('logo').onclick = () => {
   logoClicks++;
-  if (logoClicks >= 5) {
-    $('adminModal').classList.add('active');
-    if (isAdmin) showAdminPanel();
-    else { $('adminLoginSection').style.display = 'block'; $('adminPanelSection').style.display = 'none'; }
-    logoClicks = 0;
-  }
+  if (logoClicks >= 5) { $('adminModal').classList.add('active'); if (isAdmin) showAdminPanel(); else { $('adminLoginSection').style.display = 'block'; $('adminPanelSection').style.display = 'none'; } logoClicks = 0; }
 };
 $('adminCloseBtn').onclick = () => $('adminModal').classList.remove('active');
 
@@ -1516,7 +1582,6 @@ async function checkAdmin() {
   isAdmin = !!data;
   if (isAdmin) document.body.style.border = '3px solid gold';
 }
-
 $('adminLoginBtn').onclick = async () => {
   const secret = $('adminSecret').value;
   $('adminError').textContent = '';
@@ -1524,35 +1589,63 @@ $('adminLoginBtn').onclick = async () => {
   const { error } = await sb.from('admins').insert({ id: currentUser.id });
   if (error && !error.message.includes('duplicate')) return $('adminError').textContent = error.message;
   isAdmin = true;
-  $('adminError').style.color = '#2ecc71';
-  $('adminError').textContent = '✅ Ты админ!';
+  $('adminError').style.color = '#2ecc71'; $('adminError').textContent = '✅ Ты админ!';
   setTimeout(() => { $('adminSecret').value = ''; showAdminPanel(); }, 800);
 };
-
-async function showAdminPanel() {
+function showAdminPanel() {
   $('adminLoginSection').style.display = 'none';
   $('adminPanelSection').style.display = 'block';
-  await loadAdminUsers('');
+  loadAdminTab('users');
 }
-$('adminSearchUser').oninput = (e) => loadAdminUsers(e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''));
+$('adminTabs').onclick = (e) => {
+  const btn = e.target.closest('button'); if (!btn) return;
+  document.querySelectorAll('#adminTabs button').forEach(b => b.classList.toggle('active', b === btn));
+  loadAdminTab(btn.dataset.tab);
+};
+
+async function loadAdminTab(tab) {
+  const el = $('adminTabContent');
+  if (tab === 'users') {
+    el.innerHTML = `<input type="text" id="adminSearchUser" placeholder="Поиск @username..." style="margin-top:10px">
+      <div id="adminUserList" style="max-height:340px;overflow-y:auto;margin-top:8px"></div>`;
+    $('adminSearchUser').oninput = (e) => loadAdminUsers(e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, ''));
+    loadAdminUsers('');
+  } else if (tab === 'bans') {
+    el.innerHTML = `<div style="margin-top:10px;font-size:12px;color:var(--text2)">Все забаненные пользователи</div><div id="bannedList" style="max-height:340px;overflow-y:auto;margin-top:8px"></div>`;
+    loadBannedUsers();
+  } else if (tab === 'stats') {
+    const { count: usersCount } = await sb.from('profiles').select('*', { count: 'exact', head: true });
+    const { count: msgsCount } = await sb.from('messages').select('*', { count: 'exact', head: true });
+    const { count: chatsCount } = await sb.from('chats').select('*', { count: 'exact', head: true });
+    const { count: bannedCount } = await sb.from('profiles').select('*', { count: 'exact', head: true }).eq('is_banned', true);
+    el.innerHTML = `<div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="background:var(--panel2);padding:14px;border-radius:12px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--accent)">${usersCount||0}</div><div style="font-size:11px;color:var(--text2)">Юзеров</div></div>
+      <div style="background:var(--panel2);padding:14px;border-radius:12px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--accent)">${msgsCount||0}</div><div style="font-size:11px;color:var(--text2)">Сообщений</div></div>
+      <div style="background:var(--panel2);padding:14px;border-radius:12px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--accent)">${chatsCount||0}</div><div style="font-size:11px;color:var(--text2)">Чатов</div></div>
+      <div style="background:var(--panel2);padding:14px;border-radius:12px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--red)">${bannedCount||0}</div><div style="font-size:11px;color:var(--text2)">Забанено</div></div>
+    </div>`;
+  }
+}
 
 async function loadAdminUsers(search) {
   const list = $('adminUserList');
+  if (!list) return;
   list.innerHTML = '<div style="padding:10px;color:var(--text2);font-size:13px">Загрузка...</div>';
   let q = sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(50);
   if (search.length >= 2) q = q.ilike('username', `%${search}%`);
   const { data } = await q;
   list.innerHTML = '';
-  if (!data || data.length === 0) return list.innerHTML = '<div style="padding:10px;color:var(--text2);font-size:13px;text-align:center">Никого не найдено</div>';
+  if (!data?.length) return list.innerHTML = '<div style="padding:10px;color:var(--text2);font-size:13px;text-align:center">Пусто</div>';
   data.forEach(u => {
     const div = document.createElement('div');
     div.className = 'admin-user';
     const isCreator = u.username === CREATOR_USERNAME;
     div.innerHTML = `
       <div class="info"><div class="uname">${escapeHtml(u.display_name || u.username)} ${renderBadges(u)}</div>
-      <div class="nick">@${escapeHtml(u.username)}${isCreator ? ' • создатель' : ''}</div></div>
-      <button class="btn-mini btn-blue ${u.is_verified ? '' : 'off'}" data-uid="${u.id}" data-act="verify" title="Синяя галочка">${u.is_verified ? '🔵' : '✓'}</button>
-      <button class="btn-mini btn-gold ${u.is_plus ? '' : 'off'}" data-uid="${u.id}" data-act="plus" title="Space Plus">👑</button>
+      <div class="nick">@${escapeHtml(u.username)}${isCreator ? ' • созд' : ''}</div></div>
+      <button class="btn-mini btn-blue ${u.is_verified ? '' : 'off'}" data-uid="${u.id}" data-act="verify" title="Галочка">${u.is_verified ? '🔵' : '✓'}</button>
+      <button class="btn-mini btn-gold ${u.is_plus ? '' : 'off'}" data-uid="${u.id}" data-act="plus" title="Plus">👑</button>
+      <button class="btn-mini btn-red ${u.is_banned ? '' : 'off'}" data-uid="${u.id}" data-act="ban" title="Бан">🚫</button>
     `;
     list.appendChild(div);
   });
@@ -1560,54 +1653,75 @@ async function loadAdminUsers(search) {
     btn.onclick = async () => {
       const uid = btn.dataset.uid;
       const act = btn.dataset.act;
-      const field = act === 'verify' ? 'is_verified' : 'is_plus';
-      const { data: cur } = await sb.from('profiles').select(field).eq('id', uid).single();
-      const nv = !cur[field];
-      await sb.from('profiles').update({ [field]: nv }).eq('id', uid);
-      btn.classList.toggle('off', !nv);
-      if (act === 'verify') btn.textContent = nv ? '🔵' : '✓';
+      if (act === 'ban') {
+        const { data: cur } = await sb.from('profiles').select('is_banned').eq('id', uid).single();
+        const nv = !cur.is_banned;
+        let reason = null;
+        if (nv) reason = prompt('Причина бана:', 'Нарушение правил');
+        await sb.from('profiles').update({ is_banned: nv, ban_reason: reason, banned_at: nv ? new Date().toISOString() : null, banned_by: nv ? currentUser.id : null }).eq('id', uid);
+        btn.classList.toggle('off', !nv);
+      } else {
+        const field = act === 'verify' ? 'is_verified' : 'is_plus';
+        const { data: cur } = await sb.from('profiles').select(field).eq('id', uid).single();
+        const nv = !cur[field];
+        await sb.from('profiles').update({ [field]: nv }).eq('id', uid);
+        btn.classList.toggle('off', !nv);
+        if (act === 'verify') btn.textContent = nv ? '🔵' : '✓';
+      }
       userCache = {};
-      await loadChats();
+    };
+  });
+}
+
+async function loadBannedUsers() {
+  const list = $('bannedList');
+  const { data } = await sb.from('profiles').select('*').eq('is_banned', true);
+  if (!data?.length) { list.innerHTML = '<div style="padding:20px;color:var(--text2);text-align:center">Никого не забанено 🎉</div>'; return; }
+  list.innerHTML = '';
+  data.forEach(u => {
+    const div = document.createElement('div');
+    div.className = 'admin-user';
+    div.innerHTML = `
+      <div class="info"><div class="uname">${escapeHtml(u.display_name || u.username)}</div>
+      <div class="nick">@${escapeHtml(u.username)}</div>
+      <div style="font-size:11px;color:var(--red)">Причина: ${escapeHtml(u.ban_reason || '—')}</div></div>
+      <button class="btn-mini btn-blue" data-uid="${u.id}">✓ Разбан</button>
+    `;
+    list.appendChild(div);
+  });
+  list.querySelectorAll('button[data-uid]').forEach(btn => {
+    btn.onclick = async () => {
+      await sb.from('profiles').update({ is_banned: false, ban_reason: null }).eq('id', btn.dataset.uid);
+      loadBannedUsers();
     };
   });
 }
 
 $('adminLogoutBtn').onclick = async () => {
-  if (!confirm('Снять с себя права админа?')) return;
+  if (!confirm('Снять права?')) return;
   await sb.from('admins').delete().eq('id', currentUser.id);
   isAdmin = false; location.reload();
 };
 
-// ============ GLOBAL CLICKS ============
+// PLUS
+window.openPlusPage = () => {
+  const isPlus = currentProfile?.is_plus;
+  $('plusStatus').innerHTML = isPlus ? '<span class="plus-badge" style="font-size:14px;padding:6px 16px">✅ АКТИВЕН</span>' : '';
+  $('plusPage').classList.add('active');
+};
+$('plusBtn').onclick = openPlusPage;
+$('addStoryBtn').onclick = addStory;
+
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.emoji-picker-container')) $('emojiPicker').style.display = 'none';
   if (!e.target.closest('#stickerPanel') && !e.target.closest('#stickerBtn')) $('stickerPanel').classList.remove('show');
+  if (!e.target.closest('#gifPanel') && !e.target.closest('#gifBtn')) $('gifPanel').classList.remove('show');
   if (!e.target.closest('.msg-wrap')) document.querySelectorAll('.msg-wrap.show-toolbar').forEach(x => x.classList.remove('show-toolbar'));
 });
 
-// ============ HELPERS ============
 function escapeHtml(t) { const d = document.createElement('div'); d.textContent = t ?? ''; return d.innerHTML; }
 
-// Загружаем опросы при загрузке сообщений
-const originalLoadMessages = loadMessages;
-loadMessages = async function(chatId) {
-  await originalLoadMessages(chatId);
-  const msgIds = allMessages.map(m => m.id);
-  if (msgIds.length) {
-    const { data: polls } = await sb.from('polls').select('*').in('message_id', msgIds);
-    allPolls = {};
-    (polls || []).forEach(p => { allPolls[p.message_id] = p; });
-    allMessages.forEach(m => {
-      if (allPolls[m.id]) {
-        const el = document.querySelector(`.msg-wrap[data-msg-id="${m.id}"] .poll`);
-        if (el) updatePollDisplay(allPolls[m.id].id);
-      }
-    });
-  }
-};
-
-// ============ START ============
 initAuth();
 </script>
 </body>
- </html>
+                                                              </html>
