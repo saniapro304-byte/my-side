@@ -25,7 +25,6 @@ body.theme-ocean{--bg:#042f2e;--panel:#134e4a;--panel2:#115e59;--accent:#5eead4;
 body.theme-sunset{--bg:#2b1108;--panel:#431407;--panel2:#7c2d12;--accent:#fb923c;--accent-bg:#c2410c;--msg-out:#ea580c}
 body.theme-forest{--bg:#052e16;--panel:#14532d;--panel2:#166534;--accent:#86efac;--accent-bg:#15803d;--msg-out:#16a34a}
 body.theme-mono{--bg:#000;--panel:#111;--panel2:#222;--accent:#fff;--accent-bg:#333;--msg-out:#444;--text:#fff;--text2:#999}
-body.theme-candy{--bg:#fdf2f8;--panel:#fff;--panel2:#fce7f3;--accent:#ec4899;--accent-bg:#be185d;--text:#500724;--text2:#9d174d;--msg-in:#fff;--msg-out:#fbcfe8}
 body.theme-gold{--bg:#1c1917;--panel:#292524;--panel2:#44403c;--accent:#fbbf24;--accent-bg:#92400e;--msg-out:#b45309}
 body.plus-active{--accent:#ffd700;--accent-bg:#8b6914}
 
@@ -70,14 +69,12 @@ body.plus-active .sh h2{background:var(--gold);-webkit-background-clip:text;-web
 .av-s{width:34px;height:34px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:600;overflow:hidden;flex-shrink:0;cursor:pointer}
 .av-s img{width:100%;height:100%;object-fit:cover}
 
-/* СТАТУСЫ */
 .stories-bar{display:flex;gap:10px;padding:8px 12px 10px;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none}
 .stories-bar::-webkit-scrollbar{display:none}
 .story-bubble{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer;min-width:64px}
 .story-ring{width:56px;height:56px;border-radius:50%;padding:2.5px;background:var(--panel2);position:relative;transition:.2s}
 .story-ring.unseen{background:linear-gradient(135deg,#64b5ef,#4a9eff,#f5b041)}
 .story-ring.mine{background:var(--panel2)}
-.story-ring:active{transform:scale(.95)}
 .story-ring .inner{width:100%;height:100%;border-radius:50%;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;overflow:hidden;border:2.5px solid var(--panel);color:var(--text)}
 .story-ring .inner img{width:100%;height:100%;object-fit:cover}
 .story-ring .plus{position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid var(--panel);font-weight:700}
@@ -270,6 +267,7 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
 .pemoji.sel{border-color:#ffd700}
 .pemoji.lock{opacity:.4}
 
+/* АДМИНКА */
 .apanel{position:fixed;inset:0;background:var(--bg);display:none;z-index:3000;overflow-y:auto}
 .apanel.show{display:block}
 @media(min-width:900px){.apanel{max-width:1100px;height:100vh;max-height:800px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}}
@@ -328,7 +326,19 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
 .confirm .box .btns button.ok{background:var(--red);color:#fff}
 .confirm .box .btns button.no{background:var(--panel2);color:var(--text)}
 
-/* СТАТУС-ВЬЮЕР */
+.plus-page{position:fixed;inset:0;background:var(--bg);display:none;z-index:1500;overflow-y:auto}
+.plus-page.show{display:block}
+.plus-page .close{position:fixed;top:calc(14px + var(--safe-top));right:14px;width:40px;height:40px;border-radius:50%;background:var(--panel2);color:var(--text);font-size:20px;z-index:10}
+.plus-page .cont{max-width:480px;margin:0 auto;padding:24px 16px;padding-top:calc(24px + var(--safe-top));text-align:center}
+.plus-page .crn{font-size:60px}
+.plus-page h1{font-size:28px;font-weight:800;background:var(--gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:8px 0}
+.plus-page .sub{color:var(--text2);font-size:13px;margin-bottom:20px}
+.plus-page .feat{display:flex;gap:10px;padding:12px;background:var(--panel);border-radius:11px;margin-bottom:6px;text-align:left;align-items:center}
+.plus-page .feat .ic{font-size:22px}
+.plus-page .feat .t1{font-weight:600;font-size:14px}
+.plus-page .feat .t2{color:var(--text2);font-size:11px}
+.plus-badge{display:inline-block;padding:4px 12px;background:var(--gold);color:#000;border-radius:20px;font-weight:700;font-size:11px}
+
 .story-viewer{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:2500}
 .story-viewer.show{display:flex}
 .sv-progress{display:flex;gap:3px;padding:10px 12px;padding-top:calc(10px + var(--safe-top))}
@@ -373,19 +383,6 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
 .chat-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--text);text-align:left}
 .chat-menu button:hover{background:var(--panel2)}
 .chat-menu button.danger{color:var(--red)}
-
-.plus-page{position:fixed;inset:0;background:var(--bg);display:none;z-index:1500;overflow-y:auto}
-.plus-page.show{display:block}
-.plus-page .close{position:fixed;top:calc(14px + var(--safe-top));right:14px;width:40px;height:40px;border-radius:50%;background:var(--panel2);color:var(--text);font-size:20px;z-index:10}
-.plus-page .cont{max-width:480px;margin:0 auto;padding:24px 16px;padding-top:calc(24px + var(--safe-top));text-align:center}
-.plus-page .crn{font-size:60px}
-.plus-page h1{font-size:28px;font-weight:800;background:var(--gold);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:8px 0}
-.plus-page .sub{color:var(--text2);font-size:13px;margin-bottom:20px}
-.plus-page .feat{display:flex;gap:10px;padding:12px;background:var(--panel);border-radius:11px;margin-bottom:6px;text-align:left;align-items:center}
-.plus-page .feat .ic{font-size:22px}
-.plus-page .feat .t1{font-weight:600;font-size:14px}
-.plus-page .feat .t2{color:var(--text2);font-size:11px}
-.plus-badge{display:inline-block;padding:4px 12px;background:var(--gold);color:#000;border-radius:20px;font-weight:700;font-size:11px}
 </style>
 </head>
 <body>
@@ -484,7 +481,6 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
 
 <div class="imgv" id="imgv"><button onclick="document.getElementById('imgv').classList.remove('show')">✕</button><img id="imgvImg" src=""></div>
 
-<!-- ПРОСМОТР СТАТУСА -->
 <div class="story-viewer" id="storyViewer">
   <div class="sv-progress" id="svProgress"></div>
   <div class="sv-head">
@@ -505,9 +501,8 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
   <div class="sv-list" id="svViewsList"></div>
 </div>
 
-<!-- МЕНЮ ЧАТА -->
 <div class="chat-menu" id="chatMenu">
-  <button data-act="pin">📌 Закрепить / открепить</button>
+  <button data-act="pin">📌 Закрепить</button>
   <button data-act="mute">🔕 Без звука</button>
   <button data-act="archive">📦 В архив</button>
   <button data-act="clear">🧹 Очистить</button>
@@ -551,9 +546,7 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
   </div>
 </div>
 
-<div class="modal" id="userModal">
-  <div class="mbox" id="userContent"></div>
-</div>
+<div class="modal" id="userModal"><div class="mbox" id="userContent"></div></div>
 
 <div class="modal" id="groupModal">
   <div class="mbox">
@@ -622,7 +615,6 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
     <div class="feat"><div class="ic">🎨</div><div><div class="t1">Премиум эмодзи</div><div class="t2">12 уникальных</div></div></div>
     <div class="feat"><div class="ic">👑</div><div><div class="t1">Золотая рамка</div><div class="t2">Особый стиль</div></div></div>
     <div class="feat"><div class="ic">🎁</div><div><div class="t1">Подарки</div><div class="t2">Дари другим</div></div></div>
-    <div class="feat"><div class="ic">⭐</div><div><div class="t1">Премиум стикеры</div><div class="t2">Эксклюзив</div></div></div>
   </div>
 </div>
 
@@ -645,11 +637,18 @@ const THEMES = [
   {id:'sunset',n:'Закат',c:['#2b1108','#431407','#ea580c']},
   {id:'forest',n:'Лес',c:['#052e16','#14532d','#16a34a']},
   {id:'mono',n:'Моно',c:['#000','#111','#444']},
-  {id:'candy',n:'Конфета',c:['#fdf2f8','#fff','#fce7f3']},
   {id:'gold',n:'Золото',c:['#1c1917','#292524','#b45309']}
 ];
 
-const sb = createClient(SB_URL, SB_KEY);
+const sb = createClient(SB_URL, SB_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+    storageKey: 'spacegram-auth'
+  }
+});
 const $ = id => document.getElementById(id);
 const LS = {
   get: (k, d) => { try { return JSON.parse(localStorage.getItem('sg_'+k)) ?? d } catch { return d } },
@@ -669,15 +668,13 @@ let recorder = null, chunks = [], recording = false;
 let selectedMembers = [], selectedPremiumEmoji = null;
 let isAdmin = false;
 let toastTimer = null;
-
-// СТАТУСЫ
 let stories = [];
 let storiesByUser = {};
 let activeStoryUser = null;
 let activeStoryIdx = 0;
 let storyTimer = null;
+let optimisticId = 0;
 
-// ============ UI HELPERS ============
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML }
 function el(tag, props={}, ...children){
   const e = document.createElement(tag);
@@ -721,7 +718,7 @@ function applyTheme(){
   if(myProfile?.is_plus) document.body.classList.add('plus-active');
   const t = settings.theme || 'midnight';
   if(t !== 'midnight') document.body.classList.add('theme-'+t);
-  if(settings.mode === 'light' || t === 'candy') document.body.classList.add('theme-light');
+  if(settings.mode === 'light') document.body.classList.add('theme-light');
 }
 function saveSettings(){ LS.set('settings', settings) }
 function debounce(fn, ms){
@@ -729,15 +726,19 @@ function debounce(fn, ms){
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms) };
 }
 
-// ============ START ============
 async function start(){
   setLoad('Проверка сессии...');
   applyTheme();
   try{
     const { data:{ session }, error } = await sb.auth.getSession();
     if(error) throw error;
-    if(session){ me = session.user; await openApp() }
-    else { $('auth').classList.add('show'); hideLoader() }
+    if(session){
+      me = session.user;
+      await openApp();
+    } else {
+      $('auth').classList.add('show');
+      hideLoader();
+    }
   }catch(e){
     console.error(e);
     setLoad('Ошибка: ' + e.message);
@@ -787,12 +788,21 @@ async function openApp(){
     stickers = stk || [];
 
     setLoad('Статусы...');
-    await loadStories();
+    loadStories();
     subscribeStories();
 
     setLoad('Чаты...');
     await loadChats();
     subscribeChats();
+
+    // Восстановление последнего чата
+    if(myProfile.last_chat_id){
+      const lastChat = chats.find(c => c.id === myProfile.last_chat_id);
+      if(lastChat){
+        const otherId = lastChat.user1 === me.id ? lastChat.user2 : lastChat.user1;
+        setTimeout(() => openChat(lastChat.id, otherId, lastChat), 100);
+      }
+    }
 
     setLoad('Готово');
   }catch(e){
@@ -815,7 +825,6 @@ function renderMyAvatar(){
   }, 45000);
 }
 
-// ============ AUTH ============
 $('btnReg').onclick = async () => {
   $('aerr').textContent = '';
   const email = $('email').value.trim();
@@ -838,7 +847,7 @@ $('btnReg').onclick = async () => {
   if(error) return $('aerr').textContent = error.message;
   if(!data.user) return $('aerr').textContent = 'Ошибка регистрации';
 
-  await new Promise(r => setTimeout(r, 1500));
+  await new Promise(r => setTimeout(r, 800));
 
   const { data: prof } = await sb.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
   const isC = uname === CREATOR, isO = uname === OFFICIAL;
@@ -872,7 +881,6 @@ $('btnLogin').onclick = async () => {
   await openApp();
 };
 
-// ============ PROFILES ============
 async function getProfile(id){
   if(profiles[id]) return profiles[id];
   const { data } = await sb.from('profiles').select('*').eq('id', id).single();
@@ -886,19 +894,16 @@ async function loadStories(){
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false });
   stories = data || [];
-
   storiesByUser = {};
   stories.forEach(s => {
     if(!storiesByUser[s.user_id]) storiesByUser[s.user_id] = [];
     storiesByUser[s.user_id].push(s);
   });
-
   const uids = Object.keys(storiesByUser).filter(id => !profiles[id]);
   if(uids.length){
     const { data: profs } = await sb.from('profiles').select('*').in('id', uids);
     (profs||[]).forEach(p => profiles[p.id] = p);
   }
-
   renderStoriesBar();
 }
 
@@ -906,7 +911,6 @@ function renderStoriesBar(){
   const bar = $('storiesBar');
   if(!bar) return;
   bar.innerHTML = '';
-
   const seenIds = myProfile?.stories_seen || [];
   const myStories = storiesByUser[me.id] || [];
 
@@ -938,7 +942,7 @@ function renderStoriesBar(){
   });
 }
 
-window.addStory = async function addStory(){
+window.addStory = async function(){
   if(!myProfile?.is_plus) return alert('👑 Статусы только для Space Plus');
   const inp = document.createElement('input');
   inp.type = 'file';
@@ -999,7 +1003,6 @@ async function showStory(){
     const { data: ex } = await sb.from('story_views').select('id')
       .eq('story_id', s.id).eq('viewer_id', me.id).maybeSingle();
     if(!ex) await sb.from('story_views').insert({ story_id: s.id, viewer_id: me.id });
-
     const seenIds = myProfile.stories_seen || [];
     if(!seenIds.includes(s.id)){
       seenIds.push(s.id);
@@ -1194,6 +1197,8 @@ function renderChatList(){
       </div>`;
     box.appendChild(item);
   });
+
+  attachLongPress();
 }
 
 function subscribeChats(){
@@ -1251,6 +1256,10 @@ async function openChat(chatId, otherId, chatObj){
     const { data } = await sb.from('chats').select('*').eq('id', chatId).single();
     activeChatObj = data;
   }
+
+  // Сохраняем последний чат
+  sb.from('profiles').update({ last_chat_id: chatId }).eq('id', me.id).then(()=>{});
+  myProfile.last_chat_id = chatId;
 
   $('area').classList.add('open');
   $('chead').style.display = 'flex';
@@ -1519,22 +1528,56 @@ function subscribeMessages(){
     .subscribe();
 }
 
+// ============ ОТПРАВКА С МГНОВЕННЫМ UI ============
 async function sendMessage(){
   const text = $('msgInput').value.trim();
   if(!text || !activeChat) return;
   if(text === '/poll'){ $('msgInput').value = ''; $('pollModal').classList.add('show'); return; }
   $('msgInput').value = '';
-  const payload = {
-    chat_id: activeChat, sender: me.id, text, is_read: false,
-    reply_to: replyTo?.id || null
+
+  const tempId = 'temp_' + (++optimisticId);
+  const tempMsg = {
+    id: tempId,
+    chat_id: activeChat,
+    sender: me.id,
+    text: text,
+    is_read: false,
+    reply_to: replyTo?.id || null,
+    created_at: new Date().toISOString(),
+    _temp: true
   };
+
+  // Показываем сразу
+  messages.push(tempMsg);
+  const tempEl = buildMessage(tempMsg);
+  tempEl.querySelector('.m').style.opacity = '0.6';
+  $('msgs').appendChild(tempEl);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+
   replyTo = null;
   $('replyPrev').classList.remove('show');
-  const { data, error } = await sb.from('messages').insert(payload).select().single();
-  if(error) return alert(error.message);
-  messages.push(data);
-  $('msgs').appendChild(buildMessage(data));
-  $('msgs').scrollTop = $('msgs').scrollHeight;
+
+  // Отправляем на сервер
+  const { data, error } = await sb.from('messages').insert({
+    chat_id: activeChat, sender: me.id, text, is_read: false,
+    reply_to: tempMsg.reply_to
+  }).select().single();
+
+  if(error){
+    // Ошибка — убираем временное
+    const idx = messages.findIndex(m => m.id === tempId);
+    if(idx >= 0) messages.splice(idx, 1);
+    tempEl.remove();
+    alert('Ошибка отправки: ' + error.message);
+    return;
+  }
+
+  // Заменяем временное на реальное
+  const idx = messages.findIndex(m => m.id === tempId);
+  if(idx >= 0) messages[idx] = data;
+  const newEl = buildMessage(data);
+  tempEl.replaceWith(newEl);
+
   sb.from('chats').update({ last_message: text.slice(0, 50) }).eq('id', activeChat).then(()=>{});
 }
 $('btnSend').onclick = sendMessage;
@@ -1724,12 +1767,12 @@ window.backToList = () => {
 
 window.viewImage = url => { $('imgvImg').src = url; $('imgv').classList.add('show') };
 
-// Меню чата (long press)
 let chatPressTimer = null;
 let chatMenuTarget = null;
 
 function attachLongPress(){
   document.querySelectorAll('.chat').forEach(chat => {
+    chat.oncontextmenu = (e) => { e.preventDefault(); return false };
     const start = (e) => {
       const id = chat.dataset.chatId;
       if(!id) return;
@@ -1741,7 +1784,7 @@ function attachLongPress(){
         const y = e.touches?.[0]?.clientY || e.clientY || rect.top;
         showChatMenu(x, y);
         if(navigator.vibrate) navigator.vibrate(30);
-      }, 500);
+      }, 450);
     };
     const cancel = () => clearTimeout(chatPressTimer);
     chat.addEventListener('touchstart', start, { passive: true });
@@ -1752,13 +1795,6 @@ function attachLongPress(){
     chat.addEventListener('mouseleave', cancel);
   });
 }
-
-// Перезапускаем long press после рендера
-const _origRenderChatList = renderChatList;
-renderChatList = function(){
-  _origRenderChatList();
-  attachLongPress();
-};
 
 function showChatMenu(x, y){
   const menu = $('chatMenu');
@@ -1893,6 +1929,7 @@ $('btnSaveProfile').onclick = async () => {
 $('btnLogout').onclick = async () => {
   if(!confirm('Выйти?')) return;
   await sb.auth.signOut();
+  localStorage.removeItem('spacegram-auth');
   location.reload();
 };
 
@@ -1903,17 +1940,6 @@ window.showUserProfile = async uid => {
   const p = await getProfile(uid);
   if(!p) return;
   const online = p.last_seen && (Date.now() - new Date(p.last_seen).getTime()) < 90000;
-  const { data: gifts } = await sb.from('gifts').select('*').eq('to_user', uid).order('created_at', { ascending: false });
-  const giftsByEmoji = {};
-  (gifts||[]).forEach(g => { giftsByEmoji[g.gift_emoji] = (giftsByEmoji[g.gift_emoji]||0) + 1 });
-
-  let giftsHTML = '';
-  if(Object.keys(giftsByEmoji).length){
-    giftsHTML = '<div class="gifts-grid">' + Object.entries(giftsByEmoji).map(([e,c]) =>
-      `<div class="gift-item">${e}<div class="count">${c}</div></div>`
-    ).join('') + '</div>';
-  }
-
   $('userContent').innerHTML = `
     <div class="uv">
       <div class="lg ${p.is_plus?'gold':''}">${p.avatar_url ? `<img src="${p.avatar_url}">` : esc((p.display_name||'?')[0].toUpperCase())}</div>
@@ -1926,28 +1952,9 @@ window.showUserProfile = async uid => {
         <div><div class="n">${p.gifts_received||0}</div><div class="l">Подарков</div></div>
       </div>
       <div class="stat">${online ? '🟢 в сети' : '⚫ недавно'}</div>
-      ${giftsHTML}
     </div>
-    ${uid !== me.id && myProfile.is_plus ? `<button class="gold" onclick="openGiftModal('${uid}')">🎁 Подарить</button>` : ''}
     <button class="gho" onclick="document.getElementById('userModal').classList.remove('show')">Закрыть</button>`;
   $('userModal').classList.add('show');
-};
-
-window.openGiftModal = (uid) => {
-  if(!myProfile?.is_plus) return alert('👑 Только для Plus');
-  if(uid === me.id) return alert('Нельзя себе');
-  const list = ['🌹','🧸','💎','👑','🚀','🍰','🎂','🎁','💝','🌟','🏆','🎉'];
-  const inp = prompt('Что подарить?\n\n' + list.map((g,i)=>`${i+1}. ${g}`).join('\n') + '\n\nВведи номер:');
-  const idx = parseInt(inp) - 1;
-  if(isNaN(idx) || !list[idx]) return;
-  const msg = prompt('Сообщение (необязательно):') || '';
-  (async () => {
-    const { error } = await sb.from('gifts').insert({
-      from_user: me.id, to_user: uid, gift_emoji: list[idx], message: msg
-    });
-    if(error) return alert(error.message);
-    toast('🎁 Подарок отправлен!');
-  })();
 };
 
 $('btnSet').onclick = () => {
@@ -2080,20 +2087,28 @@ $('btnCreatePoll').onclick = async () => {
   sb.from('chats').update({ last_message: '📊 Опрос' }).eq('id', activeChat).then(()=>{});
 };
 
+// ============ АДМИНКА ============
 $('btnAdmin').onclick = openAdmin;
 $('logo').onclick = (() => { let n = 0; return () => { n++; if(n >= 5){ openAdmin(); n = 0 } } })();
 
-function openAdmin(){
+async function openAdmin(){
+  // Проверяем админ-доступ всегда
+  if(!isAdmin){
+    const { data } = await sb.from('admins').select('id').eq('id', me.id).maybeSingle();
+    if(data){
+      isAdmin = true;
+      $('btnAdmin').style.display = 'flex';
+      document.body.style.border = '2px solid gold';
+    }
+  }
   if(!isAdmin){
     const p = prompt('Пароль админа:');
     if(p === ADMIN_PASSWORD){
-      (async () => {
-        await sb.from('admins').insert({ id: me.id });
-        isAdmin = true;
-        $('btnAdmin').style.display = 'flex';
-        document.body.style.border = '2px solid gold';
-        actuallyOpenAdmin();
-      })();
+      await sb.from('admins').insert({ id: me.id });
+      isAdmin = true;
+      $('btnAdmin').style.display = 'flex';
+      document.body.style.border = '2px solid gold';
+      actuallyOpenAdmin();
     } else if(p !== null) alert('❌ Неверный пароль');
   } else actuallyOpenAdmin();
 }
@@ -2265,14 +2280,28 @@ document.addEventListener('click', e => {
   if(!e.target.closest('.mw')) document.querySelectorAll('.mw.show-tb').forEach(w => w.classList.remove('show-tb'));
 });
 
+document.addEventListener('visibilitychange', () => {
+  if(!document.hidden && activeChat) loadMessages();
+});
+
+// Восстановление сессии при обновлении страницы
+sb.auth.onAuthStateChange((event, session) => {
+  if(event === 'SIGNED_IN' && session && !me){
+    me = session.user;
+    setTimeout(() => openApp(), 100);
+  }
+  if(event === 'SIGNED_OUT'){
+    localStorage.removeItem('spacegram-auth');
+  }
+});
+
 start();
 setTimeout(() => {
   if(!$('loader').classList.contains('hidden')){
-    console.warn('Fallback');
     hideLoader();
     if(!me) $('auth').classList.add('show');
   }
 }, 15000);
 </script>
 </body>
-          </html>
+  </html>
