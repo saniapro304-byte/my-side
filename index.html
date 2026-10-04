@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spacegram</title>
+<script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body { background: #0e1621; display: flex; justify-content: center; align-items: center; height: 100vh; }
+
+  .app {
+    width: 900px; height: 650px; display: flex; border-radius: 16px;
+    overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.6); background: #17212b;
+  }
+
+  /* Сайдбар */
+  .sidebar {
+    width: 280px; background: #17212b; border-right: 1px solid #242f3d;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-header {
+    padding: 16px; border-bottom: 1px solid #242f3d;
+    font-weight: 700; font-size: 18px; color: #fff;
+  }
+  .chat-list { flex: 1; overflow-y: auto; }
+  .chat-item {
+    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: 0.2s; border-left: 3px solid transparent;
+  }
+  .chat-item:hover { background: #1c2733; }
+  .chat-item.active { background: #2b5278; border-left-color: #64b5ef; }
+  .chat-avatar {
+    width: 48px; height: 48px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .chat-info { flex: 1; min-width: 0; }
+  .chat-name { color: #fff; font-weight: 600; font-size: 15px; }
+  .chat-preview { color: #7d8b99; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+
+  /* Область чата */
+  .chat-area { flex: 1; display: flex; flex-direction: column; background: #0e1621; }
+  .chat-header {
+    padding: 14px 20px; background: #17212b; border-bottom: 1px solid #242f3d;
+    display: flex; align-items: center; gap: 12px; color: #fff;
+  }
+  .header-avatar {
+    width: 42px; height: 42px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 20px;
+  }
+  .header-name { font-weight: 600; font-size: 16px; }
+  .header-status { font-size: 12px; color: #64b5ef; }
+
+  .messages {
+    flex: 1; padding: 20px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-thumb { background: #2b3a4a; border-radius: 3px; }
+
+  .msg {
+    max-width: 70%; padding: 8px 14px; border-radius: 14px;
+    font-size: 14px; line-height: 1.4; word-wrap: break-word; color: #fff;
+    animation: pop 0.2s ease;
+  }
+  @keyframes pop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .msg.me { align-self: flex-end; background: #2b5278; border-bottom-right-radius: 4px; }
+  .msg.you { align-self: flex-start; background: #182533; border-bottom-left-radius: 4px; }
+  .msg .time { font-size: 10px; opacity: 0.6; margin-top: 4px; text-align: right; }
+
+  /* Ввод */
+  .input-area {
+    padding: 12px 16px; background: #17212b; display: flex; gap: 10px; align-items: center;
+  }
+  .input-area input {
+    flex: 1; padding: 12px 16px; border: none; border-radius: 24px;
+    background: #242f3d; color: #fff; outline: none; font-size: 14px;
+  }
+  .input-area input::placeholder { color: #5d7285; }
+  .emoji-btn, .send-btn {
+    width: 44px; height: 44px; border: none; border-radius: 50%;
+    background: #242f3d; color: #64b5ef; font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: 0.2s;
+  }
+  .emoji-btn:hover, .send-btn:hover { background: #2b5278; }
+  .send-btn { background: #2b5278; color: #fff; }
+  .send-btn:hover { background: #3a6a94; }
+
+  .emoji-picker-container { position: relative; }
+  emoji-picker {
+    position: absolute; bottom: 55px; right: 0; z-index: 100;
+    --background: #17212b; --border-color: #242f3d; --indicator-color: #64b5ef;
+    --input-border-color: #242f3d; --input-background: #242f3d;
+    --input-color: #fff; --category-emoji-size: 1.125rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">💬 Spacegram</div>
+    <div class="chat-list" id="chatList"></div>
+  </div>
+
+  <div class="chat-area">
+    <div class="chat-header">
+      <div class="header-avatar" id="headerAvatar">🐸</div>
+      <div>
+        <div class="header-name" id="headerName">Бурмалда</div>
+        <div class="header-status">онлайн</div>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="input-area">
+      <div class="emoji-picker-container">
+        <button class="emoji-btn" id="emojiBtn">😀</button>
+        <emoji-picker id="emojiPicker" locale="ru" style="display:none"></emoji-picker>
+      </div>
+      <input type="text" id="input" placeholder="Напиши сообщение..." autocomplete="off">
+      <button class="send-btn" id="sendBtn">➤</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- Данные чатов ---
+  const chats = [
+    { id: 'frog', name: 'Бурмалда', avatar: '🐸', color: '#4a7c59' },
+    { id: 'space', name: 'Космос', avatar: '🚀', color: '#2b5278' },
+    { id: 'crew', name: 'Экипаж', avatar: '👨‍🚀', color: '#6c5ce7' }
+  ];
+
+  // История сообщений для каждого чата
+  const histories = {
+    frog: [
+      { text: 'Здорова бурмалда! 👋', who: 'you', time: '10:00' },
+      { text: 'Ку, чё как? 😄', who: 'me', time: '10:01' }
+    ],
+    space: [
+      { text: 'Системы в норме. Готовы к прыжку?', who: 'you', time: '09:30' },
+      { text: 'Готов. Прыгаем через 5 минут. 🚀', who: 'me', time: '09:31' }
+    ],
+    crew: [
+      { text: 'Всем привет! Собрание в 15:00', who: 'you', time: '08:00' }
+    ]
+  };
+
+  const replies = {
+    frog: ['Ага, жиза 😂', 'Ну ты даёшь!', 'Хаха, норм', 'Серьёзно?', 'Окей 👍'],
+    space: ['Понял, корректирую курс 🛰️', 'Принято, капитан!', 'Системы проверены ✅', 'Есть контакт!'],
+    crew: ['Принято!', 'Буду вовремя', 'Ок, спасибо за инфо', 'Кто ещё идёт?']
+  };
+
+  let activeChat = 'frog';
+
+  // --- Элементы ---
+  const chatList = document.getElementById('chatList');
+  const messagesEl = document.getElementById('messages');
+  const input = document.getElementById('input');
+  const sendBtn = document.getElementById('sendBtn');
+  const headerAvatar = document.getElementById('headerAvatar');
+  const headerName = document.getElementById('headerName');
+  const emojiBtn = document.getElementById('emojiBtn');
+  const emojiPicker = document.getElementById('emojiPicker');
+
+  // --- Рендер списка чатов ---
+  function renderChatList() {
+    chatList.innerHTML = '';
+    chats.forEach(chat => {
+      const lastMsg = histories[chat.id][histories[chat.id].length - 1];
+      const div = document.createElement('div');
+      div.className = 'chat-item' + (chat.id === activeChat ? ' active' : '');
+      div.innerHTML = `
+        <div class="chat-avatar" style="background:${chat.color}22; color:${chat.color}">${chat.avatar}</div>
+        <div class="chat-info">
+          <div class="chat-name">${chat.name}</div>
+          <div class="chat-preview">${lastMsg ? lastMsg.text : 'Нет сообщений'}</div>
+        </div>
+      `;
+      div.onclick = () => switchChat(chat.id);
+      chatList.appendChild(div);
+    });
+  }
+
+  // --- Рендер сообщений активного чата ---
+  function renderMessages() {
+    const chat = chats.find(c => c.id === activeChat);
+    headerAvatar.textContent = chat.avatar;
+    headerAvatar.style.background = chat.color + '33';
+    headerName.textContent = chat.name;
+    messagesEl.innerHTML = '';
+    histories[activeChat].forEach(msg => {
+      const div = document.createElement('div');
+      div.className = 'msg ' + msg.who;
+      div.innerHTML = `${msg.text}<div class="time">${msg.time}</div>`;
+      messagesEl.appendChild(div);
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  // --- Переключение чата ---
+  function switchChat(id) {
+    activeChat = id;
+    renderChatList();
+    renderMessages();
+    input.focus();
+    emojiPicker.style.display = 'none';
+  }
+
+  // --- Добавление сообщения ---
+  function addMessage(text, who) {
+    const now = new Date();
+    const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    histories[activeChat].push({ text, who, time });
+    renderMessages();
+    renderChatList();
+  }
+
+  // --- Отправка ---
+  function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    addMessage(text, 'me');
+    input.value = '';
+    emojiPicker.style.display = 'none';
+
+    // Автоответ
+    setTimeout(() => {
+      const list = replies[activeChat] || replies.frog;
+      const reply = list[Math.floor(Math.random() * list.length)];
+      addMessage(reply, 'you');
+    }, 700 + Math.random() * 900);
+  }
+
+  // --- Эмодзи ---
+  emojiBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const visible = emojiPicker.style.display !== 'none';
+    emojiPicker.style.display = visible ? 'none' : 'block';
+  });
+
+  emojiPicker.addEventListener('emoji-click', (event) => {
+    input.value += event.detail.unicode;
+    input.focus();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+      emojiPicker.style.display = 'none';
+    }
+  });
+
+  // --- Слушатели ---
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+
+  // --- Инициализация ---
+  renderChatList();
+  renderMessages();
+</script>
+
+</body>
+</html>
