@@ -21,8 +21,6 @@
     --safe-bottom:env(safe-area-inset-bottom,0px);
   }
   body.light{--bg:#e8eef5;--panel:#fff;--panel2:#f0f3f7;--hover:#e8eef5;--border:#e0e6ed;--text:#0e1621;--text2:#5d7285;--text3:#8a9aad;--msg-in:#fff;--msg-out:#64b5ef}
-
-  /* 12 тем */
   body.theme-midnight{--bg:#0a0e14;--panel:#121820;--panel2:#1c2530;--accent:#7dd3fc;--accent-bg:#0c4a6e;--msg-out:#0369a1}
   body.theme-purple{--bg:#1a0f2e;--panel:#241642;--panel2:#332157;--accent:#c084fc;--accent-bg:#6b21a8;--msg-out:#7c3aed}
   body.theme-ocean{--bg:#042f2e;--panel:#134e4a;--panel2:#115e59;--accent:#5eead4;--accent-bg:#0f766e;--msg-out:#0d9488}
@@ -44,14 +42,20 @@
   .app{position:fixed;inset:0;display:flex;overflow:hidden;background:var(--panel)}
   @media(min-width:900px){.app{max-width:1100px;height:100vh;max-height:800px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.6)}}
 
+  /* LOADER */
+  .loader{position:fixed;inset:0;background:var(--panel);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:14px;transition:opacity .3s}
+  .loader.hidden{opacity:0;pointer-events:none}
+  .loader .spinner{width:38px;height:38px;border:3px solid var(--panel2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
   /* AUTH */
-  .auth-screen{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;gap:10px;background:var(--panel);overflow-y:auto;padding-top:calc(20px + var(--safe-top));padding-bottom:calc(20px + var(--safe-bottom))}
+  .auth-screen{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;align-items:center;padding:20px;gap:10px;background:var(--panel);overflow-y:auto;padding-top:calc(20px + var(--safe-top));padding-bottom:calc(20px + var(--safe-bottom))}
+  .auth-screen.show{display:flex}
   .auth-screen h1{font-size:clamp(26px,7vw,36px);margin-bottom:8px;font-weight:800;background:linear-gradient(135deg,#64b5ef,#4a9eff,#7dd3fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .auth-screen input{width:100%;max-width:320px;padding:13px 16px;border:2px solid transparent;border-radius:12px;background:var(--panel2);color:var(--text);outline:none;font-size:15px}
   .auth-screen input:focus{border-color:var(--accent)}
   .auth-screen input::placeholder{color:var(--text3)}
   .auth-screen button{width:100%;max-width:320px;padding:13px;border:none;border-radius:12px;background:var(--accent-bg);color:#fff;font-size:15px;font-weight:600;cursor:pointer}
-  .auth-screen button:active{transform:scale(.98)}
   .auth-screen button.ghost{background:var(--panel2);color:var(--text)}
   .auth-screen .error{color:var(--red);font-size:13px;min-height:16px;text-align:center;max-width:320px}
   .auth-screen .hint{color:var(--text3);font-size:11px;text-align:center;max-width:320px}
@@ -59,21 +63,19 @@
   .main-app{display:none;width:100%;height:100%}
   .main-app.active{display:flex}
 
-  /* SIDEBAR — КОМПАКТНЫЙ */
+  /* SIDEBAR */
   .sidebar{width:100%;height:100%;background:var(--panel);display:flex;flex-direction:column;position:absolute;inset:0;transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:5}
   .sidebar.hidden{transform:translateX(-100%)}
   @media(min-width:700px){.sidebar{width:300px;position:relative;inset:auto;transform:none!important;border-right:1px solid var(--border)}.sidebar.hidden{transform:none!important}}
 
   .sidebar-header{padding:calc(8px + var(--safe-top)) 10px 6px;display:flex;justify-content:space-between;align-items:center;gap:6px}
   .sidebar-header h2{font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent),#4a9eff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  body.plus-active .sidebar-header h2{background:var(--gold-grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
   .header-actions{display:flex;gap:4px;align-items:center}
   .header-btn{width:32px;height:32px;border-radius:50%;background:var(--panel2);border:none;color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .header-btn:active{transform:scale(.9);background:var(--accent-bg);color:#fff}
+  .header-btn:active{transform:scale(.9)}
   .user-avatar-small{width:32px;height:32px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;overflow:hidden;color:#fff;font-weight:600;flex-shrink:0}
   .user-avatar-small img{width:100%;height:100%;object-fit:cover}
 
-  /* STORIES — уменьшено */
   .stories-row{display:flex;gap:8px;padding:4px 10px 8px;overflow-x:auto;border-bottom:1px solid var(--border)}
   .stories-row::-webkit-scrollbar{display:none}
   .story-item{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex-shrink:0}
@@ -84,7 +86,6 @@
   .story-avatar .add{position:absolute;bottom:-2px;right:-2px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid var(--panel)}
   .story-name{font-size:9px;color:var(--text2);max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-  /* FOLDERS — компактно */
   .folders{display:flex;gap:4px;padding:0 10px 6px;overflow-x:auto}
   .folders::-webkit-scrollbar{display:none}
   .folder-btn{padding:5px 11px;border-radius:14px;background:var(--panel2);border:none;color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap;font-weight:500}
@@ -94,7 +95,7 @@
   .search-box input{width:100%;padding:9px 12px;border:2px solid transparent;border-radius:10px;background:var(--panel2);color:var(--text);outline:none;font-size:14px}
   .search-box input:focus{border-color:var(--accent)}
 
-  .chat-list{flex:1;overflow-y:auto;padding:0 4px 4px;-webkit-overflow-scrolling:touch}
+  .chat-list{flex:1;overflow-y:auto;padding:0 4px 4px}
   .chat-list::-webkit-scrollbar{width:4px}
   .chat-list::-webkit-scrollbar-thumb{background:var(--panel2);border-radius:2px}
   .chat-item{padding:7px 10px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:10px;margin:1px 0}
@@ -108,7 +109,6 @@
   .chat-preview{color:var(--text2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
   .chat-time{color:var(--text3);font-size:10px;flex-shrink:0}
 
-  /* BADGES */
   .badge{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;flex-shrink:0;font-size:9px;font-weight:bold;color:#fff}
   .badge.verified{background:var(--blue-grad)}
   .badge.creator{background:var(--red-grad)}
@@ -130,7 +130,7 @@
   .chat-actions{display:flex;gap:0}
   .chat-actions button{background:none;border:none;color:var(--accent);font-size:16px;cursor:pointer;padding:7px;border-radius:50%}
 
-  .messages{flex:1;padding:8px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;background-image:var(--wallpaper);-webkit-overflow-scrolling:touch;background-size:cover;background-position:center}
+  .messages{flex:1;padding:8px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;background-image:var(--wallpaper);background-size:cover;background-position:center}
   .messages::-webkit-scrollbar{width:4px}
   .messages::-webkit-scrollbar-thumb{background:var(--panel2);border-radius:2px}
 
@@ -181,7 +181,6 @@
   .pinned-banner .pin-text b{color:var(--text)}
   .pinned-banner button{background:none;border:none;color:var(--text2);font-size:14px;cursor:pointer}
 
-  /* INPUT — КОМПАКТНЫЙ */
   .input-area{padding:6px 8px calc(6px + var(--safe-bottom));background:var(--panel);display:flex;gap:4px;align-items:center;min-height:52px}
   .input-area input{flex:1;padding:9px 12px;border:none;border-radius:20px;background:var(--panel2);color:var(--text);outline:none;font-size:15px;min-width:0}
   .input-area input::placeholder{color:var(--text3)}
@@ -204,17 +203,13 @@
   .reply-preview .content .text{color:var(--text2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .reply-preview button{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer}
 
-  /* MODALS */
   .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);z-index:1000;justify-content:center;align-items:center;padding:14px;overflow-y:auto}
   .modal.active{display:flex}
   .modal-content{background:var(--panel);padding:18px;border-radius:16px;width:100%;max-width:420px;color:var(--text);display:flex;flex-direction:column;gap:8px;margin:auto;max-height:90vh;overflow-y:auto;padding-top:calc(18px + var(--safe-top));padding-bottom:calc(18px + var(--safe-bottom))}
-  .modal-content::-webkit-scrollbar{width:4px}
-  .modal-content::-webkit-scrollbar-thumb{background:var(--panel2);border-radius:2px}
   .modal-content h2{font-size:18px;margin-bottom:2px;font-weight:700}
   .modal-content input,.modal-content textarea,.modal-content select{padding:11px 13px;border:2px solid transparent;border-radius:10px;background:var(--panel2);color:var(--text);outline:none;font-size:15px;width:100%;font-family:inherit;resize:vertical}
-  .modal-content input:focus,.modal-content textarea:focus{border-color:var(--accent)}
+  .modal-content input:focus{border-color:var(--accent)}
   .modal-content button{padding:11px;border:none;border-radius:10px;background:var(--accent-bg);color:#fff;font-size:14px;font-weight:600;cursor:pointer}
-  .modal-content button:active{transform:scale(.98)}
   .modal-content button.danger{background:var(--red)}
   .modal-content button.ghost{background:var(--panel2);color:var(--text)}
   .modal-content button.blue{background:var(--blue-grad)}
@@ -235,18 +230,6 @@
   .switch input:checked+.slider{background:var(--accent-bg)}
   .switch input:checked+.slider::before{transform:translateX(18px)}
 
-  .admin-user{display:flex;align-items:center;gap:8px;padding:9px;background:var(--panel2);border-radius:10px;margin-top:4px}
-  .admin-user .info{flex:1;min-width:0}
-  .admin-user .uname{font-size:13px;font-weight:600;display:flex;align-items:center;gap:3px}
-  .admin-user .nick{color:var(--text2);font-size:11px}
-  .admin-user .btn-mini{padding:6px 9px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:#fff;flex-shrink:0}
-  .admin-user .btn-blue{background:var(--blue-grad)}
-  .admin-user .btn-blue.off{background:#444}
-  .admin-user .btn-gold{background:var(--gold-grad);color:#000}
-  .admin-user .btn-gold.off{background:#444;color:#fff}
-  .admin-user .btn-red{background:var(--red-grad)}
-  .admin-user .btn-red.off{background:#444}
-
   .user-profile-view{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:6px 0}
   .user-profile-view .avatar-lg{width:100px;height:100px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden;font-weight:600}
   .user-profile-view .avatar-lg img{width:100%;height:100%;object-fit:cover}
@@ -264,11 +247,10 @@
   .toggle-group button{flex:1;min-width:70px;padding:9px 8px;background:var(--panel2);border-radius:9px;border:2px solid transparent;color:var(--text);font-size:12px;cursor:pointer}
   .toggle-group button.active{background:var(--accent-bg);border-color:var(--accent);color:#fff}
 
-  /* THEME PICKER */
   .theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-  .theme-btn{aspect-ratio:1;border-radius:10px;border:3px solid transparent;cursor:pointer;position:relative;overflow:hidden;padding:0}
+  .theme-btn{aspect-ratio:1;border-radius:10px;border:3px solid transparent;cursor:pointer;overflow:hidden;padding:0}
   .theme-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--panel),0 0 12px var(--accent)}
-  .theme-btn .swatch{position:absolute;inset:0;display:flex}
+  .theme-btn .swatch{display:flex;height:100%}
   .theme-btn .swatch > div{flex:1}
 
   .img-viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:2000;justify-content:center;align-items:center;padding:16px}
@@ -324,22 +306,86 @@
   .story-viewer .nav.left{left:0}
   .story-viewer .nav.right{right:0}
 
-  .loader{position:absolute;inset:0;background:var(--panel);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:14px;transition:opacity .3s}
-  .loader.hidden{opacity:0;pointer-events:none}
-  .loader .spinner{width:38px;height:38px;border:3px solid var(--panel2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  /* ================== ADMIN PANEL ================== */
+  .admin-panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:3000;overflow-y:auto}
+  .admin-panel.active{display:block}
+  @media(min-width:900px){.admin-panel{max-width:1100px;height:100vh;max-height:800px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}}
+  .admin-shell{display:flex;flex-direction:column;height:100%}
+  .admin-top{padding:calc(12px + var(--safe-top)) 14px 12px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .admin-top h2{font-size:18px;font-weight:700;flex:1;background:linear-gradient(135deg,#ffd700,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .admin-top .close-admin{background:var(--panel2);border:none;color:var(--text);width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer}
+  .admin-stats{padding:10px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:var(--panel)}
+  @media(max-width:500px){.admin-stats{grid-template-columns:repeat(2,1fr)}}
+  .admin-stat{background:var(--panel2);padding:10px;border-radius:10px;text-align:center}
+  .admin-stat .n{font-size:18px;font-weight:800;color:var(--accent)}
+  .admin-stat .l{font-size:10px;color:var(--text2);text-transform:uppercase;margin-top:2px}
+  .admin-tabs{display:flex;gap:4px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto}
+  .admin-tabs::-webkit-scrollbar{display:none}
+  .admin-tabs button{padding:8px 14px;border-radius:16px;background:var(--panel2);border:none;color:var(--text);font-size:12px;cursor:pointer;white-space:nowrap;font-weight:500}
+  .admin-tabs button.active{background:var(--gold-grad);color:#000;font-weight:700}
+  .admin-content{flex:1;overflow-y:auto;padding:12px 14px calc(20px + var(--safe-bottom))}
+  .admin-content::-webkit-scrollbar{width:5px}
+  .admin-content::-webkit-scrollbar-thumb{background:var(--panel2);border-radius:3px}
+
+  .admin-search{width:100%;padding:11px 14px;border:2px solid transparent;border-radius:11px;background:var(--panel2);color:var(--text);outline:none;font-size:14px;margin-bottom:10px}
+  .admin-search:focus{border-color:var(--accent)}
+
+  .admin-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .admin-card .ac-avatar{width:44px;height:44px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:17px;overflow:hidden;color:#fff;font-weight:600;flex-shrink:0;position:relative}
+  .admin-card .ac-avatar img{width:100%;height:100%;object-fit:cover}
+  .admin-card .ac-avatar.banned::after{content:'🚫';position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:20px;border-radius:50%}
+  .admin-card .ac-info{flex:1;min-width:0}
+  .admin-card .ac-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:4px;margin-bottom:2px}
+  .admin-card .ac-nick{font-size:11px;color:var(--text2)}
+  .admin-card .ac-stats{font-size:10px;color:var(--text3);margin-top:3px;display:flex;gap:8px}
+  .admin-card .ac-actions{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:170px}
+
+  .ac-btn{padding:6px 10px;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;color:#fff;display:flex;align-items:center;gap:3px}
+  .ac-btn:active{transform:scale(.94)}
+  .ac-btn.blue{background:var(--blue-grad)}
+  .ac-btn.gold{background:var(--gold-grad);color:#000}
+  .ac-btn.red{background:var(--red-grad)}
+  .ac-btn.green{background:linear-gradient(135deg,#4ade80,#16a34a)}
+  .ac-btn.gray{background:#444}
+  .ac-btn.blue.off,.ac-btn.gold.off,.ac-btn.red.off{background:#333;color:#888}
+
+  .admin-empty{padding:30px 20px;text-align:center;color:var(--text2);font-size:13px}
+
+  .confirm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:3500;justify-content:center;align-items:center;padding:20px}
+  .confirm-modal.active{display:flex}
+  .confirm-box{background:var(--panel);padding:22px;border-radius:16px;width:100%;max-width:380px;border:2px solid var(--border)}
+  .confirm-box h3{font-size:17px;margin-bottom:8px}
+  .confirm-box p{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5}
+  .confirm-box input{padding:11px 14px;border:2px solid transparent;border-radius:10px;background:var(--panel2);color:var(--text);outline:none;font-size:14px;width:100%;margin-bottom:10px}
+  .confirm-box input:focus{border-color:var(--red)}
+  .confirm-box .btns{display:flex;gap:6px}
+  .confirm-box .btns button{flex:1;padding:11px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer}
+  .confirm-box .btns button.confirm{background:var(--red);color:#fff}
+  .confirm-box .btns button.cancel{background:var(--panel2);color:var(--text)}
+
+  .admin-log{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px;font-size:12px}
+  .admin-log .t{color:var(--text3);font-size:10px;margin-top:3px}
+  .admin-log .a{color:var(--accent);font-weight:600}
+
+  /* Admin login */
+  .admin-login{position:fixed;inset:0;background:var(--bg);z-index:3000;display:none;flex-direction:column;justify-content:center;align-items:center;padding:20px;gap:12px}
+  .admin-login.active{display:flex}
+  .admin-login h2{font-size:24px;background:linear-gradient(135deg,#ffd700,#ff9500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:800}
+  .admin-login input{width:100%;max-width:320px;padding:14px 16px;border:2px solid transparent;border-radius:12px;background:var(--panel2);color:var(--text);outline:none;font-size:15px;text-align:center;letter-spacing:2px}
+  .admin-login input:focus{border-color:var(--accent)}
+  .admin-login button{width:100%;max-width:320px;padding:14px;border:none;border-radius:12px;background:var(--gold-grad);color:#000;font-size:15px;font-weight:700;cursor:pointer}
+  .admin-login .err{color:var(--red);font-size:13px;min-height:16px;text-align:center}
 </style>
 </head>
 <body>
 
 <div class="app" id="app">
-
   <div class="loader" id="loader">
     <div class="spinner"></div>
     <div style="color:var(--text2);font-size:13px">Загрузка Spacegram...</div>
   </div>
 
-  <div class="auth-screen" id="authScreen" style="display:none">
+  <div class="auth-screen" id="authScreen">
     <h1>🚀 Spacegram</h1>
     <input type="email" id="email" placeholder="Email" autocomplete="email">
     <input type="password" id="password" placeholder="Пароль (мин. 6 символов)">
@@ -362,20 +408,14 @@
           <div class="user-avatar-small" id="myAvatar" onclick="openProfileModal()">?</div>
         </div>
       </div>
-
       <div class="stories-row" id="storiesRow"></div>
-
       <div class="folders" id="folders">
         <button class="folder-btn active" data-folder="all">Все</button>
         <button class="folder-btn" data-folder="private">Личные</button>
         <button class="folder-btn" data-folder="group">Группы</button>
         <button class="folder-btn" data-folder="channel">Каналы</button>
       </div>
-
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Поиск @username...">
-      </div>
-
+      <div class="search-box"><input type="text" id="searchInput" placeholder="Поиск @username..."></div>
       <div class="chat-list" id="chatList"></div>
     </div>
 
@@ -392,34 +432,24 @@
           <button id="chatMenuBtn">⋮</button>
         </div>
       </div>
-
       <div class="pinned-banner" id="pinnedBanner" style="display:none">
-        <span>📌</span>
-        <div class="pin-text" id="pinnedText"></div>
+        <span>📌</span><div class="pin-text" id="pinnedText"></div>
         <button id="unpinBtn">✕</button>
       </div>
-
       <div class="messages" id="messages" style="display:none"></div>
-
       <div class="reply-preview" id="replyPreview">
         <div class="bar"></div>
-        <div class="content">
-          <div class="author" id="replyAuthor"></div>
-          <div class="text" id="replyText"></div>
-        </div>
+        <div class="content"><div class="author" id="replyAuthor"></div><div class="text" id="replyText"></div></div>
         <button id="cancelReplyBtn">✕</button>
       </div>
-
       <div class="sticker-panel" id="stickerPanel">
         <div style="font-size:10px;color:var(--accent);font-weight:700;margin-bottom:6px">СТИКЕРЫ</div>
         <div class="sticker-grid" id="stickerGrid"></div>
       </div>
-
       <div class="gif-panel" id="gifPanel">
         <input type="text" class="gif-search" id="gifSearch" placeholder="Поиск GIF...">
         <div class="gif-grid" id="gifGrid"></div>
       </div>
-
       <div class="input-area" id="inputArea" style="display:none">
         <button class="icon-btn" id="stickerBtn">😊</button>
         <div class="emoji-picker-container">
@@ -432,10 +462,8 @@
         <button class="icon-btn" id="micBtn">🎤</button>
         <button class="icon-btn send-btn" id="sendBtn">➤</button>
       </div>
-
       <div class="empty-state" id="emptyState">
-        <div class="icon">💬</div>
-        <div>Выбери чат</div>
+        <div class="icon">💬</div><div>Выбери чат</div>
       </div>
     </div>
   </div>
@@ -482,7 +510,7 @@
 <div class="modal" id="settingsModal">
   <div class="modal-content">
     <h2>⚙️ Настройки</h2>
-    <div class="section-title">Тема (12)</div>
+    <div class="section-title">Тема</div>
     <div class="theme-grid" id="themeGrid"></div>
     <div class="section-title">Режим</div>
     <div class="toggle-group" id="modeToggle">
@@ -497,7 +525,7 @@
       <button data-wp="gradient3">Закат</button>
       <button data-wp="custom">Свои 👑</button>
     </div>
-    <div class="section-title">Настройки</div>
+    <div class="section-title">Поведение</div>
     <div class="setting-row"><div class="label">🔔 Уведомления</div><label class="switch"><input type="checkbox" id="notifToggle" checked><span class="slider"></span></label></div>
     <div class="setting-row"><div class="label">✓✓ Отчёты</div><label class="switch"><input type="checkbox" id="readReceiptsToggle" checked><span class="slider"></span></label></div>
     <div class="setting-row"><div class="label">⌨️ Enter отправить</div><label class="switch"><input type="checkbox" id="enterSendToggle" checked><span class="slider"></span></label></div>
@@ -506,12 +534,8 @@
   </div>
 </div>
 
-<!-- USER PROFILE -->
-<div class="modal" id="userProfileModal">
-  <div class="modal-content" id="userProfileContent"></div>
-</div>
+<div class="modal" id="userProfileModal"><div class="modal-content" id="userProfileContent"></div></div>
 
-<!-- GROUP -->
 <div class="modal" id="groupModal">
   <div class="modal-content">
     <h2 id="groupModalTitle">👥 Новая группа</h2>
@@ -528,7 +552,6 @@
   </div>
 </div>
 
-<!-- POLL -->
 <div class="modal" id="pollModal">
   <div class="modal-content">
     <h2>📊 Опрос</h2>
@@ -542,7 +565,6 @@
   </div>
 </div>
 
-<!-- GIFT -->
 <div class="modal" id="giftModal">
   <div class="modal-content">
     <h2>🎁 Подарить</h2>
@@ -560,25 +582,45 @@
   </div>
 </div>
 
-<!-- ADMIN -->
-<div class="modal" id="adminModal">
-  <div class="modal-content">
-    <h2>🔐 Админ-панель</h2>
-    <div id="adminLoginSection">
-      <input type="password" id="adminSecret" placeholder="Пароль">
-      <div class="error" id="adminError" style="color:#e74c3c;font-size:12px;min-height:16px;text-align:center;margin-top:6px"></div>
-      <button id="adminLoginBtn" style="width:100%;margin-top:6px">Войти</button>
+<!-- ADMIN LOGIN -->
+<div class="admin-login" id="adminLogin">
+  <h2>🔐 Админ-панель</h2>
+  <p style="color:var(--text2);font-size:13px;text-align:center;max-width:320px">Введи секретный пароль для доступа к модерации</p>
+  <input type="password" id="adminSecret" placeholder="••••••••">
+  <div class="err" id="adminError"></div>
+  <button id="adminLoginBtn">Войти</button>
+  <button class="ghost" style="background:var(--panel2);color:var(--text)" onclick="closeAdminLogin()">Отмена</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-panel" id="adminPanel">
+  <div class="admin-shell">
+    <div class="admin-top">
+      <h2>🔐 Админ-панель</h2>
+      <button class="close-admin" onclick="closeAdmin()">✕</button>
     </div>
-    <div id="adminPanelSection" style="display:none">
-      <div class="toggle-group" id="adminTabs" style="margin-bottom:8px">
-        <button data-tab="users" class="active">👥 Юзеры</button>
-        <button data-tab="bans">🚫 Баны</button>
-        <button data-tab="stats">📊 Стата</button>
-      </div>
-      <div id="adminTabContent"></div>
-      <button class="ghost" id="adminLogoutBtn" style="margin-top:10px">Выйти из админки</button>
+    <div class="admin-stats" id="adminStats"></div>
+    <div class="admin-tabs" id="adminTabs">
+      <button data-tab="users" class="active">👥 Юзеры</button>
+      <button data-tab="bans">🚫 Баны</button>
+      <button data-tab="reports">⚠️ Жалобы</button>
+      <button data-tab="logs">📋 Логи</button>
+      <button data-tab="settings">⚙️ Настройки</button>
     </div>
-    <button class="ghost" id="adminCloseBtn">Закрыть</button>
+    <div class="admin-content" id="adminContent"></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Подтверждение</h3>
+    <p id="confirmText"></p>
+    <input type="text" id="confirmInput" placeholder="Причина (необязательно)">
+    <div class="btns">
+      <button class="cancel" onclick="closeConfirm()">Отмена</button>
+      <button class="confirm" id="confirmOk">Подтвердить</button>
+    </div>
   </div>
 </div>
 
@@ -590,9 +632,9 @@
     <div class="plus-title">Space Plus</div>
     <div class="plus-sub">Премиум для настоящих звёзд</div>
     <div id="plusStatus"></div>
-    <div class="plus-feature"><div class="fi">🎨</div><div class="ft"><div class="t1">Премиум эмодзи</div><div class="t2">12 уникальных эмодзи</div></div></div>
-    <div class="plus-feature"><div class="fi">👑</div><div class="ft"><div class="t1">Золотая рамка</div><div class="t2">Особый стиль профиля</div></div></div>
-    <div class="plus-feature"><div class="fi">⭐</div><div class="ft"><div class="t1">Премиум стикеры</div><div class="t2">Эксклюзивные</div></div></div>
+    <div class="plus-feature"><div class="fi">🎨</div><div class="ft"><div class="t1">Премиум эмодзи</div><div class="t2">12 уникальных</div></div></div>
+    <div class="plus-feature"><div class="fi">👑</div><div class="ft"><div class="t1">Золотая рамка</div><div class="t2">Особый стиль</div></div></div>
+    <div class="plus-feature"><div class="fi">⭐</div><div class="ft"><div class="t1">Премиум стикеры</div><div class="t2">Эксклюзив</div></div></div>
     <div class="plus-feature"><div class="fi">🖼️</div><div class="ft"><div class="t1">Кастомные обои</div><div class="t2">Своя картинка</div></div></div>
     <div class="plus-feature"><div class="fi">🎁</div><div class="ft"><div class="t1">Подарки</div><div class="t2">Дари другим</div></div></div>
     <div class="plus-feature"><div class="fi">📸</div><div class="ft"><div class="t1">Истории 24ч</div><div class="t2">Расскажи о себе</div></div></div>
@@ -609,7 +651,6 @@ const ADMIN_SECRET="spacegram2026";
 const CREATOR_USERNAME="itzrealsaneghka";
 const PREMIUM_EMOJIS=['😎','🔥','💎','👑','🚀','🌟','💫','⚡','🎯','🏆','🥇','💯'];
 const TENOR_KEY="LIVDSRZULELA";
-
 const THEMES=[
   {id:'midnight',name:'Полночь',c:['#0a0e14','#121820','#0369a1']},
   {id:'purple',name:'Фиолет',c:['#1a0f2e','#241642','#7c3aed']},
@@ -629,7 +670,7 @@ const sb=createClient(SUPABASE_URL,SUPABASE_KEY);
 const $=id=>document.getElementById(id);
 
 let currentUser,currentProfile,currentChatId,currentChatUser,currentChatObj;
-let messagesChannel,chatsChannel,reactionsChannel;
+let messagesChannel,chatsChannel;
 let isAdmin=false,replyTo=null,selectedMembers=[];
 let allMessages=[],allReactions=[],allStickers=[],allPolls={};
 let userCache={},currentFolder='all';
@@ -638,23 +679,18 @@ let selectedPremiumEmoji=null;
 let allStories=[],currentStoryIndex=0,storyTimer;
 let settings=JSON.parse(localStorage.getItem('sg_settings')||'{}');
 let selectedGift=null,giftTargetId=null;
-let reactionsCache={};
+let currentAdminTab='users';
+let adminSearchTimer=null;
 
 function applyTheme(){
   document.body.className='';
   if(currentProfile?.is_plus)document.body.classList.add('plus-active');
   const t=settings.theme||'midnight';
   if(t!=='midnight')document.body.classList.add('theme-'+t);
-  // светлая тема?
   if(['candy','mint','ice'].includes(t))document.body.classList.add('light');
   if(settings.mode==='light')document.body.classList.add('light');
   const wp=settings.wallpaper||'none';
-  const map={
-    none:'none',
-    gradient1:'linear-gradient(135deg,rgba(100,181,239,.15),rgba(43,82,120,.2))',
-    gradient2:'radial-gradient(circle at 30% 40%,rgba(150,50,200,.15),transparent 60%),radial-gradient(circle at 70% 80%,rgba(50,100,200,.2),transparent 60%)',
-    gradient3:'linear-gradient(135deg,rgba(251,146,60,.15),rgba(190,24,93,.2))'
-  };
+  const map={none:'none',gradient1:'linear-gradient(135deg,rgba(100,181,239,.15),rgba(43,82,120,.2))',gradient2:'radial-gradient(circle at 30% 40%,rgba(150,50,200,.15),transparent 60%),radial-gradient(circle at 70% 80%,rgba(50,100,200,.2),transparent 60%)',gradient3:'linear-gradient(135deg,rgba(251,146,60,.15),rgba(190,24,93,.2))'};
   const msgs=$('messages');
   if(msgs){
     if(wp==='custom'&&settings.customWallpaper)msgs.style.backgroundImage=`url(${settings.customWallpaper})`;
@@ -674,22 +710,21 @@ function renderBadges(p){
   if(p.premium_emoji)h+=`<span style="font-size:13px">${p.premium_emoji}</span>`;
   return h;
 }
-
 function hideLoader(){$('loader').classList.add('hidden')}
 
 async function init(){
   applyTheme();
   const {data:{session}}=await sb.auth.getSession();
   if(session){currentUser=session.user;await enterApp()}
-  else{$('authScreen').style.display='flex';hideLoader()}
+  else{$('authScreen').classList.add('show');hideLoader()}
 }
 
 async function enterApp(){
-  $('authScreen').style.display='none';
+  $('authScreen').classList.remove('show');
   $('mainApp').classList.add('active');
   try{
     await loadProfile();
-    if(currentProfile?.is_banned){await sb.auth.signOut();alert('🚫 Ты забанен: '+(currentProfile.ban_reason||''));location.reload();return}
+    if(currentProfile?.is_banned){await sb.auth.signOut();alert('🚫 Забанен: '+(currentProfile.ban_reason||''));location.reload();return}
     await checkAdmin();
     await loadStickers();
     await loadChats();
@@ -768,7 +803,7 @@ function renderPremiumEmojiRow(){
 $('closeProfileBtn').onclick=()=>$('profileModal').classList.remove('active');
 $('avatarPreview').onclick=()=>{
   const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
-  inp.onchange=async(e)=>{
+  inp.onchange=async e=>{
     const file=e.target.files[0];if(!file)return;
     if(file.size>2*1024*1024)return alert('> 2 МБ');
     const path=`${currentUser.id}/ava_${Date.now()}.jpg`;
@@ -792,7 +827,7 @@ $('addStoryBtn').onclick=()=>window.addStory();
 window.addStory=()=>{
   if(!currentProfile?.is_plus)return alert('👑 Plus only');
   const inp=document.createElement('input');inp.type='file';inp.accept='image/*';
-  inp.onchange=async(e)=>{
+  inp.onchange=async e=>{
     const file=e.target.files[0];if(!file)return;
     const path=`stories/${currentUser.id}/${Date.now()}.jpg`;
     const{error}=await sb.storage.from('media').upload(path,file);
@@ -814,13 +849,11 @@ function renderStoriesRow(){
   allStories.forEach(s=>{(grouped[s.user_id]=grouped[s.user_id]||[]).push(s)});
   let html=`<div class="story-item" onclick="addStory()">
     <div class="story-avatar me"><div class="inner">${currentProfile?.avatar_url?`<img src="${currentProfile.avatar_url}">`:(currentProfile?.display_name||'?')[0].toUpperCase()}</div><div class="add">+</div></div>
-    <div class="story-name">Моя</div>
-  </div>`;
+    <div class="story-name">Моя</div></div>`;
   Object.entries(grouped).forEach(([uid])=>{
     html+=`<div class="story-item" onclick="openStoryViewer('${uid}')">
       <div class="story-avatar"><div class="inner" data-uid="${uid}">?</div></div>
-      <div class="story-name" data-name="${uid}">...</div>
-    </div>`;
+      <div class="story-name" data-name="${uid}">...</div></div>`;
   });
   row.innerHTML=html;
   row.querySelectorAll('.inner[data-uid]').forEach(async el=>{
@@ -843,11 +876,9 @@ window.openStoryViewer=async uid=>{
   clearTimeout(storyTimer);storyTimer=setTimeout(()=>nextStory(),5000);
 };
 function showStory(stories){
-  const s=stories[currentStoryIndex];
-  if(!s)return closeStoryViewer();
+  const s=stories[currentStoryIndex];if(!s)return closeStoryViewer();
   $('storyContent').innerHTML=`<img src="${s.media_url}">`;
-  $('storyProgress').innerHTML=stories.map((_,i)=>
-    `<div class="bar ${i===currentStoryIndex?'active':''}">${i<currentStoryIndex?'<div class="fill" style="width:100%"></div>':i===currentStoryIndex?'<div class="fill"></div>':''}</div>`).join('');
+  $('storyProgress').innerHTML=stories.map((_,i)=>`<div class="bar ${i===currentStoryIndex?'active':''}">${i<currentStoryIndex?'<div class="fill" style="width:100%"></div>':i===currentStoryIndex?'<div class="fill"></div>':''}</div>`).join('');
 }
 window.nextStory=()=>{
   const uid=allStories[currentStoryIndex]?.user_id;
@@ -871,10 +902,7 @@ $('settingsBtn').onclick=()=>{
 };
 $('closeSettingsBtn').onclick=()=>$('settingsModal').classList.remove('active');
 function renderThemeGrid(){
-  $('themeGrid').innerHTML=THEMES.map(t=>`
-    <button class="theme-btn ${(settings.theme||'midnight')===t.id?'active':''}" data-theme="${t.id}" title="${t.name}">
-      <div class="swatch">${t.c.map(c=>`<div style="background:${c}"></div>`).join('')}</div>
-    </button>`).join('');
+  $('themeGrid').innerHTML=THEMES.map(t=>`<button class="theme-btn ${(settings.theme||'midnight')===t.id?'active':''}" data-theme="${t.id}"><div class="swatch">${t.c.map(c=>`<div style="background:${c}"></div>`).join('')}</div></button>`).join('');
   $('themeGrid').querySelectorAll('.theme-btn').forEach(b=>{
     b.onclick=()=>{settings.theme=b.dataset.theme;saveSettings();applyTheme();renderThemeGrid()};
   });
@@ -930,7 +958,6 @@ async function loadChats(){
   else if(currentFolder==='group')filtered=filtered.filter(c=>c.is_group);
   else if(currentFolder==='channel')filtered=filtered.filter(c=>c.is_channel);
   if(!filtered.length){list.innerHTML='<div style="padding:24px;color:var(--text2);text-align:center;font-size:13px">Нет чатов</div>';return}
-  // Параллельная загрузка юзеров
   const uidsToFetch=filtered.filter(c=>!c.is_group&&!c.is_channel).map(c=>c.user1===uid?c.user2:c.user1).filter(id=>!userCache[id]);
   if(uidsToFetch.length){
     const{data:profs}=await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_creator,is_plus,premium_emoji,last_seen,is_banned').in('id',uidsToFetch);
@@ -1026,15 +1053,13 @@ async function loadMessages(chatId){
   let lastDate='';
   allMessages.forEach(m=>{
     const d=new Date(m.created_at).toLocaleDateString('ru');
-    if(d!==lastDate){
-      const div=document.createElement('div');div.className='date-divider';div.textContent=fmtDate(new Date(m.created_at));msgs.appendChild(div);lastDate=d;
-    }
+    if(d!==lastDate){const div=document.createElement('div');div.className='date-divider';div.textContent=fmtDate(new Date(m.created_at));msgs.appendChild(div);lastDate=d}
     appendMessage(m,false);
   });
-  await loadReactionsForChat(chatId);
-  // Опросы
   const msgIds=allMessages.map(m=>m.id);
   if(msgIds.length){
+    const{data:rx}=await sb.from('reactions').select('*').in('message_id',msgIds);
+    allReactions=rx||[];renderReactions();
     const{data:polls}=await sb.from('polls').select('*').in('message_id',msgIds);
     allPolls={};(polls||[]).forEach(p=>allPolls[p.message_id]=p);
     allMessages.forEach(m=>{if(allPolls[m.id])updatePollDisplay(allPolls[m.id].id)});
@@ -1084,21 +1109,9 @@ function appendMessage(m,scroll=true){
   wrap.appendChild(div);
   const rx=document.createElement('div');rx.className='reactions';rx.dataset.msgId=m.id;wrap.appendChild(rx);
   const tb=document.createElement('div');tb.className='msg-toolbar';
-  tb.innerHTML=`
-    <button data-act="react-👍">👍</button>
-    <button data-act="react-❤️">❤️</button>
-    <button data-act="react-😂">😂</button>
-    <button data-act="reply">↩</button>
-    <button data-act="forward">↪</button>
-    <button data-act="pin">📌</button>
-    ${isMine?'<button data-act="edit">✏️</button>':''}
-    ${isMine?'<button data-act="delete">🗑</button>':''}`;
+  tb.innerHTML=`<button data-act="react-👍">👍</button><button data-act="react-❤️">❤️</button><button data-act="react-😂">😂</button><button data-act="reply">↩</button><button data-act="forward">↪</button><button data-act="pin">📌</button>${isMine?'<button data-act="edit">✏️</button>':''}${isMine?'<button data-act="delete">🗑</button>':''}`;
   wrap.appendChild(tb);
-  div.onclick=e=>{
-    e.stopPropagation();
-    document.querySelectorAll('.msg-wrap.show-toolbar').forEach(x=>x.classList.remove('show-toolbar'));
-    wrap.classList.add('show-toolbar');
-  };
+  div.onclick=e=>{e.stopPropagation();document.querySelectorAll('.msg-wrap.show-toolbar').forEach(x=>x.classList.remove('show-toolbar'));wrap.classList.add('show-toolbar')};
   tb.querySelectorAll('button').forEach(btn=>{
     btn.onclick=async e=>{
       e.stopPropagation();const act=btn.dataset.act;wrap.classList.remove('show-toolbar');
@@ -1115,8 +1128,7 @@ function appendMessage(m,scroll=true){
 }
 function renderPoll(poll){
   const opts=poll.options||[];
-  return `<div class="poll" data-poll="${poll.id}"><div class="poll-question">📊 ${esc(poll.question)}</div>
-    ${opts.map((o,i)=>`<div class="poll-option" data-idx="${i}"><div class="poll-bar" style="width:0%"></div><span>${esc(o)} <span class="poll-count"></span></span></div>`).join('')}</div>`;
+  return `<div class="poll" data-poll="${poll.id}"><div class="poll-question">📊 ${esc(poll.question)}</div>${opts.map((o,i)=>`<div class="poll-option" data-idx="${i}"><div class="poll-bar" style="width:0%"></div><span>${esc(o)} <span class="poll-count"></span></span></div>`).join('')}</div>`;
 }
 window.viewImg=url=>{$('imgViewerImg').src=url;$('imgViewer').classList.add('active')};
 
@@ -1124,28 +1136,15 @@ async function forwardMsg(m){
   const{data:chats}=await sb.from('chats').select('id,user1,user2,is_group,is_channel,group_name').or(`user1.eq.${currentUser.id},user2.eq.${currentUser.id}`).limit(30);
   if(!chats?.length)return alert('Нет чатов');
   const names=[];
-  for(let i=0;i<chats.length;i++){
-    const c=chats[i];let n;
-    if(c.is_group||c.is_channel)n=c.group_name||'Группа';
-    else{const p=await getUser(c.user1===currentUser.id?c.user2:c.user1);n=p?.display_name||'user'}
-    names.push(`${i+1}. ${n}`);
-  }
+  for(let i=0;i<chats.length;i++){const c=chats[i];let n;if(c.is_group||c.is_channel)n=c.group_name||'Группа';else{const p=await getUser(c.user1===currentUser.id?c.user2:c.user1);n=p?.display_name||'user'}names.push(`${i+1}. ${n}`)}
   const pick=prompt('Куда:\n'+names.join('\n')+'\n\nНомер:');
-  const idx=parseInt(pick)-1;
-  if(isNaN(idx)||!chats[idx])return;
+  const idx=parseInt(pick)-1;if(isNaN(idx)||!chats[idx])return;
   const target=chats[idx];
   await sb.from('messages').insert({chat_id:target.id,sender:currentUser.id,text:m.text,file_url:m.file_url,file_type:m.file_type,file_name:m.file_name,forwarded_from:m.sender,is_read:false});
   await sb.from('chats').update({last_message:'↪ '+(m.text?.slice(0,40)||'файл')}).eq('id',target.id);
   alert('✅');
 }
 
-async function loadReactionsForChat(chatId){
-  const msgIds=allMessages.map(m=>m.id);
-  if(!msgIds.length){allReactions=[];return}
-  const{data}=await sb.from('reactions').select('*').in('message_id',msgIds);
-  allReactions=data||[];
-  renderReactions();
-}
 function renderReactions(){
   document.querySelectorAll('.reactions').forEach(el=>{
     const msgId=el.dataset.msgId;
@@ -1159,7 +1158,9 @@ async function toggleReaction(msgId,emoji){
   const existing=allReactions.find(r=>r.message_id===msgId&&r.user_id===currentUser.id&&r.emoji===emoji);
   if(existing)await sb.from('reactions').delete().eq('id',existing.id);
   else await sb.from('reactions').insert({message_id:msgId,user_id:currentUser.id,emoji});
-  await loadReactionsForChat(currentChatId);
+  const msgIds=allMessages.map(m=>m.id);
+  const{data}=await sb.from('reactions').select('*').in('message_id',msgIds);
+  allReactions=data||[];renderReactions();
 }
 function renderPinned(){
   const banner=$('pinnedBanner');
@@ -1223,28 +1224,8 @@ function openGroupInfo(){
   $('userProfileModal').classList.add('active');
 }
 
-$('gifBtn').onclick=e=>{e.stopPropagation();$('gifPanel').classList.toggle('show');$('stickerPanel').classList.remove('show');$('emojiPicker').style.display='none';if($('gifPanel').classList.contains('show')&&!$('gifGrid').children.length)$('gifSearch').value='hello',$('gifSearch').dispatchEvent(new Event('input'))};
-$('gifSearch').oninput=(()=>{
-  let t;
-  return e=>{
-    clearTimeout(t);
-    t=setTimeout(async()=>{
-      const q=e.target.value.trim()||'hello';
-      try{
-        const res=await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(q)}&key=${TENOR_KEY}&limit=12`);
-        const data=await res.json();
-        $('gifGrid').innerHTML=(data.results||[]).map(g=>`<div class="gif-item" data-full="${g.media[0].gif.url}"><img src="${g.media[0].tinygif.url}" loading="lazy"></div>`).join('');
-        document.querySelectorAll('.gif-item').forEach(el=>{
-          el.onclick=async()=>{
-            await sb.from('messages').insert({chat_id:currentChatId,sender:currentUser.id,text:'',is_read:false,file_url:el.dataset.full,file_type:'gif',file_name:'GIF'});
-            await sb.from('chats').update({last_message:'🎬 GIF'}).eq('id',currentChatId);
-            $('gifPanel').classList.remove('show');
-          };
-        });
-      }catch(err){$('gifGrid').innerHTML='<div style="color:#888;text-align:center;padding:20px;grid-column:1/-1">Не удалось</div>'}
-    },400);
-  };
-})();
+$('gifBtn').onclick=e=>{e.stopPropagation();$('gifPanel').classList.toggle('show');$('stickerPanel').classList.remove('show');$('emojiPicker').style.display='none';if($('gifPanel').classList.contains('show')&&!$('gifGrid').children.length){$('gifSearch').value='hello';$('gifSearch').dispatchEvent(new Event('input'))}};
+$('gifSearch').oninput=(()=>{let t;return e=>{clearTimeout(t);t=setTimeout(async()=>{const q=e.target.value.trim()||'hello';try{const res=await fetch(`https://g.tenor.com/v1/search?q=${encodeURIComponent(q)}&key=${TENOR_KEY}&limit=12`);const data=await res.json();$('gifGrid').innerHTML=(data.results||[]).map(g=>`<div class="gif-item" data-full="${g.media[0].gif.url}"><img src="${g.media[0].tinygif.url}" loading="lazy"></div>`).join('');document.querySelectorAll('.gif-item').forEach(el=>{el.onclick=async()=>{await sb.from('messages').insert({chat_id:currentChatId,sender:currentUser.id,text:'',is_read:false,file_url:el.dataset.full,file_type:'gif',file_name:'GIF'});await sb.from('chats').update({last_message:'🎬 GIF'}).eq('id',currentChatId);$('gifPanel').classList.remove('show')}})}catch(err){$('gifGrid').innerHTML='<div style="color:#888;text-align:center;padding:20px;grid-column:1/-1">Не удалось</div>'}},400)}})();
 
 async function sendMessage(){
   const text=$('messageInput').value.trim();
@@ -1306,10 +1287,7 @@ async function loadStickers(){
 $('stickerBtn').onclick=e=>{e.stopPropagation();$('stickerPanel').classList.toggle('show');$('emojiPicker').style.display='none';$('gifPanel').classList.remove('show');if($('stickerPanel').classList.contains('show'))renderStickers()};
 function renderStickers(){
   const isPlus=currentProfile?.is_plus;
-  $('stickerGrid').innerHTML=allStickers.map(s=>{
-    const locked=s.is_premium&&!isPlus;
-    return `<div class="sticker-item ${s.is_premium?'premium':''}" data-url="${s.url}" data-premium="${s.is_premium}"><img src="${s.url}" loading="lazy">${locked?'<div style="font-size:9px;color:#f5b041">👑</div>':''}</div>`;
-  }).join('');
+  $('stickerGrid').innerHTML=allStickers.map(s=>{const locked=s.is_premium&&!isPlus;return `<div class="sticker-item ${s.is_premium?'premium':''}" data-url="${s.url}" data-premium="${s.is_premium}"><img src="${s.url}" loading="lazy">${locked?'<div style="font-size:9px;color:#f5b041">👑</div>':''}</div>`}).join('');
   $('stickerGrid').querySelectorAll('.sticker-item').forEach(el=>{
     el.onclick=async()=>{
       if(el.dataset.premium==='true'&&!currentProfile?.is_plus)return alert('👑 Plus only');
@@ -1361,26 +1339,7 @@ $('chatTypeToggle').onclick=e=>{
   document.querySelectorAll('#chatTypeToggle button').forEach(x=>x.classList.toggle('active',x===b));
   $('groupModalTitle').textContent=b.dataset.type==='channel'?'📢 Новый канал':'👥 Новая группа';
 };
-$('groupSearchInput').oninput=(()=>{
-  let t;
-  return e=>{
-    clearTimeout(t);
-    const val=e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
-    if(!val||val.length<2){$('groupSearchResults').innerHTML='';return}
-    t=setTimeout(async()=>{
-      const{data}=await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_creator,is_plus').ilike('username',`%${val}%`).limit(10);
-      $('groupSearchResults').innerHTML='';
-      (data||[]).filter(u=>u.id!==currentUser.id).forEach(u=>{
-        const div=document.createElement('div');div.className='admin-user';
-        div.innerHTML=`<div class="chat-avatar" style="width:32px;height:32px;font-size:12px">${u.avatar_url?`<img src="${u.avatar_url}">`:(u.display_name||'?')[0].toUpperCase()}</div>
-          <div class="info"><div class="uname">${esc(u.display_name)} ${renderBadges(u)}</div><div class="nick">@${esc(u.username)}</div></div>
-          <button class="btn-mini btn-blue">+</button>`;
-        div.querySelector('button').onclick=()=>{if(selectedMembers.find(m=>m.id===u.id))return;selectedMembers.push(u);renderSel()};
-        $('groupSearchResults').appendChild(div);
-      });
-    },300);
-  };
-})();
+$('groupSearchInput').oninput=(()=>{let t;return e=>{clearTimeout(t);const val=e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');if(!val||val.length<2){$('groupSearchResults').innerHTML='';return}t=setTimeout(async()=>{const{data}=await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_creator,is_plus').ilike('username',`%${val}%`).limit(10);$('groupSearchResults').innerHTML='';(data||[]).filter(u=>u.id!==currentUser.id).forEach(u=>{const div=document.createElement('div');div.className='admin-card';div.innerHTML=`<div class="ac-avatar" style="width:36px;height:36px;font-size:14px">${u.avatar_url?`<img src="${u.avatar_url}">`:(u.display_name||'?')[0].toUpperCase()}</div><div class="ac-info"><div class="ac-name">${esc(u.display_name)} ${renderBadges(u)}</div><div class="ac-nick">@${esc(u.username)}</div></div><button class="ac-btn blue">+</button>`;div.querySelector('button').onclick=()=>{if(selectedMembers.find(m=>m.id===u.id))return;selectedMembers.push(u);renderSel()};$('groupSearchResults').appendChild(div)})},300)}})();
 function renderSel(){
   $('groupSelected').innerHTML=selectedMembers.map(u=>`<div style="background:var(--panel2);padding:4px 8px;border-radius:16px;font-size:11px;display:flex;align-items:center;gap:4px">${esc(u.display_name)} <span data-uid="${u.id}" style="cursor:pointer;color:var(--red)">✕</span></div>`).join('');
   $('groupSelected').querySelectorAll('span[data-uid]').forEach(s=>{s.onclick=()=>{selectedMembers=selectedMembers.filter(m=>m.id!==s.dataset.uid);renderSel()}});
@@ -1407,10 +1366,7 @@ $('chatMenuBtn').onclick=e=>{
 };
 $('searchMsgBtn').onclick=()=>{
   const q=prompt('Поиск:');if(!q)return;
-  document.querySelectorAll('.msg-wrap').forEach(w=>{
-    const t=w.querySelector('.msg')?.textContent.toLowerCase()||'';
-    w.style.opacity=t.includes(q.toLowerCase())?'1':'0.3';
-  });
+  document.querySelectorAll('.msg-wrap').forEach(w=>{const t=w.querySelector('.msg')?.textContent.toLowerCase()||'';w.style.opacity=t.includes(q.toLowerCase())?'1':'0.3'});
 };
 
 window.openGiftModal=uid=>{
@@ -1429,119 +1385,310 @@ $('sendGiftBtn').onclick=async()=>{
   alert('🎁 Отправлено!');$('giftModal').classList.remove('active');
 };
 
-// ADMIN
-$('adminBtn').onclick=()=>{$('adminModal').classList.add('active');if(isAdmin)showAdminPanel();else{$('adminLoginSection').style.display='block';$('adminPanelSection').style.display='none'}};
-$('logo').onclick=(()=>{let c=0;return()=>{c++;if(c>=5){$('adminModal').classList.add('active');if(isAdmin)showAdminPanel();else{$('adminLoginSection').style.display='block';$('adminPanelSection').style.display='none'}c=0}}})();
-$('adminCloseBtn').onclick=()=>$('adminModal').classList.remove('active');
+// ==================== ADMIN SYSTEM ====================
+$('adminBtn').onclick=openAdminGate;
+$('logo').onclick=(()=>{let c=0;return()=>{c++;if(c>=5){openAdminGate();c=0}}})();
+
+function openAdminGate(){
+  if(isAdmin)return openAdminPanel();
+  $('adminLogin').classList.add('active');
+  $('adminSecret').value='';
+  $('adminError').textContent='';
+  setTimeout(()=>$('adminSecret').focus(),100);
+}
+window.closeAdminLogin=()=>$('adminLogin').classList.remove('active');
+
+$('adminLoginBtn').onclick=async()=>{
+  const s=$('adminSecret').value;
+  $('adminError').textContent='';
+  if(s!==ADMIN_SECRET)return $('adminError').textContent='❌ Неверный пароль';
+  const{error}=await sb.from('admins').insert({id:currentUser.id});
+  if(error&&!error.message.includes('duplicate'))return $('adminError').textContent=error.message;
+  isAdmin=true;$('adminBtn').style.display='flex';document.body.style.border='3px solid gold';
+  closeAdminLogin();
+  openAdminPanel();
+  logAdminAction('login','','');
+};
 
 async function checkAdmin(){
   const{data}=await sb.from('admins').select('id').eq('id',currentUser.id).maybeSingle();
   isAdmin=!!data;
   if(isAdmin){$('adminBtn').style.display='flex';document.body.style.border='3px solid gold'}
 }
-$('adminLoginBtn').onclick=async()=>{
-  const secret=$('adminSecret').value;$('adminError').textContent='';
-  if(secret!==ADMIN_SECRET)return $('adminError').textContent='❌ Неверный пароль';
-  const{error}=await sb.from('admins').insert({id:currentUser.id});
-  if(error&&!error.message.includes('duplicate'))return $('adminError').textContent=error.message;
-  isAdmin=true;$('adminBtn').style.display='flex';document.body.style.border='3px solid gold';
-  $('adminError').style.color='#2ecc71';$('adminError').textContent='✅ Ты админ!';
-  setTimeout(()=>{$('adminSecret').value='';showAdminPanel()},700);
+
+window.closeAdmin=()=>{$('adminPanel').classList.remove('active');loadChats()};
+function openAdminPanel(){
+  $('adminPanel').classList.add('active');
+  renderAdminStats();
+  loadAdminTab('users');
+}
+$('adminTabs').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#adminTabs button').forEach(x=>x.classList.toggle('active',x===b));
+  loadAdminTab(b.dataset.tab);
 };
-function showAdminPanel(){$('adminLoginSection').style.display='none';$('adminPanelSection').style.display='block';loadAdminTab('users')}
-$('adminTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#adminTabs button').forEach(x=>x.classList.toggle('active',x===b));loadAdminTab(b.dataset.tab)};
+
+async function renderAdminStats(){
+  const[{count:uc},{count:mc},{count:cc},{count:bc}]=await Promise.all([
+    sb.from('profiles').select('*',{count:'exact',head:true}),
+    sb.from('messages').select('*',{count:'exact',head:true}),
+    sb.from('chats').select('*',{count:'exact',head:true}),
+    sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true)
+  ]);
+  $('adminStats').innerHTML=`
+    <div class="admin-stat"><div class="n">${uc||0}</div><div class="l">Юзеры</div></div>
+    <div class="admin-stat"><div class="n">${mc||0}</div><div class="l">Сообщ</div></div>
+    <div class="admin-stat"><div class="n">${cc||0}</div><div class="l">Чаты</div></div>
+    <div class="admin-stat"><div class="n" style="color:var(--red)">${bc||0}</div><div class="l">Баны</div></div>`;
+}
 
 async function loadAdminTab(tab){
-  const el=$('adminTabContent');
+  currentAdminTab=tab;
+  const el=$('adminContent');
   if(tab==='users'){
-    el.innerHTML=`<input type="text" id="adminSearchUser" placeholder="Поиск @username..." style="margin-top:8px">
-      <div id="adminUserList" style="max-height:300px;overflow-y:auto;margin-top:6px"></div>`;
-    $('adminSearchUser').oninput=(()=>{let t;return e=>{clearTimeout(t);t=setTimeout(()=>loadAdminUsers(e.target.value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'')),300)}})();
+    el.innerHTML=`<input type="text" class="admin-search" id="adminSearch" placeholder="🔍 Поиск @username или имя...">
+      <div id="adminList"></div>`;
+    $('adminSearch').oninput=e=>{
+      clearTimeout(adminSearchTimer);
+      adminSearchTimer=setTimeout(()=>loadAdminUsers(e.target.value.trim().toLowerCase()),350);
+    };
     loadAdminUsers('');
   }else if(tab==='bans'){
-    el.innerHTML=`<div style="margin-top:8px;font-size:11px;color:var(--text2)">Забаненные</div><div id="bannedList" style="max-height:300px;overflow-y:auto;margin-top:6px"></div>`;
-    loadBanned();
-  }else if(tab==='stats'){
-    const{count:uc}=await sb.from('profiles').select('*',{count:'exact',head:true});
-    const{count:mc}=await sb.from('messages').select('*',{count:'exact',head:true});
-    const{count:cc}=await sb.from('chats').select('*',{count:'exact',head:true});
-    const{count:bc}=await sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true);
-    el.innerHTML=`<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
-      <div style="background:var(--panel2);padding:12px;border-radius:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">${uc||0}</div><div style="font-size:10px;color:var(--text2)">Юзеров</div></div>
-      <div style="background:var(--panel2);padding:12px;border-radius:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">${mc||0}</div><div style="font-size:10px;color:var(--text2)">Сообщений</div></div>
-      <div style="background:var(--panel2);padding:12px;border-radius:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--accent)">${cc||0}</div><div style="font-size:10px;color:var(--text2)">Чатов</div></div>
-      <div style="background:var(--panel2);padding:12px;border-radius:10px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--red)">${bc||0}</div><div style="font-size:10px;color:var(--text2)">Забанено</div></div>
-    </div>`;
+    el.innerHTML='<div id="bannedList"></div>';
+    loadBannedUsers();
+  }else if(tab==='reports'){
+    el.innerHTML='<div id="reportsList"></div>';
+    loadReports();
+  }else if(tab==='logs'){
+    el.innerHTML='<div id="logsList"></div>';
+    loadAdminLogs();
+  }else if(tab==='settings'){
+    el.innerHTML=`
+      <div class="admin-card" style="display:block">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">🎛 Глобальные настройки</div>
+        <div class="setting-row" style="margin-bottom:6px"><div class="label">Регистрация открыта</div><label class="switch"><input type="checkbox" id="regOpenToggle" checked><span class="slider"></span></label></div>
+        <div class="setting-row" style="margin-bottom:6px"><div class="label">Режим обслуживания</div><label class="switch"><input type="checkbox" id="maintenanceToggle"><span class="slider"></span></label></div>
+        <button class="ac-btn gold" id="exportDataBtn" style="width:100%;margin-top:8px;padding:10px">📥 Экспорт данных (JSON)</button>
+        <button class="ac-btn red" id="clearOldMessagesBtn" style="width:100%;margin-top:6px;padding:10px">🗑 Удалить сообщения старше 30 дней</button>
+      </div>`;
+    loadAppSettings();
   }
 }
 
 async function loadAdminUsers(search){
-  const list=$('adminUserList');if(!list)return;
-  list.innerHTML='<div style="padding:8px;color:var(--text2);font-size:12px">Загрузка...</div>';
-  let q=sb.from('profiles').select('id,username,display_name,is_verified,is_plus,is_banned,is_creator').order('created_at',{ascending:false}).limit(50);
-  if(search.length>=2)q=q.ilike('username',`%${search}%`);
-  const{data}=await q;list.innerHTML='';
-  if(!data?.length)return list.innerHTML='<div style="padding:8px;color:var(--text2);font-size:12px;text-align:center">Пусто</div>';
-  data.forEach(u=>{
-    const div=document.createElement('div');div.className='admin-user';
-    const isCreator=u.username===CREATOR_USERNAME;
-    div.innerHTML=`<div class="info"><div class="uname">${esc(u.display_name||u.username)}</div>
-      <div class="nick">@${esc(u.username)}${isCreator?' • созд':''}</div></div>
-      <button class="btn-mini btn-blue ${u.is_verified?'':'off'}" data-uid="${u.id}" data-act="verify">${u.is_verified?'🔵':'✓'}</button>
-      <button class="btn-mini btn-gold ${u.is_plus?'':'off'}" data-uid="${u.id}" data-act="plus">👑</button>
-      <button class="btn-mini btn-red ${u.is_banned?'':'off'}" data-uid="${u.id}" data-act="ban">🚫</button>`;
-    list.appendChild(div);
-  });
-  list.querySelectorAll('button[data-act]').forEach(btn=>{
-    btn.onclick=async()=>{
-      const uid=btn.dataset.uid,act=btn.dataset.act;
-      if(act==='ban'){
-        const{data:cur}=await sb.from('profiles').select('is_banned').eq('id',uid).single();
-        const nv=!cur.is_banned;
-        let reason=null;if(nv)reason=prompt('Причина:','Нарушение правил');
-        await sb.from('profiles').update({is_banned:nv,ban_reason:reason,banned_at:nv?new Date().toISOString():null,banned_by:nv?currentUser.id:null}).eq('id',uid);
-        btn.classList.toggle('off',!nv);
-      }else{
-        const field=act==='verify'?'is_verified':'is_plus';
-        const{data:cur}=await sb.from('profiles').select(field).eq('id',uid).single();
-        const nv=!cur[field];
-        await sb.from('profiles').update({[field]:nv}).eq('id',uid);
-        btn.classList.toggle('off',!nv);
-        if(act==='verify')btn.textContent=nv?'🔵':'✓';
-      }
-      userCache={};
-    };
-  });
-}
-
-async function loadBanned(){
-  const list=$('bannedList');
-  const{data}=await sb.from('profiles').select('id,username,display_name,ban_reason').eq('is_banned',true);
-  if(!data?.length){list.innerHTML='<div style="padding:16px;color:var(--text2);text-align:center">Никого 🎉</div>';return}
+  const list=$('adminList');if(!list)return;
+  list.innerHTML='<div class="admin-empty">Загрузка...</div>';
+  let q=sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_banned,is_creator,messages_count,gifts_received,created_at').order('created_at',{ascending:false}).limit(60);
+  if(search.length>=2){
+    q=q.or(`username.ilike.%${search}%,display_name.ilike.%${search}%`);
+  }
+  const{data}=await q;
+  if(!data?.length){list.innerHTML='<div class="admin-empty">Никого не найдено</div>';return}
   list.innerHTML='';
   data.forEach(u=>{
-    const div=document.createElement('div');div.className='admin-user';
-    div.innerHTML=`<div class="info"><div class="uname">${esc(u.display_name||u.username)}</div>
-      <div class="nick">@${esc(u.username)}</div>
-      <div style="font-size:10px;color:var(--red)">${esc(u.ban_reason||'—')}</div></div>
-      <button class="btn-mini btn-blue" data-uid="${u.id}">✓ Разбан</button>`;
-    list.appendChild(div);
-  });
-  list.querySelectorAll('button[data-uid]').forEach(btn=>{
-    btn.onclick=async()=>{await sb.from('profiles').update({is_banned:false,ban_reason:null}).eq('id',btn.dataset.uid);loadBanned()};
+    list.appendChild(renderAdminUserCard(u));
   });
 }
 
-$('adminLogoutBtn').onclick=async()=>{
-  if(!confirm('Снять права?'))return;
-  await sb.from('admins').delete().eq('id',currentUser.id);
-  isAdmin=false;$('adminBtn').style.display='none';document.body.style.border='';location.reload();
+function renderAdminUserCard(u){
+  const div=document.createElement('div');
+  div.className='admin-card';
+  const isCreator=u.username===CREATOR_USERNAME;
+  const bannedCls=u.is_banned?'banned':'';
+  div.innerHTML=`
+    <div class="ac-avatar ${bannedCls}">${u.avatar_url?`<img src="${u.avatar_url}" loading="lazy">`:(u.display_name||'?')[0].toUpperCase()}</div>
+    <div class="ac-info">
+      <div class="ac-name">${esc(u.display_name||u.username)} ${renderBadges(u)}</div>
+      <div class="ac-nick">@${esc(u.username)}${isCreator?' • СОЗДАТЕЛЬ':''}</div>
+      <div class="ac-stats"><span>💬 ${u.messages_count||0}</span><span>🎁 ${u.gifts_received||0}</span></div>
+    </div>
+    <div class="ac-actions">
+      <button class="ac-btn blue ${u.is_verified?'':'off'}" data-act="verify" title="Синяя галочка">${u.is_verified?'🔵':'✓'}</button>
+      <button class="ac-btn gold ${u.is_plus?'':'off'}" data-act="plus" title="Plus">👑</button>
+      <button class="ac-btn red ${u.is_banned?'':'off'}" data-act="ban" title="Бан">🚫</button>
+      <button class="ac-btn gray" data-act="gift" title="Дать подарок">🎁</button>
+    </div>`;
+  div.querySelectorAll('button[data-act]').forEach(btn=>{
+    btn.onclick=()=>adminUserAction(btn.dataset.act,u,btn);
+  });
+  return div;
+}
+
+async function adminUserAction(act,u,btn){
+  if(act==='verify'){
+    const nv=!u.is_verified;
+    await sb.from('profiles').update({is_verified:nv}).eq('id',u.id);
+    btn.classList.toggle('off',!nv);btn.textContent=nv?'🔵':'✓';
+    userCache={};
+    logAdminAction(nv?'verify_grant':'verify_revoke',u.id,u.username);
+    toast(nv?'🔵 Галочка выдана':'Галочка снята');
+  }else if(act==='plus'){
+    const nv=!u.is_plus;
+    await sb.from('profiles').update({is_plus:nv}).eq('id',u.id);
+    btn.classList.toggle('off',!nv);
+    userCache={};
+    logAdminAction(nv?'plus_grant':'plus_revoke',u.id,u.username);
+    toast(nv?'👑 Plus выдан':'Plus снят');
+  }else if(act==='ban'){
+    if(u.is_banned){
+      await sb.from('profiles').update({is_banned:false,ban_reason:null,banned_at:null,banned_by:null}).eq('id',u.id);
+      btn.classList.add('off');
+      userCache={};
+      logAdminAction('unban',u.id,u.username);
+      toast('✓ Разбанен');
+    }else{
+      openConfirm('🚫 Забанить '+u.username,'Пользователь не сможет войти. Укажи причину:',async(reason)=>{
+        await sb.from('profiles').update({is_banned:true,ban_reason:reason||'Нарушение правил',banned_at:new Date().toISOString(),banned_by:currentUser.id}).eq('id',u.id);
+        btn.classList.remove('off');
+        userCache={};
+        logAdminAction('ban',u.id,u.username+' | '+(reason||''));
+        toast('🚫 Забанен');
+      });
+    }
+  }else if(act==='gift'){
+    const{data:cur}=await sb.from('profiles').select('gifts_received').eq('id',u.id).single();
+    await sb.from('profiles').update({gifts_received:(cur?.gifts_received||0)+1}).eq('id',u.id);
+    logAdminAction('gift',u.id,u.username);
+    toast('🎁 Подарок выдан');
+  }
+}
+
+async function loadBannedUsers(){
+  const list=$('bannedList');
+  const{data}=await sb.from('profiles').select('id,username,display_name,avatar_url,ban_reason,banned_at').eq('is_banned',true).order('banned_at',{ascending:false});
+  if(!data?.length){list.innerHTML='<div class="admin-empty">Никого не забанено 🎉</div>';return}
+  list.innerHTML='';
+  data.forEach(u=>{
+    const div=document.createElement('div');
+    div.className='admin-card';
+    div.innerHTML=`
+      <div class="ac-avatar banned">${u.avatar_url?`<img src="${u.avatar_url}">`:(u.display_name||'?')[0].toUpperCase()}</div>
+      <div class="ac-info">
+        <div class="ac-name">${esc(u.display_name||u.username)}</div>
+        <div class="ac-nick">@${esc(u.username)}</div>
+        <div class="ac-stats"><span style="color:var(--red)">${esc(u.ban_reason||'—')}</span></div>
+      </div>
+      <button class="ac-btn green" data-uid="${u.id}">✓ Разбан</button>`;
+    div.querySelector('button').onclick=async()=>{
+      await sb.from('profiles').update({is_banned:false,ban_reason:null,banned_at:null,banned_by:null}).eq('id',u.id);
+      logAdminAction('unban',u.id,u.username);
+      loadBannedUsers();renderAdminStats();
+    };
+    list.appendChild(div);
+  });
+}
+
+async function loadReports(){
+  const list=$('reportsList');
+  list.innerHTML='<div class="admin-empty">Загрузка...</div>';
+  const{data}=await sb.from('reports').select('*').order('created_at',{ascending:false}).limit(50);
+  if(!data?.length){list.innerHTML='<div class="admin-empty">Жалоб нет ✨</div>';return}
+  list.innerHTML='';
+  for(const r of data){
+    const div=document.createElement('div');
+    div.className='admin-card';
+    div.style.flexDirection='column';
+    div.style.alignItems='stretch';
+    const reporter=await getUser(r.reporter);
+    const target=r.target_user?await getUser(r.target_user):null;
+    div.innerHTML=`
+      <div style="font-size:12px;margin-bottom:6px">
+        <b>${esc(reporter?.display_name||'?')}</b> пожаловался на <b>${esc(target?.display_name||'—')}</b>
+      </div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:6px">Причина: ${esc(r.reason)}</div>
+      <div style="font-size:10px;color:var(--text3)">${new Date(r.created_at).toLocaleString('ru')}</div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        ${target?`<button class="ac-btn red" data-uid="${target.id}">🚫 Забанить</button>`:''}
+        <button class="ac-btn gray" data-rid="${r.id}">✓ Обработано</button>
+      </div>`;
+    div.querySelectorAll('button').forEach(b=>{
+      b.onclick=async()=>{
+        if(b.dataset.uid){
+          await sb.from('profiles').update({is_banned:true,ban_reason:'Жалоба: '+r.reason,banned_at:new Date().toISOString(),banned_by:currentUser.id}).eq('id',b.dataset.uid);
+          logAdminAction('ban_by_report',b.dataset.uid,r.reason);
+          toast('🚫 Забанен');
+        }
+        await sb.from('reports').update({status:'resolved'}).eq('id',r.id);
+        loadReports();renderAdminStats();
+      };
+    });
+    list.appendChild(div);
+  }
+}
+
+async function loadAdminLogs(){
+  const list=$('logsList');
+  const{data}=await sb.from('admin_logs').select('*').order('created_at',{ascending:false}).limit(50);
+  if(!data?.length){list.innerHTML='<div class="admin-empty">Логов нет</div>';return}
+  list.innerHTML=data.map(l=>{
+    const actionNames={login:'🔐 Вход',ban:'🚫 Бан',unban:'✓ Разбан',verify_grant:'🔵 Выдал галочку',verify_revoke:'⚪ Снял галочку',plus_grant:'👑 Выдал Plus',plus_revoke:'⚪ Снял Plus',gift:'🎁 Выдал подарок',ban_by_report:'🚫 Бан по жалобе'};
+    return `<div class="admin-log"><div class="a">${actionNames[l.action]||l.action}</div><div>${esc(l.details||'')}</div><div class="t">${new Date(l.created_at).toLocaleString('ru')}</div></div>`;
+  }).join('');
+}
+
+async function logAdminAction(action,target_id,details){
+  try{await sb.from('admin_logs').insert({admin_id:currentUser.id,action,target_id:target_id||null,details})}catch(e){}
+}
+
+async function loadAppSettings(){
+  const{data}=await sb.from('app_settings').select('*');
+  const s={};(data||[]).forEach(x=>s[x.key]=x.value);
+  $('regOpenToggle').checked=s.registration_open!==false;
+  $('maintenanceToggle').checked=s.maintenance===true;
+  $('regOpenToggle').onchange=async e=>{
+    await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','registration_open');
+    toast('✓ Сохранено');
+  };
+  $('maintenanceToggle').onchange=async e=>{
+    await sb.from('app_settings').update({value:e.target.checked,updated_at:new Date().toISOString()}).eq('key','maintenance');
+    toast('✓ Сохранено');
+  };
+  $('exportDataBtn').onclick=async()=>{
+    const{data:users}=await sb.from('profiles').select('*');
+    const blob=new Blob([JSON.stringify(users,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='spacegram_users.json';a.click();
+  };
+  $('clearOldMessagesBtn').onclick=()=>{
+    openConfirm('🗑 Удалить старые','Удалить все сообщения старше 30 дней?',async()=>{
+      const d=new Date();d.setDate(d.getDate()-30);
+      await sb.from('messages').delete().lt('created_at',d.toISOString());
+      toast('✓ Удалено');
+    });
+  };
+}
+
+// CONFIRM MODAL
+let confirmCallback=null;
+function openConfirm(title,text,cb){
+  $('confirmTitle').textContent=title;
+  $('confirmText').textContent=text;
+  $('confirmInput').value='';
+  $('confirmModal').classList.add('active');
+  confirmCallback=cb;
+  setTimeout(()=>$('confirmInput').focus(),100);
+}
+window.closeConfirm=()=>{$('confirmModal').classList.remove('active');confirmCallback=null};
+$('confirmOk').onclick=async()=>{
+  const reason=$('confirmInput').value.trim();
+  if(confirmCallback)await confirmCallback(reason);
+  closeConfirm();
 };
 
-window.openPlusPage=()=>{
-  $('plusStatus').innerHTML=currentProfile?.is_plus?'<span class="plus-badge" style="font-size:13px;padding:5px 14px">✅ АКТИВЕН</span>':'';
-  $('plusPage').classList.add('active');
-};
+// TOAST
+function toast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--panel2);color:var(--text);padding:11px 20px;border-radius:22px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,.4);border:1px solid var(--border);animation:toastIn .3s;white-space:nowrap';
+  document.body.appendChild(t);
+  const style=document.createElement('style');
+  style.textContent='@keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}';
+  document.head.appendChild(style);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},2000);
+}
+
+// PLUS
+window.openPlusPage=()=>{$('plusStatus').innerHTML=currentProfile?.is_plus?'<span class="plus-badge" style="font-size:13px;padding:5px 14px">✅ АКТИВЕН</span>':'';$('plusPage').classList.add('active')};
 $('plusBtn').onclick=openPlusPage;
 
 document.addEventListener('click',e=>{
@@ -1556,4 +1703,4 @@ function esc(t){const d=document.createElement('div');d.textContent=t??'';return
 init();
 </script>
 </body>
-       </html>
+                                                                </html>
