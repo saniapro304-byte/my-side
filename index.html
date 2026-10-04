@@ -70,6 +70,20 @@ body.plus-active .sh h2{background:var(--gold);-webkit-background-clip:text;-web
 .av-s{width:34px;height:34px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:600;overflow:hidden;flex-shrink:0;cursor:pointer}
 .av-s img{width:100%;height:100%;object-fit:cover}
 
+/* СТАТУСЫ */
+.stories-bar{display:flex;gap:10px;padding:8px 12px 10px;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none}
+.stories-bar::-webkit-scrollbar{display:none}
+.story-bubble{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;cursor:pointer;min-width:64px}
+.story-ring{width:56px;height:56px;border-radius:50%;padding:2.5px;background:var(--panel2);position:relative;transition:.2s}
+.story-ring.unseen{background:linear-gradient(135deg,#64b5ef,#4a9eff,#f5b041)}
+.story-ring.mine{background:var(--panel2)}
+.story-ring:active{transform:scale(.95)}
+.story-ring .inner{width:100%;height:100%;border-radius:50%;background:var(--panel);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:600;overflow:hidden;border:2.5px solid var(--panel);color:var(--text)}
+.story-ring .inner img{width:100%;height:100%;object-fit:cover}
+.story-ring .plus{position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;border:2px solid var(--panel);font-weight:700}
+.story-name{font-size:10px;color:var(--text2);max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.story-name.unseen{color:var(--text);font-weight:600}
+
 .folders{display:flex;gap:4px;padding:0 12px 8px;overflow-x:auto;scrollbar-width:none}
 .folders::-webkit-scrollbar{display:none}
 .fb{padding:5px 12px;border-radius:14px;background:var(--panel2);color:var(--text);font-size:12px;font-weight:500;white-space:nowrap;flex-shrink:0}
@@ -83,9 +97,11 @@ body.plus-active .sh h2{background:var(--gold);-webkit-background-clip:text;-web
 .chats{flex:1;overflow-y:auto;padding:0 6px 6px;-webkit-overflow-scrolling:touch}
 .chats::-webkit-scrollbar{width:3px}
 .chats::-webkit-scrollbar-thumb{background:var(--panel2);border-radius:2px}
-.chat{padding:7px 10px;display:flex;align-items:center;gap:10px;border-radius:10px;margin:1px 0;cursor:pointer}
+.chat{padding:7px 10px;display:flex;align-items:center;gap:10px;border-radius:10px;margin:1px 0;cursor:pointer;position:relative}
 .chat:active{background:var(--panel2)}
 .chat.active{background:var(--accent-bg)}
+.chat.pinned::before{content:'📌';position:absolute;right:6px;top:6px;font-size:10px}
+.chat.muted .cname::after{content:' 🔕';font-size:10px}
 .cav{width:44px;height:44px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;font-weight:600;overflow:hidden;flex-shrink:0;position:relative}
 .cav img{width:100%;height:100%;object-fit:cover}
 .dot-on{position:absolute;bottom:0;right:0;width:11px;height:11px;background:var(--green);border-radius:50%;border:2px solid var(--panel)}
@@ -312,6 +328,52 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
 .confirm .box .btns button.ok{background:var(--red);color:#fff}
 .confirm .box .btns button.no{background:var(--panel2);color:var(--text)}
 
+/* СТАТУС-ВЬЮЕР */
+.story-viewer{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:2500}
+.story-viewer.show{display:flex}
+.sv-progress{display:flex;gap:3px;padding:10px 12px;padding-top:calc(10px + var(--safe-top))}
+.sv-progress .bar{flex:1;height:3px;background:rgba(255,255,255,.3);border-radius:2px;overflow:hidden}
+.sv-progress .bar .fill{height:100%;background:#fff;width:0;border-radius:2px}
+.sv-progress .bar.done .fill{width:100%}
+.sv-progress .bar.active .fill{animation:svFill 5s linear forwards}
+@keyframes svFill{from{width:0}to{width:100%}}
+.sv-head{display:flex;align-items:center;gap:10px;padding:8px 14px;color:#fff}
+.sv-head .av{width:36px;height:36px;border-radius:50%;background:#333;overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:600}
+.sv-head .av img{width:100%;height:100%;object-fit:cover}
+.sv-head .meta{flex:1}
+.sv-head .nm{font-weight:600;font-size:14px}
+.sv-head .tm{font-size:11px;opacity:.7}
+.sv-head button{background:rgba(255,255,255,.15);color:#fff;width:34px;height:34px;border-radius:50%;font-size:16px}
+.sv-content{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;position:relative}
+.sv-content img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
+.sv-content .caption{position:absolute;bottom:80px;left:20px;right:20px;color:#fff;font-size:16px;text-align:center;text-shadow:0 2px 8px rgba(0,0,0,.8);padding:10px}
+.sv-nav{position:absolute;top:80px;bottom:0;width:33%;z-index:5;cursor:pointer}
+.sv-nav.left{left:0}
+.sv-nav.right{right:0}
+.sv-bottom{padding:14px 20px calc(14px + var(--safe-bottom));display:flex;gap:8px;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.sv-bottom input{flex:1;padding:10px 16px;border-radius:20px;background:rgba(255,255,255,.15);color:#fff;border:none;outline:none}
+.sv-bottom input::placeholder{color:rgba(255,255,255,.6)}
+.sv-views{color:#fff;font-size:13px;padding:8px 14px;text-align:right}
+.sv-list{position:absolute;bottom:0;left:0;right:0;max-height:40vh;background:var(--panel);border-radius:16px 16px 0 0;padding:14px;overflow-y:auto;transform:translateY(100%);transition:.3s}
+.sv-list.show{transform:translateY(0)}
+.sv-list h4{font-size:13px;color:var(--text2);margin-bottom:10px;text-transform:uppercase}
+.sv-viewer-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px}
+.sv-viewer-row .av{width:36px;height:36px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px;overflow:hidden}
+.sv-viewer-row .av img{width:100%;height:100%;object-fit:cover}
+.sv-viewer-row .info{flex:1}
+.sv-viewer-row .nm{font-size:14px;font-weight:600;color:var(--text)}
+.sv-viewer-row .tm{font-size:11px;color:var(--text2)}
+
+.gifts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;padding:8px 0}
+.gift-item{background:var(--panel2);border-radius:12px;padding:10px;text-align:center;font-size:32px;position:relative}
+.gift-item .count{position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;min-width:20px;text-align:center}
+
+.chat-menu{position:fixed;background:var(--panel);border-radius:12px;padding:6px;box-shadow:0 10px 40px rgba(0,0,0,.6);z-index:2000;min-width:180px;display:none;border:1px solid var(--border)}
+.chat-menu.show{display:block}
+.chat-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border-radius:8px;font-size:14px;color:var(--text);text-align:left}
+.chat-menu button:hover{background:var(--panel2)}
+.chat-menu button.danger{color:var(--red)}
+
 .plus-page{position:fixed;inset:0;background:var(--bg);display:none;z-index:1500;overflow-y:auto}
 .plus-page.show{display:block}
 .plus-page .close{position:fixed;top:calc(14px + var(--safe-top));right:14px;width:40px;height:40px;border-radius:50%;background:var(--panel2);color:var(--text);font-size:20px;z-index:10}
@@ -357,6 +419,7 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
           <div class="av-s" id="myAva" onclick="showProfile()">?</div>
         </div>
       </div>
+      <div class="stories-bar" id="storiesBar"></div>
       <div class="folders" id="folders">
         <button class="fb active" data-f="all">Все</button>
         <button class="fb" data-f="unread">Непрочитанные</button>
@@ -421,6 +484,36 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
 
 <div class="imgv" id="imgv"><button onclick="document.getElementById('imgv').classList.remove('show')">✕</button><img id="imgvImg" src=""></div>
 
+<!-- ПРОСМОТР СТАТУСА -->
+<div class="story-viewer" id="storyViewer">
+  <div class="sv-progress" id="svProgress"></div>
+  <div class="sv-head">
+    <div class="av" id="svAva"></div>
+    <div class="meta">
+      <div class="nm" id="svName"></div>
+      <div class="tm" id="svTime"></div>
+    </div>
+    <button onclick="closeStoryViewer()">✕</button>
+  </div>
+  <div class="sv-content" id="svContent"></div>
+  <div class="sv-views" id="svViews" style="display:none"></div>
+  <div class="sv-nav left" onclick="prevStory()"></div>
+  <div class="sv-nav right" onclick="nextStory()"></div>
+  <div class="sv-bottom" id="svBottom" style="display:none">
+    <input id="svReplyInput" placeholder="Ответить...">
+  </div>
+  <div class="sv-list" id="svViewsList"></div>
+</div>
+
+<!-- МЕНЮ ЧАТА -->
+<div class="chat-menu" id="chatMenu">
+  <button data-act="pin">📌 Закрепить / открепить</button>
+  <button data-act="mute">🔕 Без звука</button>
+  <button data-act="archive">📦 В архив</button>
+  <button data-act="clear">🧹 Очистить</button>
+  <button data-act="delete" class="danger">🗑 Удалить</button>
+</div>
+
 <div class="modal" id="profileModal">
   <div class="mbox">
     <h2>Профиль</h2>
@@ -433,6 +526,7 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
     <textarea id="pBio" placeholder="О себе..." rows="2"></textarea>
     <div class="st">Премиум эмодзи</div>
     <div class="pemojis" id="pEmojis"></div>
+    <button class="gold" onclick="addStory()">📸 Добавить в статус</button>
     <button id="btnSaveProfile">💾 Сохранить</button>
     <button class="dgr" id="btnLogout">🚪 Выйти</button>
     <button class="gho" onclick="document.getElementById('profileModal').classList.remove('show')">Закрыть</button>
@@ -524,10 +618,11 @@ emoji-picker{position:absolute;bottom:48px;right:0;z-index:100;--background:var(
     <h1>Space Plus</h1>
     <div class="sub">Премиум-возможности</div>
     <div id="plusStatus"></div>
+    <div class="feat"><div class="ic">📸</div><div><div class="t1">Статусы 24ч</div><div class="t2">Расскажи о себе</div></div></div>
     <div class="feat"><div class="ic">🎨</div><div><div class="t1">Премиум эмодзи</div><div class="t2">12 уникальных</div></div></div>
     <div class="feat"><div class="ic">👑</div><div><div class="t1">Золотая рамка</div><div class="t2">Особый стиль</div></div></div>
+    <div class="feat"><div class="ic">🎁</div><div><div class="t1">Подарки</div><div class="t2">Дари другим</div></div></div>
     <div class="feat"><div class="ic">⭐</div><div><div class="t1">Премиум стикеры</div><div class="t2">Эксклюзив</div></div></div>
-    <div class="feat"><div class="ic">📸</div><div><div class="t1">Истории 24ч</div><div class="t2">Расскажи о себе</div></div></div>
   </div>
 </div>
 
@@ -563,7 +658,7 @@ const LS = {
 
 let me = null, myProfile = null;
 let activeChat = null, activeOther = null, activeChatObj = null;
-let chatSub = null, msgSub = null;
+let chatSub = null, msgSub = null, storySub = null;
 let chats = [], messages = [], reactions = [], polls = {}, stickers = [];
 let profiles = {};
 let unread = {};
@@ -575,6 +670,14 @@ let selectedMembers = [], selectedPremiumEmoji = null;
 let isAdmin = false;
 let toastTimer = null;
 
+// СТАТУСЫ
+let stories = [];
+let storiesByUser = {};
+let activeStoryUser = null;
+let activeStoryIdx = 0;
+let storyTimer = null;
+
+// ============ UI HELPERS ============
 function esc(s){ const d=document.createElement('div'); d.textContent=s??''; return d.innerHTML }
 function el(tag, props={}, ...children){
   const e = document.createElement(tag);
@@ -621,7 +724,12 @@ function applyTheme(){
   if(settings.mode === 'light' || t === 'candy') document.body.classList.add('theme-light');
 }
 function saveSettings(){ LS.set('settings', settings) }
+function debounce(fn, ms){
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms) };
+}
 
+// ============ START ============
 async function start(){
   setLoad('Проверка сессии...');
   applyTheme();
@@ -646,18 +754,13 @@ async function openApp(){
     setLoad('Профиль...');
     let { data: prof } = await sb.from('profiles').select('*').eq('id', me.id).maybeSingle();
 
-    // Если профиля нет — создаём вручную
     if(!prof){
       setLoad('Создание профиля...');
       const uname = me.user_metadata?.username || (me.email||'').split('@')[0] || 'user_' + me.id.slice(0,8);
       const isC = uname === CREATOR, isO = uname === OFFICIAL;
       const { data: created, error: ce } = await sb.from('profiles').insert({
-        id: me.id,
-        username: uname,
-        display_name: uname,
-        is_creator: isC,
-        is_verified: isC || isO,
-        is_plus: isC || isO,
+        id: me.id, username: uname, display_name: uname,
+        is_creator: isC, is_verified: isC || isO, is_plus: isC || isO,
         last_seen: new Date().toISOString()
       }).select().single();
       if(ce) throw new Error('Не удалось создать профиль: ' + ce.message);
@@ -682,6 +785,10 @@ async function openApp(){
     setLoad('Стикеры...');
     const { data: stk } = await sb.from('stickers').select('*');
     stickers = stk || [];
+
+    setLoad('Статусы...');
+    await loadStories();
+    subscribeStories();
 
     setLoad('Чаты...');
     await loadChats();
@@ -708,65 +815,45 @@ function renderMyAvatar(){
   }, 45000);
 }
 
-// ============ РЕГИСТРАЦИЯ ============
+// ============ AUTH ============
 $('btnReg').onclick = async () => {
   $('aerr').textContent = '';
   const email = $('email').value.trim();
   const pass = $('pass').value;
   const uname = $('uname').value.trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
   if(!email || !pass) return $('aerr').textContent = 'Заполни email и пароль';
-  if(pass.length < 6) return $('aerr').textContent = 'Пароль минимум 6 символов';
-  if(uname.length < 3) return $('aerr').textContent = 'Username минимум 3 символа';
-  if(uname.length > 20) return $('aerr').textContent = 'Username максимум 20 символов';
+  if(pass.length < 6) return $('aerr').textContent = 'Пароль минимум 6';
+  if(uname.length < 3) return $('aerr').textContent = 'Username минимум 3';
+  if(uname.length > 20) return $('aerr').textContent = 'Username максимум 20';
 
   $('aerr').textContent = 'Проверка ника...';
   const { data: exist } = await sb.from('profiles').select('id').eq('username', uname).maybeSingle();
   if(exist) return $('aerr').textContent = '@' + uname + ' уже занят';
 
   $('aerr').textContent = 'Регистрация...';
-  // ВАЖНО: передаём username в метаданные, чтобы триггер его подхватил
   const { data, error } = await sb.auth.signUp({
-    email,
-    password: pass,
-    options: {
-      data: {
-        username: uname,
-        display_name: uname
-      }
-    }
+    email, password: pass,
+    options: { data: { username: uname, display_name: uname } }
   });
   if(error) return $('aerr').textContent = error.message;
   if(!data.user) return $('aerr').textContent = 'Ошибка регистрации';
 
-  // Ждём триггер БД
-  await new Promise(r => setTimeout(r, 800));
+  await new Promise(r => setTimeout(r, 1500));
 
-  // Проверяем что создалось
   const { data: prof } = await sb.from('profiles').select('*').eq('id', data.user.id).maybeSingle();
+  const isC = uname === CREATOR, isO = uname === OFFICIAL;
+  const correct = {
+    username: uname, display_name: uname,
+    is_creator: isC, is_verified: isC || isO, is_plus: isC || isO
+  };
 
   if(!prof){
-    // Триггер не сработал — создаём сами
-    const isC = uname === CREATOR, isO = uname === OFFICIAL;
     const { error: pe } = await sb.from('profiles').insert({
-      id: data.user.id,
-      username: uname,
-      display_name: uname,
-      is_creator: isC,
-      is_verified: isC || isO,
-      is_plus: isC || isO,
-      last_seen: new Date().toISOString()
+      id: data.user.id, ...correct, last_seen: new Date().toISOString()
     });
     if(pe) return $('aerr').textContent = 'Ошибка профиля: ' + pe.message;
   } else if(prof.username !== uname){
-    // Триггер поставил автогенерированный ник — перезаписываем
-    const isC = uname === CREATOR, isO = uname === OFFICIAL;
-    const { error: ue } = await sb.from('profiles').update({
-      username: uname,
-      display_name: uname,
-      is_creator: isC,
-      is_verified: isC || isO,
-      is_plus: isC || isO
-    }).eq('id', data.user.id);
+    const { error: ue } = await sb.from('profiles').update(correct).eq('id', data.user.id);
     if(ue) return $('aerr').textContent = 'Ошибка обновления: ' + ue.message;
   }
 
@@ -774,11 +861,10 @@ $('btnReg').onclick = async () => {
   await openApp();
 };
 
-// ============ ВХОД ============
 $('btnLogin').onclick = async () => {
   $('aerr').textContent = '';
   const email = $('email').value.trim(), pass = $('pass').value;
-  if(!email || !pass) return $('aerr').textContent = 'Заполни email и пароль';
+  if(!email || !pass) return $('aerr').textContent = 'Заполни';
   $('aerr').textContent = 'Вход...';
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   if(error) return $('aerr').textContent = error.message;
@@ -794,6 +880,235 @@ async function getProfile(id){
   return data;
 }
 
+// ============ СТАТУСЫ ============
+async function loadStories(){
+  const { data } = await sb.from('stories').select('*')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+  stories = data || [];
+
+  storiesByUser = {};
+  stories.forEach(s => {
+    if(!storiesByUser[s.user_id]) storiesByUser[s.user_id] = [];
+    storiesByUser[s.user_id].push(s);
+  });
+
+  const uids = Object.keys(storiesByUser).filter(id => !profiles[id]);
+  if(uids.length){
+    const { data: profs } = await sb.from('profiles').select('*').in('id', uids);
+    (profs||[]).forEach(p => profiles[p.id] = p);
+  }
+
+  renderStoriesBar();
+}
+
+function renderStoriesBar(){
+  const bar = $('storiesBar');
+  if(!bar) return;
+  bar.innerHTML = '';
+
+  const seenIds = myProfile?.stories_seen || [];
+  const myStories = storiesByUser[me.id] || [];
+
+  const mine = el('div', { class:'story-bubble', onclick: () => {
+    if(myStories.length === 0) return addStory();
+    openStoryViewer(me.id);
+  }});
+  mine.innerHTML = `
+    <div class="story-ring mine">
+      <div class="inner">${myProfile.avatar_url?`<img src="${myProfile.avatar_url}">`:esc((myProfile.display_name||'?')[0].toUpperCase())}</div>
+      ${myStories.length===0?'<div class="plus">+</div>':''}
+    </div>
+    <div class="story-name">Моя</div>`;
+  bar.appendChild(mine);
+
+  Object.keys(storiesByUser).forEach(uid => {
+    if(uid === me.id) return;
+    const userStories = storiesByUser[uid];
+    const p = profiles[uid];
+    if(!p) return;
+    const allSeen = userStories.every(s => seenIds.includes(s.id));
+    const item = el('div', { class:'story-bubble', onclick: () => openStoryViewer(uid) });
+    item.innerHTML = `
+      <div class="story-ring ${allSeen?'':'unseen'}">
+        <div class="inner">${p.avatar_url?`<img src="${p.avatar_url}">`:esc((p.display_name||'?')[0].toUpperCase())}</div>
+      </div>
+      <div class="story-name ${allSeen?'':'unseen'}">${esc(p.display_name)}</div>`;
+    bar.appendChild(item);
+  });
+}
+
+window.addStory = async function addStory(){
+  if(!myProfile?.is_plus) return alert('👑 Статусы только для Space Plus');
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.onchange = async e => {
+    const file = e.target.files[0];
+    if(!file) return;
+    if(file.size > 10*1024*1024) return alert('Файл > 10 МБ');
+    const caption = prompt('Подпись (необязательно):') || '';
+    const path = `${me.id}/${Date.now()}.jpg`;
+    const { error: ue } = await sb.storage.from('stories').upload(path, file);
+    if(ue) return alert('Ошибка загрузки: ' + ue.message);
+    const { data: u } = sb.storage.from('stories').getPublicUrl(path);
+    const { error: ie } = await sb.from('stories').insert({
+      user_id: me.id, media_url: u.publicUrl, media_type:'image', caption
+    });
+    if(ie) return alert('Ошибка: ' + ie.message);
+    toast('✅ Статус добавлен');
+    await loadStories();
+  };
+  inp.click();
+};
+
+async function openStoryViewer(uid){
+  const userStories = storiesByUser[uid];
+  if(!userStories?.length) return;
+  activeStoryUser = uid;
+  activeStoryIdx = 0;
+  $('storyViewer').classList.add('show');
+  const p = profiles[uid];
+  $('svAva').innerHTML = p.avatar_url ? `<img src="${p.avatar_url}">` : esc((p.display_name||'?')[0].toUpperCase());
+  $('svName').textContent = p.display_name;
+  $('svBottom').style.display = uid === me.id ? 'none' : 'flex';
+  $('svViews').style.display = uid === me.id ? 'block' : 'none';
+  showStory();
+}
+
+async function showStory(){
+  const userStories = storiesByUser[activeStoryUser];
+  const s = userStories[activeStoryIdx];
+  if(!s) return closeStoryViewer();
+  clearTimeout(storyTimer);
+
+  $('svProgress').innerHTML = userStories.map((_, i) => 
+    `<div class="bar ${i<activeStoryIdx?'done':''} ${i===activeStoryIdx?'active':''}"><div class="fill"></div></div>`
+  ).join('');
+
+  const diff = Date.now() - new Date(s.created_at).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  $('svTime').textContent = hours > 0 ? hours + ' ч назад' : (mins > 0 ? mins + ' мин назад' : 'только что');
+
+  $('svContent').innerHTML = `
+    <img src="${s.media_url}" onerror="this.style.display='none'">
+    ${s.caption ? `<div class="caption">${esc(s.caption)}</div>` : ''}`;
+
+  if(activeStoryUser !== me.id){
+    const { data: ex } = await sb.from('story_views').select('id')
+      .eq('story_id', s.id).eq('viewer_id', me.id).maybeSingle();
+    if(!ex) await sb.from('story_views').insert({ story_id: s.id, viewer_id: me.id });
+
+    const seenIds = myProfile.stories_seen || [];
+    if(!seenIds.includes(s.id)){
+      seenIds.push(s.id);
+      const trimmed = seenIds.slice(-500);
+      await sb.from('profiles').update({ stories_seen: trimmed }).eq('id', me.id);
+      myProfile.stories_seen = trimmed;
+    }
+  } else {
+    await showStoryViews(s.id);
+  }
+
+  storyTimer = setTimeout(() => nextStory(), 5000);
+}
+
+async function showStoryViews(storyId){
+  const { data } = await sb.from('story_views').select('*')
+    .eq('story_id', storyId).order('viewed_at', { ascending: false });
+  const count = (data||[]).length;
+  $('svViews').innerHTML = `👁 ${count} просмотр${count===1?'':count<5?'а':'ов'}`;
+  if(count === 0){
+    $('svViewsList').innerHTML = '<h4>Просмотры</h4><div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Пока никто не смотрел</div>';
+    return;
+  }
+  const viewers = await Promise.all((data||[]).map(v => getProfile(v.viewer_id)));
+  $('svViewsList').innerHTML = '<h4>👁 Просмотры ('+count+')</h4>' + 
+    viewers.filter(Boolean).map(v => `
+      <div class="sv-viewer-row">
+        <div class="av">${v.avatar_url?`<img src="${v.avatar_url}">`:esc((v.display_name||'?')[0].toUpperCase())}</div>
+        <div class="info">
+          <div class="nm">${esc(v.display_name)} ${badges(v)}</div>
+          <div class="tm">@${esc(v.username)}</div>
+        </div>
+      </div>
+    `).join('');
+}
+
+window.nextStory = () => {
+  const userStories = storiesByUser[activeStoryUser];
+  activeStoryIdx++;
+  if(activeStoryIdx >= userStories.length){
+    const allUsers = Object.keys(storiesByUser).filter(u => storiesByUser[u].length);
+    const currentIdx = allUsers.indexOf(activeStoryUser);
+    if(currentIdx < allUsers.length - 1){
+      activeStoryUser = allUsers[currentIdx + 1];
+      activeStoryIdx = 0;
+      const p = profiles[activeStoryUser];
+      if(p){
+        $('svAva').innerHTML = p.avatar_url ? `<img src="${p.avatar_url}">` : esc((p.display_name||'?')[0].toUpperCase());
+        $('svName').textContent = p.display_name;
+      }
+      showStory();
+    } else closeStoryViewer();
+  } else showStory();
+};
+
+window.prevStory = () => {
+  if(activeStoryIdx > 0){
+    activeStoryIdx--;
+    showStory();
+  } else {
+    const allUsers = Object.keys(storiesByUser).filter(u => storiesByUser[u].length);
+    const currentIdx = allUsers.indexOf(activeStoryUser);
+    if(currentIdx > 0){
+      activeStoryUser = allUsers[currentIdx - 1];
+      activeStoryIdx = storiesByUser[activeStoryUser].length - 1;
+      const p = profiles[activeStoryUser];
+      if(p){
+        $('svAva').innerHTML = p.avatar_url ? `<img src="${p.avatar_url}">` : esc((p.display_name||'?')[0].toUpperCase());
+        $('svName').textContent = p.display_name;
+      }
+      showStory();
+    }
+  }
+};
+
+window.closeStoryViewer = () => {
+  $('storyViewer').classList.remove('show');
+  $('svViewsList').classList.remove('show');
+  clearTimeout(storyTimer);
+  loadStories();
+};
+
+$('svReplyInput')?.addEventListener('keydown', async e => {
+  if(e.key !== 'Enter') return;
+  const text = e.target.value.trim();
+  if(!text) return;
+  e.target.value = '';
+  const [u1, u2] = [me.id, activeStoryUser].sort();
+  let { data: ex } = await sb.from('chats').select('id').eq('user1', u1).eq('user2', u2).maybeSingle();
+  if(!ex){
+    const { data } = await sb.from('chats').insert({ user1: u1, user2: u2, created_by: me.id }).select().single();
+    ex = data;
+  }
+  await sb.from('messages').insert({
+    chat_id: ex.id, sender: me.id, is_read: false,
+    text: '↩ Ответ на статус: ' + text
+  });
+  await sb.from('chats').update({ last_message: '↩ Ответ на статус' }).eq('id', ex.id);
+  toast('✅ Ответ отправлен');
+  closeStoryViewer();
+});
+
+function subscribeStories(){
+  if(storySub) sb.removeChannel(storySub);
+  storySub = sb.channel('stories-stream')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => loadStories())
+    .subscribe();
+}
+
 // ============ CHATS ============
 async function loadChats(){
   const { data } = await sb.from('chats').select('*')
@@ -801,6 +1116,14 @@ async function loadChats(){
     .order('created_at', { ascending: false })
     .limit(60);
   chats = data || [];
+
+  const pinned = myProfile?.pinned_chats || [];
+  chats.sort((a, b) => {
+    const ap = pinned.indexOf(a.id), bp = pinned.indexOf(b.id);
+    if(ap >= 0 && bp < 0) return -1;
+    if(ap < 0 && bp >= 0) return 1;
+    return 0;
+  });
 
   const ids = chats.filter(c => !c.is_group && !c.is_channel)
     .map(c => c.user1 === me.id ? c.user2 : c.user1)
@@ -826,7 +1149,11 @@ async function loadChats(){
 function renderChatList(){
   const box = $('chats');
   box.innerHTML = '';
-  let list = chats.slice();
+  const archived = myProfile?.archived_chats || [];
+  const muted = myProfile?.muted_chats || [];
+  const pinned = myProfile?.pinned_chats || [];
+
+  let list = chats.filter(c => !archived.includes(c.id));
   if(filter === 'unread') list = list.filter(c => unread[c.id] > 0);
   else if(filter === 'private') list = list.filter(c => !c.is_group && !c.is_channel);
   else if(filter === 'group') list = list.filter(c => c.is_group);
@@ -846,11 +1173,14 @@ function renderChatList(){
     const online = p.last_seen && (Date.now() - new Date(p.last_seen).getTime()) < 90000;
     const count = unread[chat.id] || 0;
     const icon = chat.is_channel ? '📢' : chat.is_group ? '👥' : '';
+    const isPinned = pinned.includes(chat.id);
+    const isMuted = muted.includes(chat.id);
 
     const item = el('div', {
-      class: 'chat' + (chat.id === activeChat ? ' active' : ''),
+      class: 'chat' + (chat.id === activeChat ? ' active' : '') + (isPinned?' pinned':'') + (isMuted?' muted':''),
       onclick: () => openChat(chat.id, otherId, chat)
     });
+    item.dataset.chatId = chat.id;
     item.innerHTML = `
       <div class="cav">${p.avatar_url ? `<img src="${p.avatar_url}" loading="lazy">` : esc((p.display_name||'?')[0].toUpperCase())}
         ${online && !isGroup ? '<div class="dot-on"></div>' : ''}</div>
@@ -860,7 +1190,7 @@ function renderChatList(){
       </div>
       <div class="ctime">
         ${chat.created_at ? fmtTime(chat.created_at) : ''}
-        ${count ? `<div class="unread">${count > 99 ? '99+' : count}</div>` : ''}
+        ${count && !isMuted ? `<div class="unread">${count > 99 ? '99+' : count}</div>` : ''}
       </div>`;
     box.appendChild(item);
   });
@@ -1026,9 +1356,7 @@ function buildMessage(m){
   }
 
   const check = isMe ? `<span class="ch ${m.is_read?'read':''}">${m.is_read?'✓✓':'✓'}</span>` : '';
-  if(!m.is_sticker){
-    html += `<div class="t">${fmtTime(m.created_at)}${check}</div>`;
-  }
+  if(!m.is_sticker) html += `<div class="t">${fmtTime(m.created_at)}${check}</div>`;
   div.innerHTML = html;
   wrap.appendChild(div);
 
@@ -1087,7 +1415,7 @@ async function messageAction(act, m, wrap){
     return;
   }
   if(act === 'delete'){
-    if(!confirm('Удалить сообщение?')) return;
+    if(!confirm('Удалить?')) return;
     await sb.from('messages').update({ deleted: true, text:'', file_url: null }).eq('id', m.id);
     await loadMessages();
   }
@@ -1130,11 +1458,8 @@ document.addEventListener('click', async e => {
 
 async function toggleReaction(mid, emoji){
   const ex = reactions.find(r => r.message_id === mid && r.user_id === me.id && r.emoji === emoji);
-  if(ex){
-    await sb.from('reactions').delete().eq('id', ex.id);
-  } else {
-    await sb.from('reactions').insert({ message_id: mid, user_id: me.id, emoji });
-  }
+  if(ex) await sb.from('reactions').delete().eq('id', ex.id);
+  else await sb.from('reactions').insert({ message_id: mid, user_id: me.id, emoji });
   const ids = messages.map(m => m.id);
   const { data } = await sb.from('reactions').select('*').in('message_id', ids);
   reactions = data || [];
@@ -1153,6 +1478,7 @@ function startReply(m){
   $('msgInput').focus();
 }
 function cancelReply(){ replyTo = null; $('replyPrev').classList.remove('show') }
+window.cancelReply = cancelReply;
 
 async function forwardMsg(m){
   const { data } = await sb.from('chats').select('id,user1,user2,is_group,is_channel,group_name')
@@ -1160,8 +1486,7 @@ async function forwardMsg(m){
   if(!data?.length) return alert('Нет чатов');
   const names = [];
   for(let i=0;i<data.length;i++){
-    const c = data[i];
-    let n;
+    const c = data[i]; let n;
     if(c.is_group || c.is_channel) n = c.group_name || 'Группа';
     else { const p = await getProfile(c.user1===me.id?c.user2:c.user1); n = p?.display_name || 'user' }
     names.push(`${i+1}. ${n}`);
@@ -1197,11 +1522,7 @@ function subscribeMessages(){
 async function sendMessage(){
   const text = $('msgInput').value.trim();
   if(!text || !activeChat) return;
-  if(text === '/poll'){
-    $('msgInput').value = '';
-    $('pollModal').classList.add('show');
-    return;
-  }
+  if(text === '/poll'){ $('msgInput').value = ''; $('pollModal').classList.add('show'); return; }
   $('msgInput').value = '';
   const payload = {
     chat_id: activeChat, sender: me.id, text, is_read: false,
@@ -1362,31 +1683,25 @@ function renderPinned(){
   const nm = m.sender === me.id ? 'Ты' : (profiles[m.sender]?.display_name || '?');
   $('pinTxt').innerHTML = `<b>${esc(nm)}:</b> ${esc((m.text||'📎').slice(0,60))}`;
 }
-async function unpin(){
+window.unpin = async function(){
   await sb.from('chats').update({ pinned_message_id: null }).eq('id', activeChat);
   activeChatObj.pinned_message_id = null;
   renderPinned();
-}
+};
 
 $('btnChatMenu').onclick = e => {
   e.stopPropagation();
   if(!activeChat) return;
   const c = prompt('1 — Очистить чат\n2 — Удалить чат\n3 — Создать опрос\n\nВведи номер:');
   if(c === '1'){
-    if(confirm('Очистить все сообщения?')){
+    if(confirm('Очистить все сообщения?'))
       sb.from('messages').delete().eq('chat_id', activeChat).then(() => loadMessages());
-    }
   } else if(c === '2'){
-    if(confirm('Удалить чат полностью?')){
+    if(confirm('Удалить чат?'))
       sb.from('messages').delete().eq('chat_id', activeChat).then(() =>
-        sb.from('chats').delete().eq('id', activeChat).then(() => {
-          backToList(); loadChats();
-        })
+        sb.from('chats').delete().eq('id', activeChat).then(() => { backToList(); loadChats(); })
       );
-    }
-  } else if(c === '3'){
-    $('pollModal').classList.add('show');
-  }
+  } else if(c === '3') $('pollModal').classList.add('show');
 };
 $('btnSearchMsg').onclick = () => {
   const q = prompt('Поиск в чате:');
@@ -1407,6 +1722,105 @@ window.backToList = () => {
   loadChats();
 };
 
+window.viewImage = url => { $('imgvImg').src = url; $('imgv').classList.add('show') };
+
+// Меню чата (long press)
+let chatPressTimer = null;
+let chatMenuTarget = null;
+
+function attachLongPress(){
+  document.querySelectorAll('.chat').forEach(chat => {
+    const start = (e) => {
+      const id = chat.dataset.chatId;
+      if(!id) return;
+      chatPressTimer = setTimeout(() => {
+        chatMenuTarget = chats.find(c => c.id === id);
+        if(!chatMenuTarget) return;
+        const rect = chat.getBoundingClientRect();
+        const x = e.touches?.[0]?.clientX || e.clientX || rect.left;
+        const y = e.touches?.[0]?.clientY || e.clientY || rect.top;
+        showChatMenu(x, y);
+        if(navigator.vibrate) navigator.vibrate(30);
+      }, 500);
+    };
+    const cancel = () => clearTimeout(chatPressTimer);
+    chat.addEventListener('touchstart', start, { passive: true });
+    chat.addEventListener('touchend', cancel);
+    chat.addEventListener('touchmove', cancel);
+    chat.addEventListener('mousedown', start);
+    chat.addEventListener('mouseup', cancel);
+    chat.addEventListener('mouseleave', cancel);
+  });
+}
+
+// Перезапускаем long press после рендера
+const _origRenderChatList = renderChatList;
+renderChatList = function(){
+  _origRenderChatList();
+  attachLongPress();
+};
+
+function showChatMenu(x, y){
+  const menu = $('chatMenu');
+  menu.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - 250) + 'px';
+  menu.classList.add('show');
+}
+
+document.addEventListener('click', e => {
+  if(!e.target.closest('#chatMenu')) $('chatMenu')?.classList.remove('show');
+});
+
+$('chatMenu')?.addEventListener('click', async e => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const act = btn.dataset.act;
+  $('chatMenu').classList.remove('show');
+  if(!chatMenuTarget) return;
+
+  if(act === 'pin'){
+    const pinned = myProfile.pinned_chats || [];
+    const idx = pinned.indexOf(chatMenuTarget.id);
+    if(idx >= 0) pinned.splice(idx, 1);
+    else pinned.unshift(chatMenuTarget.id);
+    await sb.from('profiles').update({ pinned_chats: pinned }).eq('id', me.id);
+    myProfile.pinned_chats = pinned;
+    toast(idx >= 0 ? 'Откреплено' : '📌 Закреплено');
+    loadChats();
+  } else if(act === 'mute'){
+    const muted = myProfile.muted_chats || [];
+    const idx = muted.indexOf(chatMenuTarget.id);
+    if(idx >= 0) muted.splice(idx, 1);
+    else muted.push(chatMenuTarget.id);
+    await sb.from('profiles').update({ muted_chats: muted }).eq('id', me.id);
+    myProfile.muted_chats = muted;
+    toast(idx >= 0 ? 'Звук включён' : '🔕 Отключён');
+    loadChats();
+  } else if(act === 'archive'){
+    const arch = myProfile.archived_chats || [];
+    const idx = arch.indexOf(chatMenuTarget.id);
+    if(idx >= 0) arch.splice(idx, 1);
+    else arch.push(chatMenuTarget.id);
+    await sb.from('profiles').update({ archived_chats: arch }).eq('id', me.id);
+    myProfile.archived_chats = arch;
+    toast(idx >= 0 ? 'Извлечён' : '📦 В архиве');
+    loadChats();
+  } else if(act === 'clear'){
+    if(!confirm('Очистить все сообщения в чате?')) return;
+    await sb.from('messages').delete().eq('chat_id', chatMenuTarget.id);
+    if(activeChat === chatMenuTarget.id) loadMessages();
+    toast('✅ Очищено');
+  } else if(act === 'delete'){
+    if(!confirm('Удалить чат полностью?')) return;
+    await sb.from('messages').delete().eq('chat_id', chatMenuTarget.id);
+    await sb.from('chats').delete().eq('id', chatMenuTarget.id);
+    if(activeChat === chatMenuTarget.id) backToList();
+    loadChats();
+    toast('🗑 Удалён');
+  }
+});
+
+// ============ ПРОФИЛЬ ============
 window.showProfile = () => {
   if(!myProfile) return;
   $('pName').value = myProfile.display_name || '';
@@ -1489,6 +1903,17 @@ window.showUserProfile = async uid => {
   const p = await getProfile(uid);
   if(!p) return;
   const online = p.last_seen && (Date.now() - new Date(p.last_seen).getTime()) < 90000;
+  const { data: gifts } = await sb.from('gifts').select('*').eq('to_user', uid).order('created_at', { ascending: false });
+  const giftsByEmoji = {};
+  (gifts||[]).forEach(g => { giftsByEmoji[g.gift_emoji] = (giftsByEmoji[g.gift_emoji]||0) + 1 });
+
+  let giftsHTML = '';
+  if(Object.keys(giftsByEmoji).length){
+    giftsHTML = '<div class="gifts-grid">' + Object.entries(giftsByEmoji).map(([e,c]) =>
+      `<div class="gift-item">${e}<div class="count">${c}</div></div>`
+    ).join('') + '</div>';
+  }
+
   $('userContent').innerHTML = `
     <div class="uv">
       <div class="lg ${p.is_plus?'gold':''}">${p.avatar_url ? `<img src="${p.avatar_url}">` : esc((p.display_name||'?')[0].toUpperCase())}</div>
@@ -1501,9 +1926,28 @@ window.showUserProfile = async uid => {
         <div><div class="n">${p.gifts_received||0}</div><div class="l">Подарков</div></div>
       </div>
       <div class="stat">${online ? '🟢 в сети' : '⚫ недавно'}</div>
+      ${giftsHTML}
     </div>
+    ${uid !== me.id && myProfile.is_plus ? `<button class="gold" onclick="openGiftModal('${uid}')">🎁 Подарить</button>` : ''}
     <button class="gho" onclick="document.getElementById('userModal').classList.remove('show')">Закрыть</button>`;
   $('userModal').classList.add('show');
+};
+
+window.openGiftModal = (uid) => {
+  if(!myProfile?.is_plus) return alert('👑 Только для Plus');
+  if(uid === me.id) return alert('Нельзя себе');
+  const list = ['🌹','🧸','💎','👑','🚀','🍰','🎂','🎁','💝','🌟','🏆','🎉'];
+  const inp = prompt('Что подарить?\n\n' + list.map((g,i)=>`${i+1}. ${g}`).join('\n') + '\n\nВведи номер:');
+  const idx = parseInt(inp) - 1;
+  if(isNaN(idx) || !list[idx]) return;
+  const msg = prompt('Сообщение (необязательно):') || '';
+  (async () => {
+    const { error } = await sb.from('gifts').insert({
+      from_user: me.id, to_user: uid, gift_emoji: list[idx], message: msg
+    });
+    if(error) return alert(error.message);
+    toast('🎁 Подарок отправлен!');
+  })();
 };
 
 $('btnSet').onclick = () => {
@@ -1651,9 +2095,7 @@ function openAdmin(){
         actuallyOpenAdmin();
       })();
     } else if(p !== null) alert('❌ Неверный пароль');
-  } else {
-    actuallyOpenAdmin();
-  }
+  } else actuallyOpenAdmin();
 }
 function actuallyOpenAdmin(){
   $('apanel').classList.add('show');
@@ -1737,7 +2179,7 @@ async function adminAction(act, u, btn){
     btn.classList.toggle('off', !nv);
     btn.textContent = nv ? '🔵' : '✓';
     delete profiles[u.id];
-    toast(nv ? '🔵 Галочка выдана' : 'Галочка снята');
+    toast(nv ? '🔵 Галочка выдана' : 'Снята');
   } else if(act === 'plus'){
     const nv = !u.is_plus;
     await sb.from('profiles').update({ is_plus: nv }).eq('id', u.id);
@@ -1752,7 +2194,7 @@ async function adminAction(act, u, btn){
       btn.classList.add('off');
       toast('✓ Разбанен');
     } else {
-      askConfirm(`🚫 Забанить @${u.username}`, 'Причина бана:', async reason => {
+      askConfirm(`🚫 Забанить @${u.username}`, 'Причина:', async reason => {
         await sb.from('profiles').update({
           is_banned: true,
           ban_reason: reason || 'Нарушение правил',
@@ -1823,18 +2265,10 @@ document.addEventListener('click', e => {
   if(!e.target.closest('.mw')) document.querySelectorAll('.mw.show-tb').forEach(w => w.classList.remove('show-tb'));
 });
 
-function debounce(fn, ms){
-  let t;
-  return (...args) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
-  };
-}
-
 start();
 setTimeout(() => {
   if(!$('loader').classList.contains('hidden')){
-    console.warn('Fallback: loader не скрылся за 15 сек');
+    console.warn('Fallback');
     hideLoader();
     if(!me) $('auth').classList.add('show');
   }
