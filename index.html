@@ -1801,5 +1801,56 @@ sb.auth.onAuthStateChange((event,session)=>{
 start();
 setTimeout(()=>{if(!$('loader').classList.contains('hidden')){hideLoader();if(!me)$('auth').classList.add('show')}},10000);
 </script>
+  // ==== ДИАГНОСТИКА ЗАГРУЗКИ ====
+const showLoadingDiag = (msg) => {
+  const l = $('loader');
+  if(!l) return;
+  let d = $('loadDiag');
+  if(!d){
+    d = document.createElement('div');
+    d.id = 'loadDiag';
+    d.style.cssText = 'position:absolute;bottom:40px;left:20px;right:20px;color:#7d8b99;font-size:11px;text-align:center;font-family:monospace;z-index:10000';
+    l.appendChild(d);
+  }
+  d.innerHTML = msg;
+};
+
+(async () => {
+  try {
+    showLoadingDiag('▶ start()...');
+    applyTheme();
+    
+    showLoadingDiag('▶ getSession()...');
+    const { data: { session }, error: sesErr } = await sb.auth.getSession();
+    if(sesErr) throw new Error('Session: ' + sesErr.message);
+    
+    if(session && session.user) {
+      showLoadingDiag('▶ Сессия найдена, enterApp()...');
+      me = session.user;
+      await enterApp();
+      showLoadingDiag('✔ Готово');
+    } else {
+      showLoadingDiag('▶ Нет сессии — показываю форму входа');
+      $('auth').classList.add('show');
+      hideLoader();
+    }
+  } catch(e) {
+    console.error('START ERROR:', e);
+    showLoadingDiag('❌ ОШИБКА:<br><br><b style="color:#f55">' + e.message + '</b><br><br>' + (e.stack||'').split('\n').slice(0,3).join('<br>'));
+    // Показываем форму входа, чтобы можно было хотя бы залогиниться
+    setTimeout(() => {
+      hideLoader();
+      $('auth').classList.add('show');
+    }, 5000);
+  }
+})();
+
+// Страховка: если через 15 секунд всё ещё грузит — показываем форму
+setTimeout(() => {
+  if($('loader') && !$('loader').classList.contains('hidden')) {
+    hideLoader();
+    if(!me) $('auth').classList.add('show');
+  }
+}, 15000);
 </body>
   </html>
