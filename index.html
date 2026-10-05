@@ -479,13 +479,17 @@ const boot=(msg,color)=>{
 window.addEventListener('error',e=>{console.error('JS Error:',e)});
 
 // ==== ЗАГРУЗКА SDK ====
+// ВАЖНО: используем esm.sh вместо unpkg — он автоматически разрешает
+// внутренние зависимости типа "@supabase/gotrue-js" на рабочие URL.
 let createClient;
 try{
   boot('1. Загрузка Supabase SDK...');
-  const m=await import("https://unpkg.com/@supabase/supabase-js@2.39.7/dist/module/index.js");
-  createClient=m.createClient;
+  const m = await import("https://esm.sh/@supabase/supabase-js@2.39.7");
+  createClient = m.createClient;
+  
   boot('2. SDK загружен. Загрузка emoji-picker...');
-  await import("https://unpkg.com/emoji-picker-element@1.20.0/index.js");
+  await import("https://esm.sh/emoji-picker-element@1.20.0");
+  
   boot('3. Emoji-picker загружен. Подключение к Supabase...');
 }catch(e){
   boot('<span style="color:#f55;font-size:18px">❌ ОШИБКА ЗАГРУЗКИ SDK</span><br><br>'+e.message+'<br><br>Это значит что CDN не работает. Включи VPN или попробуй другой Wi-Fi.',"#fff");
@@ -1480,4 +1484,4 @@ setTimeout(()=>{
 },10000);
 </script>
 </body>
-                                                                </html>
+  </html>
