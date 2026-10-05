@@ -49,7 +49,6 @@ img{display:block;max-width:100%}
 .main{display:none;width:100%;height:100%}
 .main.active{display:flex}
 
-/* BOTTOM NAV */
 .bnav{position:absolute;bottom:0;left:0;right:0;background:var(--panel);border-top:1px solid var(--border);display:flex;padding:6px 0 calc(6px + var(--safe-bottom));z-index:50}
 .bnav.hidden{display:none!important}
 .bnav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px;color:var(--text2);font-size:10px;font-weight:500;position:relative}
@@ -57,7 +56,6 @@ img{display:block;max-width:100%}
 .bnav .bicon{font-size:22px;line-height:1}
 .bnav .badge{position:absolute;top:2px;right:20%;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;min-width:16px}
 
-/* SIDEBAR */
 .sidebar{width:100%;height:100%;background:var(--panel);display:flex;flex-direction:column;position:absolute;inset:0;transition:transform .28s;z-index:5;padding-bottom:70px}
 .sidebar.hidden{transform:translateX(-100%)}
 @media(min-width:700px){.sidebar{width:320px;position:relative;border-right:1px solid var(--border)}.sidebar.hidden{transform:none}}
@@ -112,12 +110,11 @@ body.plus-active .sh h2{background:var(--gold);-webkit-background-clip:text;-web
 .b.v{background:var(--blue);box-shadow:0 0 8px rgba(74,158,255,.6)}
 .b.c{background:linear-gradient(135deg,#ff4a4a,#e60000);box-shadow:0 0 8px rgba(255,74,74,.6)}
 .b.p{background:var(--gold);color:#000;box-shadow:0 0 8px rgba(255,215,0,.6)}
-.b.s{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 0 8px rgba(16,185,129,.6)}
+.b.yt{background:linear-gradient(135deg,#ff0000,#c00);color:#fff;box-shadow:0 0 10px rgba(255,0,0,.7)}
 .b.official{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border-radius:5px;box-shadow:0 0 10px rgba(59,130,246,.8)}
 .b.bot{background:linear-gradient(135deg,#fff,#ccc);color:#000;font-weight:900;box-shadow:0 0 10px rgba(255,255,255,.7)}
 .b.b{background:#555}
 
-/* CHAT AREA */
 .area{flex:1;display:flex;flex-direction:column;background:var(--bg);position:absolute;inset:0;transform:translateX(100%);transition:transform .28s;z-index:100}
 .area.open{transform:translateX(0)}
 @media(min-width:700px){.area{position:relative;transform:none}}
@@ -210,7 +207,6 @@ emoji-picker{position:absolute;bottom:52px;right:0;z-index:100;--background:var(
 .gif-item:active{transform:scale(.97)}
 .gif-item img{width:100%;height:100px;object-fit:cover}
 
-/* FEED */
 .feed{flex:1;overflow-y:auto;padding:12px 14px 100px;display:none}
 .feed.show{display:block}
 .post{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 12px rgba(0,0,0,.15)}
@@ -227,8 +223,6 @@ emoji-picker{position:absolute;bottom:52px;right:0;z-index:100;--background:var(
 .post-act{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;transition:.15s}
 .post-act:active{transform:scale(.94)}
 .post-act.liked{color:var(--red)}
-.post-act.liked .heart{animation:heartPop .4s}
-@keyframes heartPop{50%{transform:scale(1.4)}}
 .post-act .icon{font-size:17px}
 .comments{background:var(--panel2);border-radius:10px;padding:10px;margin-top:10px}
 .comment{padding:6px 0;font-size:13px;display:flex;gap:8px}
@@ -236,14 +230,12 @@ emoji-picker{position:absolute;bottom:52px;right:0;z-index:100;--background:var(
 .comment .cav-mini img{width:100%;height:100%;object-fit:cover}
 .comment .cmt-body{flex:1;min-width:0}
 .comment .cmt-name{color:var(--accent);font-weight:600;margin-bottom:2px;font-size:12px}
-.comment .cmt-text{color:var(--text);line-height:1.4}
 .cmt-input{display:flex;gap:6px;margin-top:8px}
 .cmt-input input{flex:1;padding:8px 12px;border-radius:16px;background:var(--panel);color:var(--text);outline:none;border:none;font-size:13px}
 .cmt-input button{padding:8px 14px;border-radius:16px;background:var(--accent-bg);color:#fff;font-size:13px;font-weight:600}
 .feed-create{position:fixed;bottom:calc(90px + var(--safe-bottom));right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent-bg);color:#fff;font-size:26px;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(43,82,120,.5);z-index:50;cursor:pointer;transition:.2s}
 .feed-create:active{transform:scale(.9)}
 
-/* MODALS */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:none;justify-content:center;align-items:center;padding:14px;z-index:1000;overflow-y:auto}
 .modal.show{display:flex}
 .mbox{background:var(--panel);border-radius:20px;padding:20px;width:100%;max-width:420px;color:var(--text);display:flex;flex-direction:column;gap:10px;margin:auto;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -287,7 +279,6 @@ emoji-picker{position:absolute;bottom:52px;right:0;z-index:100;--background:var(
 .uv .stats .n{font-size:20px;font-weight:800;color:var(--accent)}
 .uv .stats .l{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
 
-/* ADMIN */
 .apanel{position:fixed;inset:0;background:var(--bg);display:none;z-index:3000;overflow-y:auto}
 .apanel.show{display:block}
 @media(min-width:900px){.apanel{max-width:1100px;height:100vh;max-height:800px;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.7)}}
@@ -299,27 +290,28 @@ emoji-picker{position:absolute;bottom:52px;right:0;z-index:100;--background:var(
 .astat{background:var(--panel2);padding:12px 8px;border-radius:12px;text-align:center}
 .astat .n{font-size:20px;font-weight:800;color:var(--accent)}
 .astat .l{font-size:10px;color:var(--text2);text-transform:uppercase;margin-top:3px;letter-spacing:.5px}
-.atabs{display:flex;gap:5px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:0}
+.atabs{display:flex;gap:5px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:9}
 .atabs::-webkit-scrollbar{display:none}
-.atabs button{padding:8px 16px;border-radius:18px;background:var(--panel2);color:var(--text);font-size:12px;font-weight:600;white-space:nowrap}
+.atabs button{padding:8px 16px;border-radius:18px;background:var(--panel2);color:var(--text);font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0}
 .atabs button.active{background:var(--gold);color:#000}
 .abody{flex:1;padding:14px 14px calc(20px + var(--safe-bottom))}
 .asrch{width:100%;padding:12px 16px;border-radius:12px;background:var(--panel2);color:var(--text);outline:none;margin-bottom:12px;border:2px solid transparent;font-size:14px}
 .asrch:focus{border-color:var(--accent)}
-.acard{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:center}
+.acard{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
 .acard .ava{width:48px;height:48px;border-radius:50%;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0;position:relative}
 .acard .ava img{width:100%;height:100%;object-fit:cover}
 .acard .ava.banned::after{content:'🚫';position:absolute;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:50%}
 .acard .inf{flex:1;min-width:0}
 .acard .nm{font-size:14px;font-weight:600;display:flex;gap:5px;align-items:center;margin-bottom:3px;flex-wrap:wrap}
-.acard .nck{font-size:11px;color:var(--text2)}
+.acard .nck{font-size:11px;color:var(--text2);word-break:break-all}
 .acard .st{font-size:10px;color:var(--text3);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
-.acard .acts{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:220px}
+.acard .acts{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:240px}
 .abtn{padding:7px 11px;border-radius:9px;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:3px;transition:.15s}
 .abtn:active{transform:scale(.94)}
 .abtn.b{background:var(--blue)}
 .abtn.w{background:linear-gradient(135deg,#fff,#ddd);color:#000}
 .abtn.g{background:var(--gold);color:#000}
+.abtn.yt{background:linear-gradient(135deg,#ff0000,#c00)}
 .abtn.r{background:linear-gradient(135deg,#ff4a4a,#e60000)}
 .abtn.gr{background:linear-gradient(135deg,#4ade80,#16a34a)}
 .abtn.off{background:#333;color:#666}
@@ -402,7 +394,7 @@ emoji-picker{position:absolute;bottom:52px;right:0;z-index:100;--background:var(
 <div class="err" id="aerr"></div>
 <button id="btnLogin">Войти</button>
 <button class="ghost" id="btnReg">Зарегистрироваться</button>
-<div class="hint">💡 @spacegram — верификация ботом<br>💡 @itzrealsaneghka — создатель</div>
+<div class="hint">💡 @spacegram — бот-верификация<br>💡 @itzrealsaneghka — создатель + ютубер</div>
 </div>
 
 <div class="main" id="main">
@@ -560,6 +552,7 @@ emoji-picker{position:absolute;bottom:52px;right:0;z-index:100;--background:var(
 <button data-t="users" class="active">👥 Юзеры</button>
 <button data-t="bans">🚫 Баны</button>
 <button data-t="channels">📢 Каналы</button>
+<button data-t="stats">📊 Статистика</button>
 </div>
 <div class="abody" id="abody"></div>
 </div></div>
@@ -622,6 +615,7 @@ const fmtTime=d=>new Date(d).toLocaleTimeString('ru',{hour:'2-digit',minute:'2-d
 const fmtDate=d=>{const n=new Date(),y=new Date();y.setDate(y.getDate()-1);return d.toDateString()===n.toDateString()?'Сегодня':d.toDateString()===y.toDateString()?'Вчера':d.toLocaleDateString('ru',{day:'numeric',month:'short'})};
 const relTime=d=>{const diff=Date.now()-new Date(d).getTime();const mins=Math.floor(diff/60000);if(mins<1)return 'только что';if(mins<60)return mins+' мин назад';const h=Math.floor(mins/60);if(h<24)return h+' ч назад';return Math.floor(h/24)+' дн назад'};
 
+// ГАЛОЧКИ: 🔴 создатель, 🟢 ютубер, 🤖 бот, 🔵 обычная, 👑 Plus, 🟦 канал
 function badges(p,isChannel=false){
   if(!p)return '';
   if(p.is_banned)return '<span class="b b">🚫</span>';
@@ -631,6 +625,7 @@ function badges(p,isChannel=false){
     return h;
   }
   if(p.is_creator)h+='<span class="b c" title="Создатель">★</span>';
+  else if(p.is_youtuber)h+='<span class="b yt" title="YouTuber">▶</span>';
   else if(p.is_bot_verified||p.username===OFFICIAL)h+='<span class="b bot" title="Верифицирован ботом">✓</span>';
   else if(p.is_verified)h+='<span class="b v" title="Верифицирован">✓</span>';
   if(p.is_plus)h+='<span class="b p" title="Space Plus">👑</span>';
@@ -676,7 +671,7 @@ async function openApp(){
     if(!prof){
       const uname=me.user_metadata?.username||(me.email||'').split('@')[0]||'user_'+me.id.slice(0,8);
       const isC=uname===CREATOR,isO=uname===OFFICIAL;
-      const{data:created,error:ce}=await sb.from('profiles').insert({id:me.id,username:uname,display_name:uname,is_creator:isC,is_verified:isC||isO,is_plus:isC||isO,is_bot_verified:isO,last_seen:new Date().toISOString()}).select().single();
+      const{data:created,error:ce}=await sb.from('profiles').insert({id:me.id,username:uname,display_name:uname,is_creator:isC,is_verified:isC||isO,is_plus:isC||isO,is_bot_verified:isO,is_youtuber:isC,last_seen:new Date().toISOString()}).select().single();
       if(ce)throw new Error(ce.message);
       prof=created;
     }
@@ -734,7 +729,7 @@ $('btnReg').onclick=async()=>{
   await new Promise(r=>setTimeout(r,800));
   const{data:prof}=await sb.from('profiles').select('*').eq('id',data.user.id).maybeSingle();
   const isC=uname===CREATOR,isO=uname===OFFICIAL;
-  const correct={username:uname,display_name:uname,is_creator:isC,is_verified:isC||isO,is_plus:isC||isO,is_bot_verified:isO};
+  const correct={username:uname,display_name:uname,is_creator:isC,is_verified:isC||isO,is_plus:isC||isO,is_bot_verified:isO,is_youtuber:isC};
   if(!prof){const{error:pe}=await sb.from('profiles').insert({id:data.user.id,...correct,last_seen:new Date().toISOString()});if(pe)return $('aerr').textContent='Ошибка: '+pe.message}
   else if(prof.username!==uname){const{error:ue}=await sb.from('profiles').update(correct).eq('id',data.user.id);if(ue)return $('aerr').textContent='Ошибка: '+ue.message}
   me=data.user;await openApp();
@@ -756,23 +751,15 @@ async function getProfile(id){
   if(data)profiles[id]=data;return data;
 }
 
-// BOTTOM NAV
 $('bnav').onclick=e=>{
   const b=e.target.closest('button');if(!b)return;
   const tab=b.dataset.tab;
   if(activeChat && tab!=='chats')backToList();
   document.querySelectorAll('.bnav button').forEach(x=>x.classList.toggle('active',x===b));
   currentTab=tab;
-  if(tab==='chats'){
-    $('sidebar').classList.remove('hidden');
-    $('feedScreen').classList.remove('show');
-    $('feedCreateBtn').style.display='none';
-  }else if(tab==='feed'){
-    $('sidebar').classList.add('hidden');
-    $('feedScreen').classList.add('show');
-    $('feedCreateBtn').style.display='flex';
-    loadFeed();
-  }else if(tab==='profile'){showProfile()}
+  if(tab==='chats'){$('sidebar').classList.remove('hidden');$('feedScreen').classList.remove('show');$('feedCreateBtn').style.display='none'}
+  else if(tab==='feed'){$('sidebar').classList.add('hidden');$('feedScreen').classList.add('show');$('feedCreateBtn').style.display='flex';loadFeed()}
+  else if(tab==='profile'){showProfile()}
 };
 
 // СТАТУСЫ
@@ -900,7 +887,7 @@ async function renderFeed(){
       ${post.text?`<div class="post-text">${esc(post.text).replace(/@([a-z0-9_]+)/gi,'<span style="color:var(--accent);font-weight:600">@$1</span>')}</div>`:''}
       ${post.media_url?`<div class="post-media"><img src="${post.media_url}" loading="lazy" onclick="viewImage('${post.media_url}')"></div>`:''}
       <div class="post-acts">
-        <div class="post-act ${likedSet.has(post.id)?'liked':''}" data-like="${post.id}"><span class="icon heart">${likedSet.has(post.id)?'❤️':'🤍'}</span><span>${post.likes||0}</span></div>
+        <div class="post-act ${likedSet.has(post.id)?'liked':''}" data-like="${post.id}"><span class="icon">${likedSet.has(post.id)?'❤️':'🤍'}</span><span>${post.likes||0}</span></div>
         <div class="post-act" data-comment="${post.id}"><span class="icon">💬</span><span>${post.comments_count||0}</span></div>
       </div>
       <div class="comments" id="comments-${post.id}" style="display:none"></div>`;
@@ -938,7 +925,7 @@ async function loadComments(postId){
   if(authorIds.length){const{data:profs}=await sb.from('profiles').select('*').in('id',authorIds);(profs||[]).forEach(p=>profiles[p.id]=p)}
   box.innerHTML=comments.map(c=>{
     const a=profiles[c.author_id];
-    return `<div class="comment"><div class="cav-mini">${a?.avatar_url?`<img src="${a.avatar_url}">`:esc((a?.display_name||'?')[0].toUpperCase())}</div><div class="cmt-body"><div class="cmt-name">${esc(a?.display_name||'?')}</div><div class="cmt-text">${esc(c.text)}</div></div></div>`;
+    return `<div class="comment"><div class="cav-mini">${a?.avatar_url?`<img src="${a.avatar_url}">`:esc((a?.display_name||'?')[0].toUpperCase())}</div><div class="cmt-body"><div class="cmt-name">${esc(a?.display_name||'?')}</div><div>${esc(c.text)}</div></div></div>`;
   }).join('');
   box.innerHTML+=`<div class="cmt-input"><input id="cmtInput-${postId}" placeholder="Комментарий..."><button data-send="${postId}">➤</button></div>`;
   box.querySelector(`[data-send="${postId}"]`).onclick=()=>sendComment(postId);
@@ -957,12 +944,7 @@ async function sendComment(postId){
   await loadComments(postId);
 }
 
-window.openCreatePost=()=>{
-  postImageUrl=null;
-  $('postText').value='';
-  $('postImagePreview').innerHTML='';
-  $('createPostModal').classList.add('show');
-};
+window.openCreatePost=()=>{postImageUrl=null;$('postText').value='';$('postImagePreview').innerHTML='';$('createPostModal').classList.add('show')};
 window.closeCreatePost=()=>$('createPostModal').classList.remove('show');
 
 $('btnPostImage').onclick=()=>{
@@ -1078,7 +1060,6 @@ async function startChat(otherId){
 }
 
 async function openChat(chatId,otherId,chatObj){
-  // СКРЫВАЕМ BOTTOM NAV
   $('bnav').classList.add('hidden');
   activeChat=chatId;activeOther=otherId;activeChatObj=chatObj||chats.find(c=>c.id===chatId);
   if(!activeChatObj){const{data}=await sb.from('chats').select('*').eq('id',chatId).single();activeChatObj=data}
@@ -1352,7 +1333,6 @@ $('btnSearchMsg').onclick=()=>{
 window.backToList=()=>{
   $('area').classList.remove('open');$('pinBar').style.display='none';
   $('stickerPanel').classList.add('hidden');$('gifPanel').classList.add('hidden');
-  // ПОКАЗЫВАЕМ BOTTOM NAV ОБРАТНО
   $('bnav').classList.remove('hidden');
   if(msgSub){sb.removeChannel(msgSub);msgSub=null}
   activeChat=null;activeOther=null;activeChatObj=null;
@@ -1511,7 +1491,7 @@ $('btnCreatePoll').onclick=async()=>{
   sb.from('chats').update({last_message:'📊'}).eq('id',activeChat).then(()=>{});
 };
 
-// АДМИН
+// ===== АДМИНКА =====
 $('btnAdmin').onclick=openAdmin;
 $('logo').onclick=(()=>{let n=0;return()=>{n++;if(n>=5){openAdmin();n=0}}})();
 
@@ -1527,13 +1507,14 @@ $('atabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;document.
 
 async function renderAdminStats(){
   try{
-    const[u,m,c,bn]=await Promise.all([
+    const[u,m,c,bn,yt]=await Promise.all([
       sb.from('profiles').select('*',{count:'exact',head:true}),
       sb.from('messages').select('*',{count:'exact',head:true}),
       sb.from('chats').select('*',{count:'exact',head:true}),
-      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true)
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true),
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_youtuber',true)
     ]);
-    $('astats').innerHTML=`<div class="astat"><div class="n">${u.count||0}</div><div class="l">Юзеры</div></div><div class="astat"><div class="n">${m.count||0}</div><div class="l">Сообщ</div></div><div class="astat"><div class="n">${c.count||0}</div><div class="l">Чаты</div></div><div class="astat"><div class="n" style="color:var(--red)">${bn.count||0}</div><div class="l">Баны</div></div>`;
+    $('astats').innerHTML=`<div class="astat"><div class="n">${u.count||0}</div><div class="l">Юзеры</div></div><div class="astat"><div class="n">${m.count||0}</div><div class="l">Сообщ</div></div><div class="astat"><div class="n">${c.count||0}</div><div class="l">Чаты</div></div><div class="astat"><div class="n" style="color:var(--red)">${bn.count||0}</div><div class="l">Баны</div></div><div class="astat"><div class="n" style="color:#ff4a4a">${yt.count||0}</div><div class="l">Ютуберы</div></div>`;
   }catch(e){}
 }
 
@@ -1547,7 +1528,31 @@ async function loadAdminTab(tab){
     $('abody').innerHTML='<div id="aBans"></div>';loadAdminBans();
   }else if(tab==='channels'){
     $('abody').innerHTML='<div id="aChannels"></div>';loadAdminChannels();
+  }else if(tab==='stats'){
+    await loadAdminStats();
   }
+}
+
+async function loadAdminStats(){
+  try{
+    const[u,m,c,bn,yt,pl]=await Promise.all([
+      sb.from('profiles').select('*',{count:'exact',head:true}),
+      sb.from('messages').select('*',{count:'exact',head:true}),
+      sb.from('chats').select('*',{count:'exact',head:true}),
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true),
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_youtuber',true),
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_plus',true)
+    ]);
+    $('abody').innerHTML=`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+        <div class="astat"><div class="n">${u.count||0}</div><div class="l">Всего юзеров</div></div>
+        <div class="astat"><div class="n">${m.count||0}</div><div class="l">Сообщений</div></div>
+        <div class="astat"><div class="n">${c.count||0}</div><div class="l">Чатов</div></div>
+        <div class="astat"><div class="n" style="color:var(--red)">${bn.count||0}</div><div class="l">Забанено</div></div>
+        <div class="astat"><div class="n" style="color:#ff4a4a">${yt.count||0}</div><div class="l">Ютуберов</div></div>
+        <div class="astat"><div class="n" style="color:var(--yellow)">${pl.count||0}</div><div class="l">Plus</div></div>
+      </div>`;
+  }catch(e){$('abody').innerHTML='<div class="empty-a">Ошибка: '+esc(e.message)+'</div>'}
 }
 
 async function loadAdminUsers(search){
@@ -1562,20 +1567,24 @@ async function loadAdminUsers(search){
 
 function buildAdminCard(u){
   const d=el('div',{class:'acard'});
+  const isC=u.username===CREATOR,isO=u.username===OFFICIAL;
+  const cantTouch=isC||isO;
   d.innerHTML=`
     <div class="ava ${u.is_banned?'banned':''}">${u.avatar_url?`<img src="${u.avatar_url}" loading="lazy">`:esc((u.display_name||'?')[0].toUpperCase())}</div>
     <div class="inf">
       <div class="nm">${esc(u.display_name||u.username)} ${badges(u)}</div>
-      <div class="nck">@${esc(u.username)}${u.username===CREATOR?' • СОЗДАТЕЛЬ':''}${u.username===OFFICIAL?' • ОФИЦИАЛЬНЫЙ':''}</div>
-      <div class="st"><span>💬 ${u.messages_count||0}</span><span>🎁 ${u.gifts_received||0}</span></div>
+      <div class="nck">@${esc(u.username)}${isC?' • СОЗДАТЕЛЬ':''}${isO?' • ОФИЦИАЛЬНЫЙ':''}</div>
+      <div class="st"><span>💬 ${u.messages_count||0}</span></div>
     </div>
     <div class="acts">
-      <button class="abtn b ${u.is_verified?'':'off'}" data-act="verify">${u.is_verified?'🔵':'✓'}</button>
-      <button class="abtn w ${u.is_bot_verified?'':'off'}" data-act="bot" style="${u.is_bot_verified?'':'background:#444;color:#888'}">${u.is_bot_verified?'🤖':'B'}</button>
-      <button class="abtn g ${u.is_plus?'':'off'}" data-act="plus">👑</button>
-      <button class="abtn r ${u.is_banned?'':'off'}" data-act="ban">🚫</button>
+      <button class="abtn b ${u.is_verified?'':'off'}" data-act="verify" ${cantTouch?'disabled style="opacity:.4;cursor:not-allowed"':''}>${u.is_verified?'🔵':'✓'}</button>
+      <button class="abtn yt ${u.is_youtuber?'':'off'}" data-act="yt" ${cantTouch?'disabled style="opacity:.4;cursor:not-allowed"':''}>▶</button>
+      <button class="abtn w ${u.is_bot_verified?'':'off'}" data-act="bot" style="${u.is_bot_verified?'':'background:#444;color:#888'}${cantTouch?';opacity:.4;cursor:not-allowed':''}" ${cantTouch?'disabled':''}>${u.is_bot_verified?'🤖':'B'}</button>
+      <button class="abtn g ${u.is_plus?'':'off'}" data-act="plus" ${cantTouch?'disabled style="opacity:.4;cursor:not-allowed"':''}>👑</button>
+      <button class="abtn r ${u.is_banned?'':'off'}" data-act="ban" ${cantTouch?'disabled style="opacity:.4;cursor:not-allowed"':''}>🚫</button>
+      <button class="abtn r" data-act="delete" style="background:#600" ${cantTouch?'disabled style="background:#333;color:#666;cursor:not-allowed"':''}>🗑</button>
     </div>`;
-  d.querySelectorAll('button[data-act]').forEach(b=>{b.onclick=()=>adminAction(b.dataset.act,u,b)});
+  d.querySelectorAll('button[data-act]').forEach(b=>{if(!b.disabled)b.onclick=()=>adminAction(b.dataset.act,u,b)});
   return d;
 }
 
@@ -1585,6 +1594,10 @@ async function adminAction(act,u,btn){
       const nv=!u.is_verified;
       await sb.from('profiles').update({is_verified:nv}).eq('id',u.id);
       btn.classList.toggle('off',!nv);btn.textContent=nv?'🔵':'✓';delete profiles[u.id];toast(nv?'🔵':'Снято');
+    }else if(act==='yt'){
+      const nv=!u.is_youtuber;
+      await sb.from('profiles').update({is_youtuber:nv}).eq('id',u.id);
+      btn.classList.toggle('off',!nv);delete profiles[u.id];toast(nv?'▶ YouTuber':'Снято');
     }else if(act==='bot'){
       const nv=!u.is_bot_verified;
       await sb.from('profiles').update({is_bot_verified:nv}).eq('id',u.id);
@@ -1606,6 +1619,19 @@ async function adminAction(act,u,btn){
         btn.classList.remove('off');toast('🚫');
       }
       delete profiles[u.id];
+    }else if(act==='delete'){
+      const confirm1=prompt(`⚠️ УДАЛИТЬ @${u.username}?\n\nЭто навсегда удалит:\n• профиль\n• все сообщения\n• все чаты\n\nНапиши "УДАЛИТЬ" для подтверждения:`);
+      if(confirm1!=='УДАЛИТЬ')return toast('❌ Отменено');
+      const{error}=await sb.rpc('admin_delete_user',{target_id:u.id});
+      if(error){
+        await sb.from('messages').delete().eq('sender',u.id);
+        await sb.from('chats').delete().or(`user1.eq.${u.id},user2.eq.${u.id}`);
+        await sb.from('profiles').delete().eq('id',u.id);
+        await sb.auth.admin?.deleteUser?.(u.id).catch(()=>{});
+      }
+      delete profiles[u.id];
+      toast('🗑 Удалён');
+      const card=btn.closest('.acard');if(card)card.remove();
     }
   }catch(e){alert('Ошибка: '+e.message)}
 }
@@ -1656,4 +1682,4 @@ start();
 setTimeout(()=>{if(!$('loader').classList.contains('hidden')){hideLoader();if(!me)$('auth').classList.add('show')}},15000);
 </script>
 </body>
-  </html>
+                                                                                                                                        </html>
