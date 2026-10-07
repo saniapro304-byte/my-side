@@ -289,6 +289,7 @@ img{display:block;max-width:100%}
 <div class="md" id="profM"><div class="mb">
 <h2 id="profT">Профиль</h2>
 <div class="avp" id="avP">?</div>
+<div id="profileStats"></div>
 <div class="st">Имя</div><input id="pN">
 <div class="st">Username</div><input id="pU" disabled style="opacity:.6">
 <div class="st">Телефон</div><input id="pPh" placeholder="+7...">
@@ -542,7 +543,6 @@ async function enterApp(){
     setInterval(checkPlusExp,60000);
     if(isAdmin)setInterval(checkVerMsgs,20000);
     chatPollI=setInterval(()=>{if(!document.hidden)loadChats()},20000);
-    // Сворачиваем кнопки в меню
     setTimeout(()=>{
       const acts=$('topActs');if(!acts)return;
       const btns=Array.from(acts.querySelectorAll('button'));
@@ -553,8 +553,7 @@ async function enterApp(){
         $('bmc').innerHTML=`<h2>Меню</h2>${items}<button onclick="document.getElementById('bm').classList.remove('show')" style="margin-top:8px">Закрыть</button>`;
         $('bm').classList.add('show');
       };
-      const avt=acts.querySelector('.avt');
-      acts.insertBefore(menu,avt);
+      acts.insertBefore(menu,acts.querySelector('.avt'));
     },500);
   }catch(e){console.error(e);alert('Ошибка: '+e.message)}
   checkPin();
@@ -668,7 +667,6 @@ $('bPriv').onclick=()=>{$('cbHL').checked=myP.hide_last_seen||false;$('cbHP').ch
 $('bSavePriv').onclick=async()=>{const u={hide_last_seen:$('cbHL').checked,hide_phone:$('cbHP').checked,hide_avatar:$('cbHA').checked};await sb.from('profiles').update(u).eq('id',me.id);Object.assign(myP,u);tst('✅');$('privM').classList.remove('show')};
 $('bSess').onclick=()=>{$('setM').classList.remove('show');$('sessL').innerHTML=`<div style="background:var(--p2);border-radius:12px;padding:14px;margin-bottom:10px"><div style="font-weight:600;font-size:14px">📱 Это устройство</div><div style="font-size:12px;color:var(--t2);margin-top:4px">${navigator.userAgent.substring(0,60)}...</div><div style="font-size:11px;color:var(--g);margin-top:6px">● Активна</div></div><button class="dg" onclick="if(confirm('Выйти со всех?')){sb.auth.signOut();location.reload()}">🚪 Завершить все</button>`;$('sessM').classList.add('show')};
 
-// ==== ЧАТЫ ====
 async function loadChats(){
   try{
     const{data}=await sb.from('chats').select('*').or(`user1.eq.${me.id},user2.eq.${me.id}`).order('created_at',{ascending:false}).limit(60);
@@ -950,13 +948,28 @@ window.back=()=>{
   aC=null;aO=null;aCO=null;loadChats();
 };
 window.viewImg=url=>{const v=document.createElement('div');v.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:2000;padding:16px';v.innerHTML=`<img src="${url}" style="max-width:100%;max-height:100%;border-radius:10px"><button style="position:absolute;top:20px;right:20px;color:#fff;font-size:26px;background:rgba(0,0,0,.5);width:44px;height:44px;border-radius:50%">✕</button>`;v.onclick=()=>v.remove();document.body.appendChild(v)};// ==== ПРОФИЛЬ ====
-window.showProf=()=>{
+window.showProf=async()=>{
   if(!myP)return;
-  $('pN').value=myP.display_name||'';$('pU').value='@'+myP.username;$('pPh').value=myP.phone||'';$('pB').value=myP.bio||'';
-  const p=$('avP');p.className='avp'+(myP.is_plus?' gl':'');p.innerHTML=myP.avatar_url?`<img src="${myP.avatar_url}">`:esc((myP.display_name||'?')[0].toUpperCase());
-  $('profT').innerHTML='Профиль '+(myP.is_plus?'<span style="color:#ffd700">👑</span>':'');
-  const es=$('emSt');es.innerHTML=EMS.map(e=>`<button style="padding:6px 10px;border-radius:10px;background:${myP.emoji_status===e?'var(--ab)':'var(--p2)'};font-size:20px;border:2px solid transparent" data-e="${e}">${e}</button>`).join('');
+  try{const{data:fresh}=await sb.from('profiles').select('*').eq('id',me.id).single();if(fresh){myP=fresh;profiles[me.id]=fresh}}catch(e){}
+  $('pN').value=myP.display_name||'';
+  $('pU').value='@'+myP.username;
+  $('pPh').value=myP.phone||'';
+  $('pB').value=myP.bio||'';
+  const p=$('avP');
+  p.className='avp'+(myP.is_plus?' gl':'');
+  p.innerHTML=myP.avatar_url?`<img src="${myP.avatar_url}">`:esc((myP.display_name||'?')[0].toUpperCase());
+  $('profT').innerHTML='Профиль '+(myP.is_plus?'<span style="color:#ffd700">👑 Plus</span>':'');
+  const es=$('emSt');
+  es.innerHTML=EMS.map(e=>`<button style="padding:6px 10px;border-radius:10px;background:${myP.emoji_status===e?'var(--ab)':'var(--p2)'};font-size:20px;border:2px solid transparent" data-e="${e}">${e}</button>`).join('');
   es.querySelectorAll('button').forEach(b=>b.onclick=()=>{myP.emoji_status=myP.emoji_status===b.dataset.e?null:b.dataset.e;showProf()});
+  // Статистика
+  let mc=0,fc=0;
+  try{const{data:ch}=await sb.from('chats').select('id').or(`user1.eq.${me.id},user2.eq.${me.id}`).limit(200);if(ch?.length){const{count}=await sb.from('messages').select('*',{count:'exact',head:true}).in('chat_id',ch.map(c=>c.id));mc=count||0}}catch(e){}
+  try{const{count}=await sb.from('friends').select('*',{count:'exact',head:true}).eq('user_id',me.id);fc=count||0}catch(e){}
+  const plusInfo=myP.is_plus?`<div style="background:linear-gradient(135deg,#ffd700,#ff9500);color:#000;border-radius:12px;padding:12px;text-align:center;font-weight:700;margin:10px 0">👑 Plus активен${myP.plus_until?` до ${new Date(myP.plus_until).toLocaleDateString('ru')}`:''}</div>`:'';
+  const stats=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin:10px 0"><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--a)">${mc}</div><div style="font-size:9px;color:var(--t2);text-transform:uppercase;margin-top:2px">Сообщ</div></div><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--a)">${fc}</div><div style="font-size:9px;color:var(--t2);text-transform:uppercase;margin-top:2px">Друзей</div></div><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--a)">${myP.gifts_received||0}</div><div style="font-size:9px;color:var(--t2);text-transform:uppercase;margin-top:2px">Получ</div></div><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:16px;font-weight:800;color:var(--a)">${myP.gifts_sent||0}</div><div style="font-size:9px;color:var(--t2);text-transform:uppercase;margin-top:2px">Отправ</div></div></div>`;
+  const info=`<div style="background:var(--p2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.7;color:var(--t2);margin-bottom:10px"><div><b style="color:var(--t)">📅 Регистрация:</b> ${myP.created_at?new Date(myP.created_at).toLocaleDateString('ru'):'—'}</div><div><b style="color:var(--t)">✉️ Email:</b> ${me.email||'—'}</div></div>`;
+  const st=$('profileStats');if(st)st.innerHTML=plusInfo+stats+info;
   $('profM').classList.add('show');
 };
 $('avP').onclick=()=>{const i=document.createElement('input');i.type='file';i.accept='image/*';i.onchange=async e=>{const f=e.target.files[0];if(!f)return;const p=`${me.id}/ava_${Date.now()}.jpg`;const{error}=await sb.storage.from('avatars').upload(p,f,{upsert:true});if(error)return alert(error.message);const{data:u}=sb.storage.from('avatars').getPublicUrl(p);await sb.from('profiles').update({avatar_url:u.publicUrl}).eq('id',me.id);myP.avatar_url=u.publicUrl;renderMyA();showProf()};i.click()};
@@ -965,18 +978,20 @@ $('bOut').onclick=async()=>{if(!confirm('Выйти?'))return;await sb.auth.sign
 $('hI').onclick=()=>showUP(aO);
 window.togBlock=async uid=>{const bl=myP.blocked_users||[];const i=bl.indexOf(uid);if(i>=0)bl.splice(i,1);else bl.push(uid);await sb.from('profiles').update({blocked_users:bl}).eq('id',me.id);myP.blocked_users=bl;tst(i>=0?'✓ Разблок':'🚫 Блок');$('usrM').classList.remove('show');loadChats()};
 
-// ==== ДЕТАЛЬНЫЙ ПРОФИЛЬ ====
+// ==== ДЕТАЛЬНЫЙ ПРОФИЛЬ ДРУГОГО ====
 async function isFriend(uid){const{data}=await sb.from('friends').select('id').eq('user_id',me.id).eq('friend_id',uid).maybeSingle();return !!data}
 window.togFriend=async uid=>{const{data:ex}=await sb.from('friends').select('id').eq('user_id',me.id).eq('friend_id',uid).maybeSingle();if(ex){await sb.from('friends').delete().eq('id',ex.id);tst('✓ Убран')}else{await sb.from('friends').insert({user_id:me.id,friend_id:uid});tst('✓ В друзьях')}showUP(uid)};
 window.showUP=async uid=>{
   if(!uid)return;const p=await getP(uid);if(!p)return;
   const on=p.last_seen&&(Date.now()-new Date(p.last_seen).getTime())<90000&&!p.hide_last_seen;
   const im=uid===me.id;const bl=myP?.blocked_users||[];const ib=bl.includes(uid);
-  const fr=await isFriend(uid);let mc=0;
+  const fr=await isFriend(uid);
+  let mc=0;
   try{const{data:ch}=await sb.from('chats').select('id').or(`and(user1.eq.${me.id},user2.eq.${uid}),and(user1.eq.${uid},user2.eq.${me.id})`).limit(1);if(ch?.length){const{count}=await sb.from('messages').select('*',{count:'exact',head:true}).eq('chat_id',ch[0].id);mc=count||0}}catch(e){}
-  $('usrC').innerHTML=`<div class="uv"><div class="lg ${p.is_plus?'gl':''}">${p.avatar_url&&!p.hide_avatar?`<img src="${p.avatar_url}">`:esc((p.display_name||'?')[0].toUpperCase())}</div><div class="nm">${esc(p.display_name)} ${bd(p)} ${p.emoji_status?`<span style="font-size:18px">${p.emoji_status}</span>`:''}</div><div class="nk">@${esc(p.username)}</div>${p.bio?`<div class="bi" style="background:var(--p2);border-radius:10px;padding:10px;max-width:100%">${esc(p.bio)}</div>`:''}<div class="stt">${on?'🟢 в сети':'⚫ '+rt(p.last_seen||Date.now())}</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:14px 0"><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--a)">${mc}</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Сообщений</div></div><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--a)">${p.gifts_received||0}</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Подарков</div></div><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--a)">${p.is_plus?'👑':'—'}</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Статус</div></div></div><div style="background:var(--p2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.7;color:var(--t2)">${p.created_at?`<div><b style="color:var(--t)">Регистрация:</b> ${new Date(p.created_at).toLocaleDateString('ru')}</div>`:''}${p.phone&&!p.hide_phone?`<div><b style="color:var(--t)">Телефон:</b> ${esc(p.phone)}</div>`:''}</div><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">${!im?`<button onclick="startChat('${uid}').then(()=>document.getElementById('usrM').classList.remove('show'))" style="flex:1;padding:11px;border-radius:12px;background:var(--ab);color:#fff;font-weight:600;font-size:13px">💬 Написать</button>`:''}${!im?`<button onclick="togFriend('${uid}')" style="flex:1;padding:11px;border-radius:12px;background:var(--bl);color:#fff;font-weight:600;font-size:13px">${fr?'✓ В друзьях':'+ В друзья'}</button>`:''}${!im?`<button onclick="togBlock('${uid}')" style="flex:1;padding:11px;border-radius:12px;background:${ib?'#4ade80':'var(--r)'};color:#fff;font-weight:600;font-size:13px">${ib?'✓ Разблок':'🚫 Блок'}</button>`:''}</div><button onclick="document.getElementById('usrM').classList.remove('show')" style="width:100%;padding:12px;border-radius:12px;background:var(--p2);color:var(--t);margin-top:10px">Закрыть</button>`;
+  $('usrC').innerHTML=`<div class="uv"><div class="lg ${p.is_plus?'gl':''}">${p.avatar_url&&!p.hide_avatar?`<img src="${p.avatar_url}">`:esc((p.display_name||'?')[0].toUpperCase())}</div><div class="nm">${esc(p.display_name)} ${bd(p)} ${p.emoji_status?`<span style="font-size:18px">${p.emoji_status}</span>`:''}</div><div class="nk">@${esc(p.username)}</div>${p.bio?`<div class="bi" style="background:var(--p2);border-radius:10px;padding:10px;max-width:100%;font-style:italic">"${esc(p.bio)}"</div>`:''}<div class="stt">${on?'🟢 в сети':'⚫ '+rt(p.last_seen||Date.now())}</div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:14px 0"><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--a)">${mc}</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Сообщений</div></div><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--a)">${p.gifts_received||0}</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Подарков</div></div><div style="background:var(--p2);border-radius:10px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--a)">${p.is_plus?'👑':'—'}</div><div style="font-size:10px;color:var(--t2);text-transform:uppercase">Статус</div></div></div><div style="background:var(--p2);border-radius:10px;padding:12px;font-size:12.5px;line-height:1.7;color:var(--t2)">${p.created_at?`<div><b style="color:var(--t)">📅 Регистрация:</b> ${new Date(p.created_at).toLocaleDateString('ru')}</div>`:''}${p.phone&&!p.hide_phone?`<div><b style="color:var(--t)">📱 Телефон:</b> ${esc(p.phone)}</div>`:''}<div><b style="color:var(--t)">👑 Plus:</b> ${p.is_plus?(p.plus_until?'до '+new Date(p.plus_until).toLocaleDateString('ru'):'Активен'):'Нет'}</div><div><b style="color:var(--t)">👥 Друзья:</b> ${fr?'Да':'Нет'}</div></div><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">${!im?`<button onclick="startChat('${uid}').then(()=>document.getElementById('usrM').classList.remove('show'))" style="flex:1;padding:11px;border-radius:12px;background:var(--ab);color:#fff;font-weight:600;font-size:13px">💬 Написать</button>`:''}${!im?`<button onclick="sendGiftTo('${uid}')" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-weight:600;font-size:13px">🎁 Подарить</button>`:''}${!im?`<button onclick="togFriend('${uid}')" style="flex:1;padding:11px;border-radius:12px;background:var(--bl);color:#fff;font-weight:600;font-size:13px">${fr?'✓ В друзьях':'+ В друзья'}</button>`:''}${!im?`<button onclick="togBlock('${uid}')" style="flex:1;padding:11px;border-radius:12px;background:${ib?'#4ade80':'var(--r)'};color:#fff;font-weight:600;font-size:13px">${ib?'✓ Разблок':'🚫 Блок'}</button>`:''}</div><button onclick="document.getElementById('usrM').classList.remove('show')" style="width:100%;padding:12px;border-radius:12px;background:var(--p2);color:var(--t);margin-top:10px">Закрыть</button>`;
   $('usrM').classList.add('show');
 };
+window.sendGiftTo=async uid=>{const days=parseInt(prompt('Сколько дней Plus?','30'))||30;const msg=prompt('Сообщение (пусто):','');const{error}=await sb.from('gifts').insert({sender_id:me.id,receiver_id:uid,days,message:msg||null,claimed:false});if(error)return tst('❌ '+error.message);await sb.from('profiles').update({gifts_sent:(myP.gifts_sent||0)+1}).eq('id',me.id);myP.gifts_sent=(myP.gifts_sent||0)+1;tst('🎁 Отправлено!');$('usrM').classList.remove('show')};
 
 // ==== ГРУППЫ ====
 $('typeTG').onclick=e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#typeTG button').forEach(x=>x.classList.toggle('on',x===b));$('grpMT').textContent=b.dataset.t==='channel'?'📢 Канал':b.dataset.t==='secret'?'🔒 Секретный':'👥 Группа'};
@@ -1070,13 +1085,10 @@ $('bSendVer').onclick=async()=>{
 };
 async function checkVerMsgs(){if(!isAdmin)return;try{const{data}=await sb.from('messages').select('*').ilike('text','%[VERIFY_REQUEST:%').eq('is_read',false).neq('sender',me.id).limit(5);if(!data?.length)return;for(const m of data){await sb.from('messages').update({is_read:true}).eq('id',m.id)}tst('📥 Новая заявка')}catch(e){}}
 
-// ==== БОТ-ПОМОЩНИК ====
+// ==== БОТ ====
 $('bHelp').onclick=async()=>{
   let{data:bp}=await sb.from('profiles').select('*').eq('username','Spacegramhelperbot').maybeSingle();
-  if(!bp){
-    const{data:c,error}=await sb.from('profiles').insert({username:'Spacegramhelperbot',display_name:'💡 Spacegram Helper',bio:'Бот. Команды: /help',is_bot_verified:true,is_verified:true,is_plus:true,last_seen:new Date().toISOString()}).select().single();
-    if(error)return tst('❌ '+error.message);bp=c;
-  }
+  if(!bp){const{data:c,error}=await sb.from('profiles').insert({username:'Spacegramhelperbot',display_name:'💡 Spacegram Helper',bio:'Бот. Команды: /help',is_bot_verified:true,is_verified:true,is_plus:true,last_seen:new Date().toISOString()}).select().single();if(error)return tst('❌ '+error.message);bp=c}
   profiles[bp.id]=bp;
   const[u1,u2]=[me.id,bp.id].sort();
   let{data:c}=await sb.from('chats').select('id').or(`and(user1.eq.${u1},user2.eq.${u2}),and(user1.eq.${u2},user2.eq.${u1})`).limit(1);
@@ -1130,25 +1142,23 @@ $('bGifts').onclick=async()=>{
   $('bmc').innerHTML=h;$('bm').classList.add('show');
   $('bSendGift').onclick=()=>sendGift();
 };
-async function sendGift(){
-  const un=prompt('@username получателя:');if(!un)return;
-  const{data:t}=await sb.from('profiles').select('id,display_name').eq('username',un.trim().toLowerCase().replace('@','')).maybeSingle();
-  if(!t)return tst('❌ Не найден');if(t.id===me.id)return tst('❌ Себе нельзя');
-  const days=parseInt(prompt('Дней Plus:','30'))||30;
-  const msg=prompt('Сообщение (пусто):','');
-  const{error}=await sb.from('gifts').insert({sender_id:me.id,receiver_id:t.id,days,message:msg||null});
-  if(error)return tst('❌ '+error.message);
-  tst('🎁 Отправлено '+t.display_name);$('bm').classList.remove('show');
-}
+async function sendGift(){const un=prompt('@username получателя:');if(!un)return;const{data:t,error:e1}=await sb.from('profiles').select('id,display_name').eq('username',un.trim().toLowerCase().replace('@','')).maybeSingle();if(e1)return tst('❌ '+e1.message);if(!t)return tst('❌ Не найден');if(t.id===me.id)return tst('❌ Себе нельзя');const days=parseInt(prompt('Дней Plus:','30'))||30;const msg=prompt('Сообщение (пусто):','');const{error}=await sb.from('gifts').insert({sender_id:me.id,receiver_id:t.id,days,message:msg||null,claimed:false});if(error)return tst('❌ '+error.message);await sb.from('profiles').update({gifts_sent:(myP.gifts_sent||0)+1}).eq('id',me.id);myP.gifts_sent=(myP.gifts_sent||0)+1;tst('🎁 Отправлено '+t.display_name);$('bm').classList.remove('show')}
 window.claimGift=async gid=>{
-  const{data:g}=await sb.from('gifts').select('*').eq('id',gid).maybeSingle();
-  if(!g||g.claimed)return tst('❌ Уже');
-  await sb.from('gifts').update({claimed:true}).eq('id',gid);
-  const now=new Date();const cur=myP.plus_until&&new Date(myP.plus_until)>now?new Date(myP.plus_until):now;
-  const until=new Date(cur.getTime()+g.days*86400000).toISOString();
-  await sb.from('profiles').update({is_plus:true,plus_until:until,gifts_received:(myP.gifts_received||0)+1}).eq('id',me.id);
-  myP.is_plus=true;myP.plus_until=until;theme();
-  tst('🎉 Принято!');$('bm').classList.remove('show');
+  try{
+    const{data:g,error:ge}=await sb.from('gifts').select('*').eq('id',gid).maybeSingle();
+    if(ge)return tst('❌ '+ge.message);
+    if(!g)return tst('❌ Не найден');
+    if(g.claimed)return tst('❌ Уже принят');
+    const now=new Date();const cur=myP.plus_until&&new Date(myP.plus_until)>now?new Date(myP.plus_until):now;
+    const until=new Date(cur.getTime()+g.days*86400000).toISOString();
+    const{error:ue}=await sb.from('gifts').update({claimed:true}).eq('id',gid);
+    if(ue)return tst('❌ '+ue.message);
+    const{error:pe}=await sb.from('profiles').update({is_plus:true,plus_until:until,gifts_received:(myP.gifts_received||0)+1}).eq('id',me.id);
+    if(pe)return tst('❌ '+pe.message);
+    myP.is_plus=true;myP.plus_until=until;myP.gifts_received=(myP.gifts_received||0)+1;
+    theme();renderMyA();tst(`🎉 +${g.days} дней Plus!`);
+    $('bm').classList.remove('show');
+  }catch(e){console.error(e);tst('❌ '+e.message)}
 };
 
 // ==== АДМИНКА ====
@@ -1158,7 +1168,16 @@ async function openAdm(){try{const{data}=await sb.from('admins').select('id').eq
 function actuallyOpen(){$('apn').classList.add('show');renderAStat();loadAT('users')}
 window.closeAdm=()=>{$('apn').classList.remove('show');loadChats()};
 $('atab').onclick=e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#atab button').forEach(x=>x.classList.toggle('on',x===b));loadAT(b.dataset.t)};
-async function renderAStat(){try{const[u,m,c]=await Promise.all([sb.from('profiles').select('*',{count:'exact',head:true}),sb.from('messages').select('*',{count:'exact',head:true}),sb.from('chats').select('*',{count:'exact',head:true})]);$('astat').innerHTML=`<div class="a"><div class="n">${u.count||0}</div><div class="l">Юзеры</div></div><div class="a"><div class="n">${m.count||0}</div><div class="l">Сообщ</div></div><div class="a"><div class="n">${c.count||0}</div><div class="l">Чаты</div></div>`}catch(e){}}
+async function renderAStat(){
+  try{
+    const[u,m,c]=await Promise.all([
+      sb.from('profiles').select('*',{count:'exact',head:true}),
+      sb.from('messages').select('*',{count:'exact',head:true}),
+      sb.from('chats').select('*',{count:'exact',head:true})
+    ]);
+    $('astat').innerHTML=`<div class="a"><div class="n">${u?.count||0}</div><div class="l">Юзеры</div></div><div class="a"><div class="n">${m?.count||0}</div><div class="l">Сообщ</div></div><div class="a"><div class="n">${c?.count||0}</div><div class="l">Чаты</div></div>`;
+  }catch(e){console.warn('Stat:',e)}
+}
 let aST=null;
 async function loadAT(tab){
   if(tab==='users'){$('abod').innerHTML=`<input style="width:100%;padding:12px 16px;border-radius:12px;background:var(--p2);margin-bottom:12px;font-size:14px" id="aSr" placeholder="🔍 Поиск..."><div id="aL"></div>`;$('aSr').oninput=e=>{clearTimeout(aST);aST=setTimeout(()=>loadAU(e.target.value.trim().toLowerCase()),350)};loadAU('')}
@@ -1247,10 +1266,17 @@ async function loadAMods(){
 async function loadAStats(){
   const l=$('aStats');
   try{
-    const[u,m,c,p,f,g]=await Promise.all([sb.from('profiles').select('*',{count:'exact',head:true}),sb.from('messages').select('*',{count:'exact',head:true}),sb.from('chats').select('*',{count:'exact',head:true}),sb.from('posts').select('*',{count:'exact',head:true}),sb.from('friends').select('*',{count:'exact',head:true}),sb.from('gifts').select('*',{count:'exact',head:true})]);
-    const{data:plus}=await sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_plus',true);
-    const{data:ban}=await sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true);
-    l.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${u.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Юзеров</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${m.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Сообщений</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${c.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Чатов</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${p.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Постов</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#ffd700">${plus.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Plus</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--r)">${ban.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Забанено</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${f.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Дружб</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#e91e63">${g.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Подарков</div></div></div>`;
+    const[u,m,c,p,f,g,plus,ban]=await Promise.all([
+      sb.from('profiles').select('*',{count:'exact',head:true}),
+      sb.from('messages').select('*',{count:'exact',head:true}),
+      sb.from('chats').select('*',{count:'exact',head:true}),
+      sb.from('posts').select('*',{count:'exact',head:true}),
+      sb.from('friends').select('*',{count:'exact',head:true}),
+      sb.from('gifts').select('*',{count:'exact',head:true}),
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_plus',true),
+      sb.from('profiles').select('*',{count:'exact',head:true}).eq('is_banned',true)
+    ]);
+    l.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${u?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Юзеров</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${m?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Сообщений</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${c?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Чатов</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${p?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Постов</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#ffd700">${plus?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Plus</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--r)">${ban?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Забанено</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:var(--a)">${f?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Дружб</div></div><div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800;color:#e91e63">${g?.count||0}</div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;margin-top:4px">Подарков</div></div></div>`;
   }catch(e){l.innerHTML='<div style="color:var(--r);padding:20px">Ошибка: '+e.message+'</div>'}
 }
 
