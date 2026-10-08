@@ -22,9 +22,9 @@
 <button id="bL">Войти</button>
 <button class="g" id="bR">Регистрация</button>
 <div style="margin-top:18px;display:flex;flex-direction:column;gap:7px;width:100%;max-width:320px">
-<button style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer" onclick="openTicket('unban')">🚫 Запросить разбан</button>
-<button style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer" onclick="openTicket('contact')">💬 Связаться с админом</button>
-<button style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer" onclick="openTicket('age')">🔞 Подтвердить 16+</button>
+<button type="button" id="bTUnban" style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer">🚫 Запросить разбан</button>
+<button type="button" id="bTContact" style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer">💬 Связаться с админом</button>
+<button type="button" id="bTAge" style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer">🔞 Подтвердить 16+</button>
 </div>
 </div>
 
@@ -279,16 +279,17 @@
 <div class="ast" id="astat"></div>
 <div class="atb" id="atab">
 <button data-t="users" class="on">👥 Юзеры</button>
-<button data-t="tickets">🎫 Тикеты</button>
+<button data-t="tickets">🎫 Тикеты <span id="tkBadge" style="background:var(--r);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;display:none">0</span></button>
 <button data-t="abuse">👑 Абьюз</button>
-<button data-t="bans">🚫 Баны</button>
+<button data-t="flagged">🚨 Флаг</button>
 <button data-t="admins">🛡️ Админы</button>
+<button data-t="bans">🚫 Баны</button>
 <button data-t="channels">📢 Каналы</button>
 <button data-t="promo">🎁 Промо</button>
 <button data-t="gifts">💝 Подарки</button>
 <button data-t="verify">📥 Заявки</button>
 <button data-t="reports">🚩 Жалобы</button>
-<button data-t="modlog">📝 Модерация</button>
+<button data-t="modlog">📝 Лог</button>
 <button data-t="mods">🧩 Моды</button>
 <button data-t="stickers">🎨 Стикеры</button>
 <button data-t="stats">📊 Стата</button>
@@ -327,6 +328,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=12"></script>
+<script type="module" src="app.js?v=15"></script>
 </body>
-                                                                                                                     </html>
+  </html>
