@@ -9,6 +9,9 @@ const db=(fn,ms)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a
 const boot=(m,c)=>{const e=$('BE');if(e){e.style.display='block';e.innerHTML='<div style="color:'+(c||'#fff')+'">'+m+'</div>'}const l=$('L');if(l)l.style.display='none'};
 const BAD=/бля|хуй|пизд|еба|сука|нах|мудак|гандо|долбо|хер|жоп|срак|говн|мраз|твар|урод/gi;
 const TMOUT=(promise,ms=10000,label='запрос')=>Promise.race([promise,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Таймаут '+ms/1000+'с: '+label)),ms))]);
+window.tst=tst;
+window.esc=esc;
+window.el=el;
 
 const CDN_LIST_SUPABASE=["https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/+esm","https://esm.sh/@supabase/supabase-js@2.39.7","https://cdn.skypack.dev/@supabase/supabase-js@2.39.7"];
 const CDN_LIST_EMOJI=["https://cdn.jsdelivr.net/npm/emoji-picker-element@1.20.0/+esm","https://esm.sh/emoji-picker-element@1.20.0","https://cdn.skypack.dev/emoji-picker-element@1.20.0"];
@@ -56,7 +59,7 @@ let sFile=null,sType='image',sBg=null,sText='';
 let curVerB='verified',feedLoaded=false,curRepMsg=null,curRepReason='spam';
 let customSoundUrl=null;
 try{customSoundUrl=localStorage.getItem('sg_sound')||null}catch(e){}
-let autoReadTimer=null,lastTypingSent=0,unreadSinceScroll=0;
+let autoReadTimer=null,lastTypingSent=0;
 
 const BG=['#1a1a2e','#16213e','#0f3460','#e94560','#533483','#f39c12','#27ae60','#8e44ad','#c0392b','#2c3e50','#16a085','#d35400','#2d3436','#000'];
 const EMS=['😀','😎','🤔','😴','🎮','🎧','📚','💼','🍕','☕','🔥','💯','🚀','🌙','☀️','❤️','🎉','🎯'];
@@ -72,13 +75,16 @@ function bd(p,isCh){
   else if(p.is_bot_verified||p.username===OFFICIAL)h+='<span class="bd bot" onclick="event.stopPropagation();sBI(\'bot\')">✓</span>';
   else if(p.is_verified)h+='<span class="bd v" onclick="event.stopPropagation();sBI(\'verified\')">✓</span>';
   if(p.is_plus)h+='<span class="bd p" onclick="event.stopPropagation();sBI(\'plus\')">👑</span>';
-  if(p.age_verified)h+='<span class="bd" style="background:#10b981;font-size:9px;width:auto;padding:0 4px" onclick="event.stopPropagation();tst(\'16+ подтверждено\')">16+</span>';
-  if(p.role==='admin'||p.role==='creator')h+='<span class="bd" style="background:#7c3aed;font-size:9px;width:auto;padding:0 4px" onclick="event.stopPropagation();tst(\''+(p.role==='creator'?'Создатель':'Админ')+'\')">🛡️</span>';
+  if(p.age_verified)h+='<span class="bd" style="background:#10b981;font-size:9px;width:auto;padding:0 4px" onclick="event.stopPropagation();window.tst(\'16+ подтверждено\')">16+</span>';
+  if(p.role==='admin'||p.role==='creator')h+='<span class="bd" style="background:#7c3aed;font-size:9px;width:auto;padding:0 4px" onclick="event.stopPropagation();window.tst(\''+(p.role==='creator'?'Создатель':'Админ')+'\')">🛡️</span>';
   return h;
 }
+window.bd=bd;
 window.sBI=k=>{const i=BI[k];if(!i)return;$('bmc').innerHTML='<h2>'+i.i+' '+i.n+'</h2><div style="background:var(--p2);border-radius:12px;padding:14px;display:flex;gap:12px;align-items:center;margin-bottom:12px"><div style="font-size:34px">'+i.i+'</div><div style="font-size:13.5px">'+i.d+'</div></div><button onclick="document.getElementById(\'bm\').classList.remove(\'show\')">Понятно</button>';$('bm').classList.add('show')};
 function theme(){document.body.className='';if(myP?.is_plus)document.body.classList.add('plus');const t=settings.theme;if(t!=='midnight')document.body.classList.add(t.slice(0,2));if(settings.mode==='light')document.body.classList.add('l')}
+window.theme=theme;
 const svS=()=>localStorage.setItem('sg_settings',JSON.stringify(settings));
+window.svS=svS;
 const hl=()=>{const l=$('L');if(l)l.classList.add('h')};
 
 let baseTitle=document.title,titleTimer=null;
@@ -137,6 +143,7 @@ async function getP(id){
   if(profiles[id])return profiles[id];
   try{const{data}=await TMOUT(sb.from('profiles').select('*').eq('id',id).single(),8000,'getP');if(data)profiles[id]=data;return data}catch(e){return null}
 }
+window.getP=getP;
 
 async function addBalance(uid,amount,note){
   const{data:p}=await sb.from('profiles').select('balance').eq('id',uid).maybeSingle();
@@ -146,6 +153,7 @@ async function addBalance(uid,amount,note){
   await sb.from('balance_log').insert({user_id:uid,amount:amount,reason:note||'',from_admin:me.id});
   return nb;
 }
+window.addBalance=addBalance;
 async function spendBalance(uid,amount,note){
   const{data:p}=await sb.from('profiles').select('balance').eq('id',uid).maybeSingle();
   if(!p||(p.balance||0)<amount)return false;
@@ -154,6 +162,7 @@ async function spendBalance(uid,amount,note){
   await sb.from('balance_log').insert({user_id:uid,amount:-amount,reason:note||'',from_admin:me.id});
   return true;
 }
+window.spendBalance=spendBalance;
 window.openBalance=async()=>{
   const{data:fresh}=await sb.from('profiles').select('balance').eq('id',me.id).single();
   myP.balance=fresh.balance||0;
@@ -179,6 +188,8 @@ async function sendWarn(uid,reason){
   else tst('Варн '+total+'/3 @'+(p?.username||'?'));
 }
 async function logMod(target,action,details){try{await sb.from('mod_log').insert({admin_id:me.id,target_id:target,action:action,details:details||''})}catch(e){}}
+window.logMod=logMod;
+window.sendWarn=sendWarn;
 window.showActivity=async()=>{
   const{data}=await sb.from('messages').select('created_at').eq('sender',me.id).gte('created_at',new Date(Date.now()-30*86400000).toISOString()).limit(2000);
   const byDay={};for(let i=29;i>=0;i--){const d=new Date(Date.now()-i*86400000);byDay[d.toDateString()]=0}
@@ -418,6 +429,7 @@ async function startChat(oid){
   else{const{data,error}=await sb.from('chats').insert({user1:u1,user2:u2,created_by:me.id}).select().single();if(error)return alert(error.message);cid=data.id}
   $('srch').value='';await loadChats();openChat(cid,oid);
 }
+window.startChat=startChat;
 
 async function openChat(cid,oid,co){
   $('bnv').classList.add('h');
@@ -435,6 +447,7 @@ async function openChat(cid,oid,co){
   autoReadTimer=setTimeout(()=>markRead(),2000);
   $('msgs').addEventListener('scroll',onMsgsScroll);
 }
+window.openChat=openChat;
 async function markRead(){
   if(!aC)return;
   try{await sb.from('messages').update({is_read:true}).eq('chat_id',aC).neq('sender',me.id).eq('is_read',false)}catch(e){}
@@ -652,6 +665,7 @@ window.openStalker=async uid=>{
   });
 };
 async function hasMod(c){if(!myP?.mods?.includes(c))return false;const{data}=await sb.from('mod_activations').select('*').eq('user_id',me.id).eq('mod_code',c).maybeSingle();if(!data)return false;return new Date(data.active_until)>new Date()}
+window.hasMod=hasMod;
 
 $('bMenu').onclick=e=>{e.stopPropagation();if(!aC)return;const pins=JSON.parse(localStorage.getItem('sg_pins')||'[]');const isPin=pins.includes(aC);const c=prompt('1 - '+(isPin?'Открепить':'Закрепить')+'\n2 - Очистить\n3 - Удалить\nНомер:');if(c==='1'){if(isPin)pins.splice(pins.indexOf(aC),1);else pins.push(aC);localStorage.setItem('sg_pins',JSON.stringify(pins));tst('OK');loadChats()}else if(c==='2'){if(confirm('Очистить?'))sb.from('messages').delete().eq('chat_id',aC).then(()=>loadMsgs())}else if(c==='3'){if(confirm('Удалить?'))sb.from('messages').delete().eq('chat_id',aC).then(()=>sb.from('chats').delete().eq('id',aC).then(()=>{back();loadChats()}))}};
 $('bSrch').onclick=()=>{const q=prompt('Поиск в чате:');const oldBar=document.querySelector('.chSearchBar');if(oldBar)oldBar.remove();document.querySelectorAll('.mw').forEach(w=>{w.style.opacity='1';w.style.background=''});if(!q)return;let found=0;document.querySelectorAll('.mw').forEach(w=>{const t=(w.querySelector('.m')?.textContent||'').toLowerCase();if(t.includes(q.toLowerCase())){found++;w.style.background='rgba(100,181,200,.15)';w.scrollIntoView({block:'center'})}else w.style.opacity='0.3'});const bar=el('div',{class:'chSearchBar',style:'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--p);padding:8px 14px;border-radius:20px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:100;display:flex;gap:10px;align-items:center',html:'🔍 "'+esc(q)+'" - '+found+'<button style="background:none;color:var(--a);font-size:16px;padding:0 6px" onclick="this.parentNode.remove();document.querySelectorAll(\'.mw\').forEach(w=>{w.style.opacity=\'1\';w.style.background=\'\'})">✕</button>'});document.body.appendChild(bar)};
@@ -1055,4 +1069,4 @@ const showD=m=>{let d=$('D');if(d)d.textContent=m};
 })();
 setTimeout(()=>{if($('L')&&!$('L').classList.contains('h')){hl();if(!me)$('A').classList.add('show')}},12000);
 
-console.log('[Spacegram v6] Loaded OK');
+console.log('[Spacegram v7] Loaded OK');
