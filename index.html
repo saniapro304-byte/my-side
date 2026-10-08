@@ -21,6 +21,11 @@
 <div id="AE"></div>
 <button id="bL">Войти</button>
 <button class="g" id="bR">Регистрация</button>
+<div style="margin-top:18px;display:flex;flex-direction:column;gap:7px;width:100%;max-width:320px">
+<button style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer" onclick="openTicket('unban')">🚫 Запросить разбан</button>
+<button style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer" onclick="openTicket('contact')">💬 Связаться с админом</button>
+<button style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer" onclick="openTicket('age')">🔞 Подтвердить 16+</button>
+</div>
 </div>
 
 <div class="app" id="APP">
@@ -102,6 +107,7 @@
 <div class="st">Эмодзи-статус</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap" id="emSt"></div>
 <button id="bSaveP">💾 Сохранить</button>
+<button class="gh" id="bAgeVerify" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">🔞 Подтвердить 16+</button>
 <button class="gh" id="bBal" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">💰 Баланс</button>
 <button class="gh" id="bPromo" style="background:var(--go);color:#000;font-weight:700">🎁 Промокоды</button>
 <button class="gh" id="bMods">🧩 Моды</button>
@@ -257,12 +263,26 @@
 <button class="gh" onclick="document.getElementById('reportM').classList.remove('show')">Отмена</button>
 </div></div>
 
+<div class="md" id="ticketM"><div class="mb">
+<h2 id="ticketTitle">🎫 Обращение</h2>
+<div id="ticketDesc" style="background:var(--p2);border-radius:12px;padding:12px;font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:8px"></div>
+<input id="ticketEmail" placeholder="Email от аккаунта" style="text-transform:lowercase">
+<input id="ticketSubject" placeholder="Тема (кратко)" maxlength="80">
+<textarea id="ticketText" rows="4" placeholder="Опиши ситуацию..."></textarea>
+<div id="ticketMsg" style="font-size:12px;color:var(--t2);min-height:16px;text-align:center"></div>
+<button id="bSendTicket" style="background:var(--ab);color:#fff;font-weight:700">📤 Отправить</button>
+<button class="gh" onclick="document.getElementById('ticketM').classList.remove('show')">Отмена</button>
+</div></div>
+
 <div class="apn" id="apn"><div style="display:flex;flex-direction:column;min-height:100%">
 <div class="atp"><h2>🔐 Админ-панель</h2><button onclick="closeAdm()">✕</button></div>
 <div class="ast" id="astat"></div>
 <div class="atb" id="atab">
 <button data-t="users" class="on">👥 Юзеры</button>
+<button data-t="tickets">🎫 Тикеты</button>
+<button data-t="abuse">👑 Абьюз</button>
 <button data-t="bans">🚫 Баны</button>
+<button data-t="admins">🛡️ Админы</button>
 <button data-t="channels">📢 Каналы</button>
 <button data-t="promo">🎁 Промо</button>
 <button data-t="gifts">💝 Подарки</button>
@@ -307,6 +327,6 @@
 </div>
 </div>
 
-<script type="module" src="app.js?v=100"></script>
+<script type="module" src="app.js?v=12"></script>
 </body>
-  </html>
+                                                                                                                     </html>
