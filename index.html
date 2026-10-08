@@ -46,6 +46,20 @@ body.cr-large .m{border-radius:22px!important}
 body.cr-large .ch{border-radius:16px!important}
 #callScreen{animation:callFadeIn .3s ease-out}
 @keyframes callFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cosmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.cosm-badge{animation:cosmFloat 2s ease-in-out infinite}
+.avt,.hv,.uv .lg,.avp{position:relative}
+.frame-bronze{border-color:#cd7f32!important;box-shadow:0 0 8px rgba(205,127,50,.5)!important}
+.frame-silver{border-color:#c0c0c0!important;box-shadow:0 0 8px rgba(192,192,192,.6)!important}
+.frame-gold{border-color:#ffd700!important;box-shadow:0 0 8px rgba(255,215,0,.7)!important}
+.frame-diamond{border-color:#7df9ff!important;box-shadow:0 0 12px rgba(125,249,255,.8)!important}
+.frame-fire{border-color:#ff4500!important;box-shadow:0 0 12px rgba(255,69,0,.8)!important}
+.frame-ice{border-color:#87ceeb!important;box-shadow:0 0 12px rgba(135,206,235,.7)!important}
+.frame-neon{border-color:#00ff88!important;box-shadow:0 0 12px rgba(0,255,136,.8)!important}
+.frame-blood{border-color:#8b0000!important;box-shadow:0 0 12px rgba(139,0,0,.7)!important}
+.frame-toxic{border-color:#00ff00!important;box-shadow:0 0 12px rgba(0,255,0,.7)!important}
+.frame-galaxy{border-color:#8a2be2!important;box-shadow:0 0 15px rgba(138,43,226,.8)!important}
+.frame-rainbow{border:3px solid transparent!important;background:linear-gradient(var(--p),var(--p)) padding-box,linear-gradient(45deg,#ff0000,#ff7f00,#ffff00,#00ff00,#0000ff,#4b0082,#9400d3) border-box!important;box-shadow:0 0 15px rgba(255,0,255,.5)!important}
 </style>
 </head>
 <body>
@@ -71,6 +85,7 @@ body.cr-large .ch{border-radius:16px!important}
 <div class="app" id="APP">
 <div class="sd" id="SD">
 <div class="tp">
+<button class="tb" id="bSidebar" title="Меню" style="font-size:18px;margin-right:4px">☰</button>
 <h2 id="lg">✈️ Spacegram</h2>
 <div class="a" id="topActs">
 <button class="tb" id="bAdm" style="display:none" title="Админ">🔐</button>
@@ -147,6 +162,7 @@ body.cr-large .ch{border-radius:16px!important}
 <div class="st">Эмодзи-статус</div>
 <div style="display:flex;gap:6px;flex-wrap:wrap" id="emSt"></div>
 <button id="bSaveP">💾 Сохранить</button>
+<button class="gh" id="bCosmetics" style="background:linear-gradient(135deg,#ff6bcb,#9c27b0);color:#fff;font-weight:700">🎨 Косметика</button>
 <button class="gh" id="bAgeVerify" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">🔞 Подтвердить 16+</button>
 <button class="gh" id="bBal" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">💰 Баланс</button>
 <button class="gh" id="bPromo" style="background:var(--go);color:#000;font-weight:700">🎁 Промокоды</button>
@@ -165,36 +181,14 @@ body.cr-large .ch{border-radius:16px!important}
 <div class="st">Тема</div><div class="tgr" id="tgr"></div>
 <div class="st">Режим</div><div class="tg" id="modeT"><button data-m="dark" class="on">🌙 Тёмный</button><button data-m="light">☀️ Светлый</button></div>
 <div class="st">Язык</div><div class="tg" id="langT"><button data-l="ru" class="on">🇷🇺 RU</button><button data-l="en">🇺🇸 EN</button></div>
-
 <div class="st">📏 Размер шрифта</div>
-<div class="tg" id="fontSizeT">
-<button data-fs="small">Мелкий</button>
-<button data-fs="normal" class="on">Средний</button>
-<button data-fs="large">Крупный</button>
-<button data-fs="huge">Огромный</button>
-</div>
-
+<div class="tg" id="fontSizeT"><button data-fs="small">Мелкий</button><button data-fs="normal" class="on">Средний</button><button data-fs="large">Крупный</button><button data-fs="huge">Огромный</button></div>
 <div class="st">⬜ Скругление углов</div>
-<div class="tg" id="cornerT">
-<button data-cr="small">Малое</button>
-<button data-cr="medium" class="on">Среднее</button>
-<button data-cr="large">Большое</button>
-</div>
-
+<div class="tg" id="cornerT"><button data-cr="small">Малое</button><button data-cr="medium" class="on">Среднее</button><button data-cr="large">Большое</button></div>
 <div class="st">🕐 Формат времени</div>
-<div class="tg" id="timeT">
-<button data-tf="24h" class="on">24 часа</button>
-<button data-tf="12h">12 часов</button>
-</div>
-
-<div class="st">🗑 Авто-удаление сообщений</div>
-<div class="tg" id="autoDelT">
-<button data-ad="off" class="on">Выкл</button>
-<button data-ad="24h">24ч</button>
-<button data-ad="7d">7д</button>
-<button data-ad="30d">30д</button>
-</div>
-
+<div class="tg" id="timeT"><button data-tf="24h" class="on">24 часа</button><button data-tf="12h">12 часов</button></div>
+<div class="st">🗑 Авто-удаление</div>
+<div class="tg" id="autoDelT"><button data-ad="off" class="on">Выкл</button><button data-ad="24h">24ч</button><button data-ad="7d">7д</button><button data-ad="30d">30д</button></div>
 <div class="st">Уведомления</div>
 <div class="rw"><div>🔔 Уведомления</div><label class="sw"><input type="checkbox" id="cbN" checked><span class="sl"></span></label></div>
 <div class="rw"><div>🔊 Звук</div><label class="sw"><input type="checkbox" id="cbS" checked><span class="sl"></span></label></div>
@@ -254,6 +248,20 @@ body.cr-large .ch{border-radius:16px!important}
 <div id="shopWalls" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
 <button class="gl" id="bBuyPlus">👑 Купить Plus за 5000 SG</button>
 <button class="gh" onclick="document.getElementById('shopM').classList.remove('show')">Закрыть</button>
+</div></div>
+
+<div class="md" id="cosmeticsM"><div class="mb">
+<h2>🎨 Косметика</h2>
+<div id="cosmBal" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;margin-bottom:14px">💰 0 SG</div>
+<div class="tg" id="cosmTabs" style="margin-bottom:14px">
+<button data-ct="frame" class="on">🖼 Рамки</button>
+<button data-ct="badge">🏅 Бейджи</button>
+<button data-ct="effect">✨ Эффекты</button>
+<button data-ct="avatar">👤 Аватары</button>
+<button data-ct="banner">🎨 Баннеры</button>
+</div>
+<div id="cosmList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
+<button class="gh" onclick="document.getElementById('cosmeticsM').classList.remove('show')" style="margin-top:16px">Закрыть</button>
 </div></div>
 
 <div class="md" id="myStickersM"><div class="mb">
@@ -400,6 +408,6 @@ body.cr-large .ch{border-radius:16px!important}
 </div>
 </div>
 
-<script type="module" src="app.js?v=200"></script>
+<script type="module" src="app.js?v=250"></script>
 </body>
   </html>
