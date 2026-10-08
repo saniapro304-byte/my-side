@@ -294,7 +294,6 @@ function bindAuthTicketButtons(){
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',bindAuthTicketButtons)}else{bindAuthTicketButtons}
 setTimeout(bindAuthTicketButtons,500);
 setTimeout(bindAuthTicketButtons,2000);
-
 async function loadChats(){
   try{
     const{data}=await sb.from('chats').select('*').or('user1.eq.'+me.id+',user2.eq.'+me.id).order('created_at',{ascending:false}).limit(60);
@@ -658,7 +657,6 @@ $('bMenu').onclick=e=>{e.stopPropagation();if(!aC)return;const pins=JSON.parse(l
 $('bSrch').onclick=()=>{const q=prompt('Поиск в чате:');const oldBar=document.querySelector('.chSearchBar');if(oldBar)oldBar.remove();document.querySelectorAll('.mw').forEach(w=>{w.style.opacity='1';w.style.background=''});if(!q)return;let found=0;document.querySelectorAll('.mw').forEach(w=>{const t=(w.querySelector('.m')?.textContent||'').toLowerCase();if(t.includes(q.toLowerCase())){found++;w.style.background='rgba(100,181,200,.15)';w.scrollIntoView({block:'center'})}else w.style.opacity='0.3'});const bar=el('div',{class:'chSearchBar',style:'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--p);padding:8px 14px;border-radius:20px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.4);z-index:100;display:flex;gap:10px;align-items:center',html:'🔍 "'+esc(q)+'" - '+found+'<button style="background:none;color:var(--a);font-size:16px;padding:0 6px" onclick="this.parentNode.remove();document.querySelectorAll(\'.mw\').forEach(w=>{w.style.opacity=\'1\';w.style.background=\'\'})">✕</button>'});document.body.appendChild(bar)};
 window.back=()=>{stopPoll();if(autoReadTimer)clearTimeout(autoReadTimer);$('AR').classList.remove('open');$('stkP').classList.add('h');$('gifP').classList.add('h');$('brnP').classList.add('h');$('attP').classList.add('h');$('ep').classList.remove('show');$('msgs').style.background='';$('bnv').classList.remove('h');if(mSub){sb.removeChannel(mSub);mSub=null}const sb_=$('scrollDownBtn');if(sb_)sb_.remove();const csb=document.querySelector('.chSearchBar');if(csb)csb.remove();aC=null;aO=null;aCO=null;loadChats();updateTitleBadge()};
 window.viewImg=url=>{const v=document.createElement('div');v.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;justify-content:center;align-items:center;z-index:2000;padding:16px';v.innerHTML='<img src="'+url+'" style="max-width:100%;max-height:100%;border-radius:10px"><button style="position:absolute;top:20px;right:20px;color:#fff;font-size:26px;background:rgba(0,0,0,.5);width:44px;height:44px;border-radius:50%">✕</button>';v.onclick=()=>v.remove();document.body.appendChild(v)};
-
 window.showProf=async()=>{
   if(!myP)return;
   try{const{data:fresh}=await sb.from('profiles').select('*').eq('id',me.id).single();if(fresh){myP=fresh;profiles[me.id]=fresh}}catch(e){}
