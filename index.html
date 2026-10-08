@@ -16,6 +16,37 @@ window.addEventListener('unhandledrejection',function(e){
   document.body.innerHTML='<div style="color:#f55;background:#000;padding:20px;font-family:monospace;font-size:12px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:999999">❌ PROMISE:\n\n'+(e.reason&&e.reason.message?e.reason.message:e.reason)+'\n\n'+(e.reason&&e.reason.stack?e.reason.stack:'')+'</div>';
 });
 </script>
+<style>
+#sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:min(320px,85vw);
+  background:var(--p);z-index:500;
+  transform:translateX(-100%);
+  transition:transform .25s ease-out;
+  overflow-y:auto;
+  padding:calc(8px + var(--st)) 8px calc(20px + var(--sb));
+  box-shadow:4px 0 24px rgba(0,0,0,.5);
+}
+#sidebar::-webkit-scrollbar{width:3px}
+#sidebar::-webkit-scrollbar-thumb{background:var(--p2);border-radius:2px}
+#sidebarOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;opacity:0;transition:opacity .25s;
+}
+body.fs-small{font-size:13px}
+body.fs-small .m{font-size:13px}
+body.fs-small .cn{font-size:14px}
+body.fs-large{font-size:16px}
+body.fs-large .m{font-size:16px}
+body.fs-large .cn{font-size:16px}
+body.fs-huge{font-size:18px}
+body.fs-huge .m{font-size:18px}
+body.fs-huge .cn{font-size:18px}
+body.cr-small .m{border-radius:8px!important}
+body.cr-small .ch{border-radius:6px!important}
+body.cr-large .m{border-radius:22px!important}
+body.cr-large .ch{border-radius:16px!important}
+#callScreen{animation:callFadeIn .3s ease-out}
+@keyframes callFadeIn{from{opacity:0}to{opacity:1}}
+</style>
 </head>
 <body>
 
@@ -134,11 +165,43 @@ window.addEventListener('unhandledrejection',function(e){
 <div class="st">Тема</div><div class="tgr" id="tgr"></div>
 <div class="st">Режим</div><div class="tg" id="modeT"><button data-m="dark" class="on">🌙 Тёмный</button><button data-m="light">☀️ Светлый</button></div>
 <div class="st">Язык</div><div class="tg" id="langT"><button data-l="ru" class="on">🇷🇺 RU</button><button data-l="en">🇺🇸 EN</button></div>
+
+<div class="st">📏 Размер шрифта</div>
+<div class="tg" id="fontSizeT">
+<button data-fs="small">Мелкий</button>
+<button data-fs="normal" class="on">Средний</button>
+<button data-fs="large">Крупный</button>
+<button data-fs="huge">Огромный</button>
+</div>
+
+<div class="st">⬜ Скругление углов</div>
+<div class="tg" id="cornerT">
+<button data-cr="small">Малое</button>
+<button data-cr="medium" class="on">Среднее</button>
+<button data-cr="large">Большое</button>
+</div>
+
+<div class="st">🕐 Формат времени</div>
+<div class="tg" id="timeT">
+<button data-tf="24h" class="on">24 часа</button>
+<button data-tf="12h">12 часов</button>
+</div>
+
+<div class="st">🗑 Авто-удаление сообщений</div>
+<div class="tg" id="autoDelT">
+<button data-ad="off" class="on">Выкл</button>
+<button data-ad="24h">24ч</button>
+<button data-ad="7d">7д</button>
+<button data-ad="30d">30д</button>
+</div>
+
 <div class="st">Уведомления</div>
 <div class="rw"><div>🔔 Уведомления</div><label class="sw"><input type="checkbox" id="cbN" checked><span class="sl"></span></label></div>
 <div class="rw"><div>🔊 Звук</div><label class="sw"><input type="checkbox" id="cbS" checked><span class="sl"></span></label></div>
 <div class="rw"><div>📳 Вибрация</div><label class="sw"><input type="checkbox" id="cbV" checked><span class="sl"></span></label></div>
 <div class="rw"><div>💬 Превью</div><label class="sw"><input type="checkbox" id="cbP" checked><span class="sl"></span></label></div>
+<div class="rw"><div>✨ Анимации</div><label class="sw"><input type="checkbox" id="cbAnim" checked><span class="sl"></span></label></div>
+<div class="rw"><div>🌙 Тихие часы (23:00–08:00)</div><label class="sw"><input type="checkbox" id="cbQuiet"><span class="sl"></span></label></div>
 <div class="rw"><div>👻 Ghost-режим</div><label class="sw"><input type="checkbox" id="cbGhost"><span class="sl"></span></label></div>
 <div class="rw"><div>🔔 Push-уведомления</div><label class="sw"><input type="checkbox" id="cbPush"><span class="sl"></span></label></div>
 <div class="st">Звук уведомлений</div>
@@ -337,6 +400,6 @@ window.addEventListener('unhandledrejection',function(e){
 </div>
 </div>
 
-<script type="module" src="app.js?v=99"></script>
+<script type="module" src="app.js?v=200"></script>
 </body>
-                                                                    </html>
+  </html>
