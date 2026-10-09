@@ -9,11 +9,11 @@
 <link rel="stylesheet" href="styles.css">
 <script>
 window.onerror=function(msg,src,line,col,err){
-  document.body.innerHTML='<div style="color:#f55;background:#000;padding:20px;font-family:monospace;font-size:12px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:999999">ОШИБКА:\n\n'+msg+'\n\nФайл: '+src+'\nСтрока: '+line+':'+col+'\n\n'+(err&&err.stack?err.stack:'')+'</div>';
-  return false;
+  console.error('ОШИБКА:',msg,src,line+':'+col);
+  if(err&&err.stack)console.error(err.stack);
 };
 window.addEventListener('unhandledrejection',function(e){
-  document.body.innerHTML='<div style="color:#f55;background:#000;padding:20px;font-family:monospace;font-size:12px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:999999">PROMISE:\n\n'+(e.reason&&e.reason.message?e.reason.message:e.reason)+'\n\n'+(e.reason&&e.reason.stack?e.reason.stack:'')+'</div>';
+  console.error('PROMISE:',e.reason);
 });
 </script>
 <style>
@@ -51,6 +51,7 @@ body.cr-large .ch{border-radius:16px!important}
 .frame-toxic{border-color:#00ff00!important;box-shadow:0 0 12px rgba(0,255,0,.7)!important}
 .frame-galaxy{border-color:#8a2be2!important;box-shadow:0 0 15px rgba(138,43,226,.8)!important}
 .frame-rainbow{border:3px solid transparent!important;background:linear-gradient(var(--p),var(--p)) padding-box,linear-gradient(45deg,#ff0000,#ff7f00,#ffff00,#00ff00,#0000ff,#4b0082,#9400d3) border-box!important;box-shadow:0 0 15px rgba(255,0,255,.5)!important}
+#banBanner{position:fixed;top:0;left:0;right:0;background:#e74c3c;color:#fff;padding:12px;text-align:center;font-size:13px;font-weight:700;z-index:999999}
 </style>
 </head>
 <body>
@@ -191,8 +192,8 @@ body.cr-large .ch{border-radius:16px!important}
 <div class="rw"><div>🌙 Тихие часы (23:00-08:00)</div><label class="sw"><input type="checkbox" id="cbQuiet"><span class="sl"></span></label></div>
 <div class="rw"><div>👻 Ghost-режим</div><label class="sw"><input type="checkbox" id="cbGhost"><span class="sl"></span></label></div>
 <div class="rw"><div>🔔 Push-уведомления</div><label class="sw"><input type="checkbox" id="cbPush"><span class="sl"></span></label></div>
-<div class="rw"><div>🌐 Автоперевод сообщений</div><label class="sw"><input type="checkbox" id="cbTranslate"><span class="sl"></span></label></div>
-<div class="rw"><div>🎭 Анонимный режим (в группах)</div><label class="sw"><input type="checkbox" id="cbAnon"><span class="sl"></span></label></div>
+<div class="rw"><div>🌐 Автоперевод</div><label class="sw"><input type="checkbox" id="cbTranslate"><span class="sl"></span></label></div>
+<div class="rw"><div>🎭 Анонимный режим</div><label class="sw"><input type="checkbox" id="cbAnon"><span class="sl"></span></label></div>
 <div class="rw"><div>⌨️ Показывать «печатает»</div><label class="sw"><input type="checkbox" id="cbTyping" checked><span class="sl"></span></label></div>
 <div class="st">Звук уведомлений</div>
 <button class="gh" id="bCustomSound">🎵 Свой звук</button>
@@ -334,8 +335,8 @@ body.cr-large .ch{border-radius:16px!important}
 <h2>🚩 Жалоба</h2>
 <div class="st">Причина</div>
 <div class="tg" id="repT"><button data-r="spam" class="on">Спам</button><button data-r="abuse">Оскорбление</button><button data-r="fraud">Мошенничество</button><button data-r="other">Другое</button></div>
-<textarea id="repMsg" rows="3" placeholder="Опиши проблему (необязательно)"></textarea>
-<button class="dg" id="bSendRep">🚩 Отправить жалобу</button>
+<textarea id="repMsg" rows="3" placeholder="Опиши проблему"></textarea>
+<button class="dg" id="bSendRep">🚩 Отправить</button>
 <button class="gh" onclick="document.getElementById('reportM').classList.remove('show')">Отмена</button>
 </div></div>
 
@@ -404,6 +405,6 @@ body.cr-large .ch{border-radius:16px!important}
 </div>
 </div>
 
-<script type="module" src="app.js?v=999"></script>
+<script type="module" src="app.js?v=333"></script>
 </body>
-  </html>
+</html>
