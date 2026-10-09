@@ -315,7 +315,7 @@ function bindButtons(){
   if(cosmBtn)cosmBtn.onclick=()=>{try{openCosmetics()}catch(e){}};
   const pv=$('bProfileViews');if(pv)pv.onclick=()=>{$('profM').classList.remove('show');try{showProfileViews()}catch(e){}};
   const an=$('bAnalytics');if(an)an.onclick=()=>{$('profM').classList.remove('show');try{showAnalytics()}catch(e){}};
-  const cg=$('bChatGallery');if(cg)cg.onclick=()=>try{openChatGallery()}catch(e){};
+  const cg=$('bChatGallery');if(cg)cg.onclick=()=>{try{openChatGallery()}catch(e){}};
 }
 async function checkMute(){try{const{data:fresh}=await sb.from('profiles').select('muted_until').eq('id',me.id).single();const m=fresh?.muted_until;if(m&&new Date(m)>new Date()){const left=Math.ceil((new Date(m)-Date.now())/60000);$('msgI').disabled=true;$('msgI').placeholder='Мут '+left+' мин';$('bSend').disabled=true}else{if($('msgI').disabled){$('msgI').disabled=false;$('msgI').placeholder='Сообщение';$('bSend').disabled=false}}}catch(e){}}
 async function checkPlusExp(){if(myP?.is_plus&&myP.plus_until&&new Date(myP.plus_until)<new Date()){await sb.from('profiles').update({is_plus:false}).eq('id',me.id);myP.is_plus=false;theme();tst('Plus истёк')}}
