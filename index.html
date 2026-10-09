@@ -9,28 +9,18 @@
 <link rel="stylesheet" href="styles.css">
 <script>
 window.onerror=function(msg,src,line,col,err){
-  document.body.innerHTML='<div style="color:#f55;background:#000;padding:20px;font-family:monospace;font-size:12px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:999999">❌ ОШИБКА:\n\n'+msg+'\n\nФайл: '+src+'\nСтрока: '+line+':'+col+'\n\n'+(err&&err.stack?err.stack:'')+'</div>';
+  document.body.innerHTML='<div style="color:#f55;background:#000;padding:20px;font-family:monospace;font-size:12px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:999999">ОШИБКА:\n\n'+msg+'\n\nФайл: '+src+'\nСтрока: '+line+':'+col+'\n\n'+(err&&err.stack?err.stack:'')+'</div>';
   return false;
 };
 window.addEventListener('unhandledrejection',function(e){
-  document.body.innerHTML='<div style="color:#f55;background:#000;padding:20px;font-family:monospace;font-size:12px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:999999">❌ PROMISE:\n\n'+(e.reason&&e.reason.message?e.reason.message:e.reason)+'\n\n'+(e.reason&&e.reason.stack?e.reason.stack:'')+'</div>';
+  document.body.innerHTML='<div style="color:#f55;background:#000;padding:20px;font-family:monospace;font-size:12px;white-space:pre-wrap;position:fixed;inset:0;overflow:auto;z-index:999999">PROMISE:\n\n'+(e.reason&&e.reason.message?e.reason.message:e.reason)+'\n\n'+(e.reason&&e.reason.stack?e.reason.stack:'')+'</div>';
 });
 </script>
 <style>
-#sidebar{
-  position:fixed;top:0;left:0;bottom:0;width:min(320px,85vw);
-  background:var(--p);z-index:500;
-  transform:translateX(-100%);
-  transition:transform .25s ease-out;
-  overflow-y:auto;
-  padding:calc(8px + var(--st)) 8px calc(20px + var(--sb));
-  box-shadow:4px 0 24px rgba(0,0,0,.5);
-}
+#sidebar{position:fixed;top:0;left:0;bottom:0;width:min(320px,85vw);background:var(--p);z-index:500;transform:translateX(-100%);transition:transform .25s ease-out;overflow-y:auto;padding:calc(8px + var(--st)) 8px calc(20px + var(--sb));box-shadow:4px 0 24px rgba(0,0,0,.5)}
 #sidebar::-webkit-scrollbar{width:3px}
 #sidebar::-webkit-scrollbar-thumb{background:var(--p2);border-radius:2px}
-#sidebarOverlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;opacity:0;transition:opacity .25s;
-}
+#sidebarOverlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;opacity:0;transition:opacity .25s}
 body.fs-small{font-size:13px}
 body.fs-small .m{font-size:13px}
 body.fs-small .cn{font-size:14px}
@@ -47,6 +37,7 @@ body.cr-large .ch{border-radius:16px!important}
 #callScreen{animation:callFadeIn .3s ease-out}
 @keyframes callFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes cosmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes giftPop{0%{transform:scale(0);opacity:0}30%{transform:scale(1.3);opacity:1}70%{transform:scale(1)}100%{transform:scale(0);opacity:0}}
 .cosm-badge{animation:cosmFloat 2s ease-in-out infinite}
 .avt,.hv,.uv .lg,.avp{position:relative}
 .frame-bronze{border-color:#cd7f32!important;box-shadow:0 0 8px rgba(205,127,50,.5)!important}
@@ -115,7 +106,7 @@ body.cr-large .ch{border-radius:16px!important}
 <button class="bk" onclick="back()">←</button>
 <div class="hv" id="hA">?</div>
 <div class="hi" id="hI"><h3 id="hN">—</h3><div class="sub" id="hS"></div></div>
-<div class="ha"><button id="bStalk">🕵️</button><button id="bSrch">🔍</button><button id="bMenu">⋮</button></div>
+<div class="ha"><button id="bStalk">🕵️</button><button id="bChatGallery" title="Галерея">🖼️</button><button id="bSrch">🔍</button><button id="bMenu">⋮</button></div>
 </div>
 <div class="ms" id="msgs" style="display:none"></div>
 <div class="rp" id="rP"><div class="br"></div><div class="cc"><div class="ca" id="rA"></div><div class="ct" id="rT"></div></div><button onclick="cancelRep()">✕</button></div>
@@ -163,6 +154,8 @@ body.cr-large .ch{border-radius:16px!important}
 <div style="display:flex;gap:6px;flex-wrap:wrap" id="emSt"></div>
 <button id="bSaveP">💾 Сохранить</button>
 <button class="gh" id="bCosmetics" style="background:linear-gradient(135deg,#ff6bcb,#9c27b0);color:#fff;font-weight:700">🎨 Косметика</button>
+<button class="gh" id="bProfileViews" style="background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700">👀 Кто смотрел</button>
+<button class="gh" id="bAnalytics" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-weight:700">📊 Аналитика</button>
 <button class="gh" id="bAgeVerify" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">🔞 Подтвердить 16+</button>
 <button class="gh" id="bBal" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">💰 Баланс</button>
 <button class="gh" id="bPromo" style="background:var(--go);color:#000;font-weight:700">🎁 Промокоды</button>
@@ -195,9 +188,12 @@ body.cr-large .ch{border-radius:16px!important}
 <div class="rw"><div>📳 Вибрация</div><label class="sw"><input type="checkbox" id="cbV" checked><span class="sl"></span></label></div>
 <div class="rw"><div>💬 Превью</div><label class="sw"><input type="checkbox" id="cbP" checked><span class="sl"></span></label></div>
 <div class="rw"><div>✨ Анимации</div><label class="sw"><input type="checkbox" id="cbAnim" checked><span class="sl"></span></label></div>
-<div class="rw"><div>🌙 Тихие часы (23:00–08:00)</div><label class="sw"><input type="checkbox" id="cbQuiet"><span class="sl"></span></label></div>
+<div class="rw"><div>🌙 Тихие часы (23:00-08:00)</div><label class="sw"><input type="checkbox" id="cbQuiet"><span class="sl"></span></label></div>
 <div class="rw"><div>👻 Ghost-режим</div><label class="sw"><input type="checkbox" id="cbGhost"><span class="sl"></span></label></div>
 <div class="rw"><div>🔔 Push-уведомления</div><label class="sw"><input type="checkbox" id="cbPush"><span class="sl"></span></label></div>
+<div class="rw"><div>🌐 Автоперевод сообщений</div><label class="sw"><input type="checkbox" id="cbTranslate"><span class="sl"></span></label></div>
+<div class="rw"><div>🎭 Анонимный режим (в группах)</div><label class="sw"><input type="checkbox" id="cbAnon"><span class="sl"></span></label></div>
+<div class="rw"><div>⌨️ Показывать «печатает»</div><label class="sw"><input type="checkbox" id="cbTyping" checked><span class="sl"></span></label></div>
 <div class="st">Звук уведомлений</div>
 <button class="gh" id="bCustomSound">🎵 Свой звук</button>
 <div class="st">Обои чата</div>
@@ -408,6 +404,6 @@ body.cr-large .ch{border-radius:16px!important}
 </div>
 </div>
 
-<script type="module" src="app.js?v=250"></script>
+<script type="module" src="app.js?v=300"></script>
 </body>
   </html>
