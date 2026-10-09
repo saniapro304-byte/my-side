@@ -1021,7 +1021,7 @@ setTimeout(()=>{
   const sbBtn=$('bSidebar');if(sbBtn&&!sbBtn.onclick)sbBtn.onclick=()=>{try{openSidebar()}catch(e){}};
   const pv=$('bProfileViews');if(pv&&!pv.onclick)pv.onclick=()=>{$('profM').classList.remove('show');try{showProfileViews()}catch(e){}};
   const an=$('bAnalytics');if(an&&!an.onclick)an.onclick=()=>{$('profM').classList.remove('show');try{showAnalytics()}catch(e){}};
-  const cg=$('bChatGallery');if(cg&&!cg.onclick)cg.onclick=()=>try{openChatGallery()}catch(e){};
+  const cg=$('bChatGallery');if(cg&&!cg.onclick)cg.onclick=()=>{try{openChatGallery()}catch(e){}};
 },2000);
 
 console.log('[Spacegram v10] 20+ фич + фиксы загружены 💣🎨🚀');
