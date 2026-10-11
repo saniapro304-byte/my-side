@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#17212b">
 <title>Spacegram</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=13">
 <script>
 window.onerror=function(msg,src,line,col,err){
   console.error('ОШИБКА:',msg,src,line+':'+col);
@@ -19,17 +19,14 @@ window.addEventListener('unhandledrejection',function(e){
 </head>
 <body>
 
-<!-- ЭКРАН ЗАГРУЗКИ -->
 <div id="L">
   <div class="sp"></div>
-  <div style="color:var(--t2);font-size:13px">Загрузка...</div>
+  <div style="color:#7f91a4;font-size:13px">Загрузка...</div>
   <div id="D"></div>
 </div>
 
-<!-- ЭКРАН ОШИБКИ -->
 <div id="BE" style="display:none"></div>
 
-<!-- ЭКРАН АВТОРИЗАЦИИ -->
 <div id="A" style="display:none">
   <h1>✈️ Spacegram</h1>
   <input type="email" id="em" placeholder="Email" autocomplete="email">
@@ -39,16 +36,13 @@ window.addEventListener('unhandledrejection',function(e){
   <button id="bL">Войти</button>
   <button id="bR">Регистрация</button>
   <div style="margin-top:18px;display:flex;flex-direction:column;gap:7px;width:100%;max-width:340px">
-    <button type="button" id="bTUnban" style="background:rgba(255,255,255,.08);color:#fff;padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,.15);cursor:pointer">🚫 Запросить разбан</button>
-    <button type="button" id="bTContact" style="background:rgba(255,255,255,.08);color:#fff;padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,.15);cursor:pointer">💬 Связаться с админом</button>
-    <button type="button" id="bTAge" style="background:rgba(255,255,255,.08);color:#fff;padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:1px solid rgba(255,255,255,.15);cursor:pointer">🔞 Подтвердить 16+</button>
+    <button type="button" id="bTUnban">🚫 Запросить разбан</button>
+    <button type="button" id="bTContact">💬 Связаться с админом</button>
+    <button type="button" id="bTAge">🔞 Подтвердить 16+</button>
   </div>
 </div>
 
-<!-- ГЛАВНЫЙ APP -->
 <div class="app" id="APP" style="display:none">
-
-  <!-- САЙДБАР (список чатов) -->
   <div class="sd" id="SD">
     <div class="tp">
       <button class="tb" id="bSidebar" title="Меню">⋮</button>
@@ -68,17 +62,13 @@ window.addEventListener('unhandledrejection',function(e){
         <div class="avt" id="myA" title="Профиль">?</div>
       </div>
     </div>
-
     <div class="st" id="sBar"></div>
-
     <div class="sr">
       <input id="srch" placeholder="Поиск @username или текст..." autocomplete="off">
     </div>
-
     <div class="ls" id="chats"></div>
   </div>
 
-  <!-- ЛЕНТА -->
   <div class="fd" id="fdScr">
     <div style="padding:10px 4px">
       <h2 style="font-size:19px;font-weight:800">📰 Лента</h2>
@@ -88,10 +78,7 @@ window.addEventListener('unhandledrejection',function(e){
 
   <div class="fc" id="fcBtn" style="display:none" title="Написать пост">✏️</div>
 
-  <!-- ОБЛАСТЬ ЧАТА -->
   <div class="area" id="AR">
-
-    <!-- Шапка чата -->
     <div class="chd" id="CH">
       <button class="bk" id="bBack">←</button>
       <div class="hv" id="hA">?</div>
@@ -107,10 +94,8 @@ window.addEventListener('unhandledrejection',function(e){
       </div>
     </div>
 
-    <!-- Сообщения -->
     <div class="ms" id="msgs"></div>
 
-    <!-- Панель ответа -->
     <div class="rp" id="rP">
       <div class="br"></div>
       <div class="cc">
@@ -120,19 +105,16 @@ window.addEventListener('unhandledrejection',function(e){
       <button id="rClose">✕</button>
     </div>
 
-    <!-- Панель стикеров -->
     <div class="pnl h" id="stkP">
       <div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:8px">СТИКЕРЫ</div>
       <div id="stkG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px"></div>
     </div>
 
-    <!-- Панель GIF -->
     <div class="pnl h" id="gifP">
       <input id="gifS" placeholder="Поиск GIF..." style="width:100%;padding:10px 14px;border-radius:10px;background:var(--p2);color:var(--t);margin-bottom:8px;border:1px solid var(--br)">
       <div id="gifG" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px"></div>
     </div>
 
-    <!-- Панель самоуничтожения -->
     <div class="pnl h" id="brnP">
       <div style="font-size:12px;color:var(--r);font-weight:700;margin-bottom:8px">🔥 САМОУНИЧТОЖЕНИЕ</div>
       <div class="tg" id="brnO">
@@ -143,7 +125,6 @@ window.addEventListener('unhandledrejection',function(e){
       </div>
     </div>
 
-    <!-- Панель вложений -->
     <div class="pnl h" id="attP">
       <div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:10px">ВЛОЖЕНИЯ</div>
       <div class="ag">
@@ -157,7 +138,6 @@ window.addEventListener('unhandledrejection',function(e){
       </div>
     </div>
 
-    <!-- Панель ввода -->
     <div class="inp" id="inp">
       <button class="ib" id="bPlus" title="Вложения">📎</button>
       <div class="ep" id="emW">
@@ -169,115 +149,37 @@ window.addEventListener('unhandledrejection',function(e){
       <button class="ib sn" id="bSend" title="Отправить">➤</button>
     </div>
 
-    <!-- Пустой чат -->
     <div class="emp" id="emp">
       <div class="ic">💬</div>
       <div>Выбери чат</div>
     </div>
-
   </div>
 
-  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
   <div class="bn" id="bnv">
     <button class="on" data-tab="chats"><span class="bi">💬</span>Чаты</button>
     <button data-tab="feed"><span class="bi">📰</span>Лента</button>
     <button data-tab="profile"><span class="bi">👤</span>Профиль</button>
   </div>
-
 </div>
 
-<!-- МОДАЛКА ПРОФИЛЯ -->
-<div class="md" id="profM">
-  <div class="mb" id="profBox">
-    <h2 id="profT">👤 Профиль</h2>
-    <div id="profContent"></div>
-  </div>
-</div>
+<div class="md" id="profM"><div class="mb" id="profBox"></div></div>
+<div class="md" id="setM"><div class="mb" id="setBox"></div></div>
+<div class="md" id="privM"><div class="mb" id="privBox"></div></div>
+<div class="md" id="promoM"><div class="mb" id="promoBox"></div></div>
+<div class="md" id="modsM"><div class="mb" id="modsBox"></div></div>
+<div class="md" id="shopM"><div class="mb" id="shopBox"></div></div>
+<div class="md" id="cosmeticsM"><div class="mb" id="cosmeticsBox"></div></div>
+<div class="md" id="myStickersM"><div class="mb" id="myStickersBox"></div></div>
+<div class="md" id="verM"><div class="mb" id="verBox"></div></div>
+<div class="md" id="postM"><div class="mb" id="postBox"></div></div>
+<div class="md" id="grpM"><div class="mb" id="grpBox"></div></div>
+<div class="md" id="pollM"><div class="mb" id="pollBox"></div></div>
+<div class="md" id="botM"><div class="mb" id="botBox"></div></div>
+<div class="md" id="appM"><div class="mb" id="appBox"></div></div>
+<div class="md" id="sessM"><div class="mb" id="sessBox"></div></div>
+<div class="md" id="reportM"><div class="mb" id="reportBox"></div></div>
+<div class="md" id="ticketM"><div class="mb" id="ticketBox"></div></div>
 
-<!-- МОДАЛКА НАСТРОЕК -->
-<div class="md" id="setM">
-  <div class="mb" id="setBox">
-    <h2>⚙️ Настройки</h2>
-    <div id="setContent"></div>
-  </div>
-</div>
-
-<!-- МОДАЛКА ПРИВАТНОСТИ -->
-<div class="md" id="privM">
-  <div class="mb" id="privBox"></div>
-</div>
-
-<!-- МОДАЛКА ПРОМОКОДА -->
-<div class="md" id="promoM">
-  <div class="mb" id="promoBox"></div>
-</div>
-
-<!-- МОДАЛКА МОДОВ -->
-<div class="md" id="modsM">
-  <div class="mb" id="modsBox"></div>
-</div>
-
-<!-- МОДАЛКА МАГАЗИНА -->
-<div class="md" id="shopM">
-  <div class="mb" id="shopBox"></div>
-</div>
-
-<!-- МОДАЛКА КОСМЕТИКИ -->
-<div class="md" id="cosmeticsM">
-  <div class="mb" id="cosmeticsBox"></div>
-</div>
-
-<!-- МОДАЛКА СТИКЕРОВ -->
-<div class="md" id="myStickersM">
-  <div class="mb" id="myStickersBox"></div>
-</div>
-
-<!-- МОДАЛКА ВЕРИФИКАЦИИ -->
-<div class="md" id="verM">
-  <div class="mb" id="verBox"></div>
-</div>
-
-<!-- МОДАЛКА ПОСТА -->
-<div class="md" id="postM">
-  <div class="mb" id="postBox"></div>
-</div>
-
-<!-- МОДАЛКА ГРУППЫ -->
-<div class="md" id="grpM">
-  <div class="mb" id="grpBox"></div>
-</div>
-
-<!-- МОДАЛКА ОПРОСА -->
-<div class="md" id="pollM">
-  <div class="mb" id="pollBox"></div>
-</div>
-
-<!-- МОДАЛКА БОТОВ -->
-<div class="md" id="botM">
-  <div class="mb" id="botBox"></div>
-</div>
-
-<!-- МОДАЛКА WEB APPS -->
-<div class="md" id="appM">
-  <div class="mb" id="appBox"></div>
-</div>
-
-<!-- МОДАЛКА СЕССИЙ -->
-<div class="md" id="sessM">
-  <div class="mb" id="sessBox"></div>
-</div>
-
-<!-- МОДАЛКА ЖАЛОБЫ -->
-<div class="md" id="reportM">
-  <div class="mb" id="reportBox"></div>
-</div>
-
-<!-- МОДАЛКА ТИКЕТА -->
-<div class="md" id="ticketM">
-  <div class="mb" id="ticketBox"></div>
-</div>
-
-<!-- АДМИН-ПАНЕЛЬ -->
 <div class="apn" id="apn">
   <div style="display:flex;flex-direction:column;min-height:100%">
     <div class="atp">
@@ -290,59 +192,47 @@ window.addEventListener('unhandledrejection',function(e){
   </div>
 </div>
 
-<!-- МОДАЛКА (универсальная, динамическая) -->
-<div id="bm">
-  <div id="bmc"></div>
-</div>
+<div id="bm"><div id="bmc"></div></div>
 
-<!-- PIN-ЭКРАН -->
 <div id="pinLock">
   <div style="font-size:60px">🔒</div>
   <div style="font-size:20px;font-weight:700">Введи PIN</div>
   <div id="pinDots">○ ○ ○ ○</div>
-  <div id="pinErr" style="font-size:14px;color:var(--r);min-height:20px"></div>
+  <div id="pinErr" style="font-size:14px;color:#e53935;min-height:20px"></div>
   <div id="pinKb"></div>
 </div>
 
-<!-- STORY VIEWER -->
 <div class="sv" id="svV">
   <div class="sp2" id="svP"></div>
   <div class="sh" id="svH"></div>
   <div class="sc" id="svC"></div>
-  <div class="stl l" onclick="prevS&&prevS()"></div>
-  <div class="stl r" onclick="nextS&&nextS()"></div>
+  <div class="stl l"></div>
+  <div class="stl r"></div>
   <div class="sf" id="svF"></div>
-  <button style="position:absolute;top:calc(58px + var(--st));right:12px;z-index:15;background:rgba(0,0,0,.4);width:36px;height:36px;border-radius:50%;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none" onclick="closeSV&&closeSV()">✕</button>
+  <button style="position:absolute;top:20px;right:12px;z-index:15;background:rgba(0,0,0,.4);width:36px;height:36px;border-radius:50%;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none" onclick="document.getElementById('svV').classList.remove('show')">✕</button>
 </div>
 
-<!-- STORY CREATOR -->
 <div class="cs" id="crS" style="display:none">
-  <div class="ch" style="display:flex;justify-content:space-between;padding:14px">
-    <button onclick="closeCS&&closeCS()" style="background:rgba(0,0,0,.4);width:38px;height:38px;border-radius:50%;color:#fff;font-size:18px;border:none;cursor:pointer">✕</button>
-    <button class="pb" onclick="pubS&&pubS()" style="background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;padding:10px 18px;border-radius:12px;font-weight:700;border:none;cursor:pointer">Опубликовать</button>
+  <div style="display:flex;justify-content:space-between;padding:14px">
+    <button onclick="document.getElementById('crS').style.display='none'" style="background:rgba(0,0,0,.4);width:38px;height:38px;border-radius:50%;color:#fff;font-size:18px;border:none;cursor:pointer">✕</button>
+    <button onclick="window.publishStory&&window.publishStory()" style="background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;padding:10px 18px;border-radius:12px;font-weight:700;border:none;cursor:pointer">Опубликовать</button>
   </div>
-  <div class="cb" id="csB" style="flex:1;display:flex;align-items:center;justify-content:center">
-    <div class="emp">
-      <div class="ic" style="font-size:56px">📷</div>
+  <div id="csB" style="flex:1;display:flex;align-items:center;justify-content:center">
+    <div style="text-align:center;color:#fff">
+      <div style="font-size:56px">📷</div>
       <div style="margin-bottom:14px">Выбери фото или видео</div>
-      <button style="padding:14px 28px;border-radius:14px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer" onclick="pickSM&&pickSM()">Открыть галерею</button>
+      <button style="padding:14px 28px;border-radius:14px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer" onclick="document.getElementById('storyFilePick')?.click()">Открыть галерею</button>
+      <input type="file" id="storyFilePick" accept="image/*,video/*" style="display:none">
     </div>
   </div>
-  <div class="bgp" id="bgP" style="display:flex;gap:8px;padding:14px;justify-content:center;flex-wrap:wrap"></div>
-  <div style="padding:14px;display:flex;gap:10px">
-    <button onclick="addST&&addST()" style="flex:1;padding:14px;border-radius:14px;background:rgba(255,255,255,.15);color:#fff;font-size:20px;border:none;cursor:pointer">✏️</button>
-    <button onclick="pickSM&&pickSM()" style="flex:1;padding:14px;border-radius:14px;background:rgba(255,255,255,.15);color:#fff;font-size:20px;border:none;cursor:pointer">📷</button>
-    <button onclick="pickSB&&pickSB()" style="flex:1;padding:14px;border-radius:14px;background:rgba(255,255,255,.15);color:#fff;font-size:20px;border:none;cursor:pointer">🎨</button>
-  </div>
+  <div id="bgP" style="display:flex;gap:8px;padding:14px;justify-content:center;flex-wrap:wrap"></div>
 </div>
 
-<!-- EMOJI PICKER (CDN) -->
 <script type="module">
   import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.20.0/index.js';
 </script>
 
-<!-- ГЛАВНЫЙ APP.JS -->
-<script type="module" src="app.js?v=12"></script>
+<script type="module" src="app.js?v=13"></script>
 
 </body>
 </html>
