@@ -2,409 +2,143 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#17212b">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0e1621">
 <title>Spacegram</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
 <link rel="stylesheet" href="styles.css">
-<script>
-window.onerror=function(msg,src,line,col,err){
-  console.error('ОШИБКА:',msg,src,line+':'+col);
-  if(err&&err.stack)console.error(err.stack);
-};
-window.addEventListener('unhandledrejection',function(e){
-  console.error('PROMISE:',e.reason);
-});
-</script>
-<style>
-#sidebar{position:fixed;top:0;left:0;bottom:0;width:min(320px,85vw);background:var(--p);z-index:500;transform:translateX(-100%);transition:transform .25s ease-out;overflow-y:auto;padding:calc(8px + var(--st)) 8px calc(20px + var(--sb));box-shadow:4px 0 24px rgba(0,0,0,.5)}
-#sidebar::-webkit-scrollbar{width:3px}
-#sidebar::-webkit-scrollbar-thumb{background:var(--p2);border-radius:2px}
-#sidebarOverlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;display:none;opacity:0;transition:opacity .25s}
-body.fs-small{font-size:13px}
-body.fs-small .m{font-size:13px}
-body.fs-small .cn{font-size:14px}
-body.fs-large{font-size:16px}
-body.fs-large .m{font-size:16px}
-body.fs-large .cn{font-size:16px}
-body.fs-huge{font-size:18px}
-body.fs-huge .m{font-size:18px}
-body.fs-huge .cn{font-size:18px}
-body.cr-small .m{border-radius:8px!important}
-body.cr-small .ch{border-radius:6px!important}
-body.cr-large .m{border-radius:22px!important}
-body.cr-large .ch{border-radius:16px!important}
-#callScreen{animation:callFadeIn .3s ease-out}
-@keyframes callFadeIn{from{opacity:0}to{opacity:1}}
-@keyframes cosmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-@keyframes giftPop{0%{transform:scale(0);opacity:0}30%{transform:scale(1.3);opacity:1}70%{transform:scale(1)}100%{transform:scale(0);opacity:0}}
-.cosm-badge{animation:cosmFloat 2s ease-in-out infinite}
-.avt,.hv,.uv .lg,.avp{position:relative}
-.frame-bronze{border-color:#cd7f32!important;box-shadow:0 0 8px rgba(205,127,50,.5)!important}
-.frame-silver{border-color:#c0c0c0!important;box-shadow:0 0 8px rgba(192,192,192,.6)!important}
-.frame-gold{border-color:#ffd700!important;box-shadow:0 0 8px rgba(255,215,0,.7)!important}
-.frame-diamond{border-color:#7df9ff!important;box-shadow:0 0 12px rgba(125,249,255,.8)!important}
-.frame-fire{border-color:#ff4500!important;box-shadow:0 0 12px rgba(255,69,0,.8)!important}
-.frame-ice{border-color:#87ceeb!important;box-shadow:0 0 12px rgba(135,206,235,.7)!important}
-.frame-neon{border-color:#00ff88!important;box-shadow:0 0 12px rgba(0,255,136,.8)!important}
-.frame-blood{border-color:#8b0000!important;box-shadow:0 0 12px rgba(139,0,0,.7)!important}
-.frame-toxic{border-color:#00ff00!important;box-shadow:0 0 12px rgba(0,255,0,.7)!important}
-.frame-galaxy{border-color:#8a2be2!important;box-shadow:0 0 15px rgba(138,43,226,.8)!important}
-.frame-rainbow{border:3px solid transparent!important;background:linear-gradient(var(--p),var(--p)) padding-box,linear-gradient(45deg,#ff0000,#ff7f00,#ffff00,#00ff00,#0000ff,#4b0082,#9400d3) border-box!important;box-shadow:0 0 15px rgba(255,0,255,.5)!important}
-#banBanner{position:fixed;top:0;left:0;right:0;background:#e74c3c;color:#fff;padding:12px;text-align:center;font-size:13px;font-weight:700;z-index:999999}
-</style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 </head>
 <body>
 
-<div id="L"><div class="sp"></div><div style="color:var(--t2);font-size:13px">Загрузка...</div><div id="D"></div></div>
-<div id="BE" style="display:none;position:fixed;inset:0;background:#0e1621;color:#fff;padding:20px;font-family:monospace;font-size:13px;z-index:99999;overflow-y:auto"></div>
+<!-- ЭКРАН АВТОРИЗАЦИИ -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo">🚀 Spacegram</div>
+    <div class="auth-tabs">
+      <button id="tabLogin" class="auth-tab active">Вход</button>
+      <button id="tabRegister" class="auth-tab">Регистрация</button>
+    </div>
 
-<div id="A">
-<h1>✈️ Spacegram</h1>
-<input type="email" id="em" placeholder="Email">
-<input type="password" id="pw" placeholder="Пароль (мин. 6)">
-<input type="text" id="un" placeholder="@username">
-<div id="AE"></div>
-<button id="bL">Войти</button>
-<button class="g" id="bR">Регистрация</button>
-<div style="margin-top:18px;display:flex;flex-direction:column;gap:7px;width:100%;max-width:320px">
-<button type="button" id="bTUnban" style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer">🚫 Запросить разбан</button>
-<button type="button" id="bTContact" style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer">💬 Связаться с админом</button>
-<button type="button" id="bTAge" style="background:var(--p2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;font-weight:500;border:none;cursor:pointer">🔞 Подтвердить 16+</button>
-</div>
-</div>
+    <div id="loginForm" class="auth-form">
+      <input id="loginUsername" type="text" placeholder="Юзернейм" autocomplete="username">
+      <input id="loginPassword" type="password" placeholder="Пароль" autocomplete="current-password">
+      <button id="loginBtn" class="auth-submit">Войти</button>
+      <div id="loginError" class="auth-error"></div>
+    </div>
 
-<div class="app" id="APP">
-<div class="sd" id="SD">
-<div class="tp">
-<button class="tb" id="bSidebar" title="Меню" style="font-size:18px;margin-right:4px">☰</button>
-<h2 id="lg">✈️ Spacegram</h2>
-<div class="a" id="topActs">
-<button class="tb" id="bAdm" style="display:none" title="Админ">🔐</button>
-<button class="tb" id="bVer" title="Верификация">✅</button>
-<button class="tb" id="bHelp" title="Помощник">💡</button>
-<button class="tb" id="bSaved" title="Избранное">📌</button>
-<button class="tb" id="bFriends" title="Друзья">👥</button>
-<button class="tb" id="bStickers" title="Мои стикеры">🎨</button>
-<button class="tb" id="bBot" title="Боты">🤖</button>
-<button class="tb" id="bShop" title="Магазин">🛒</button>
-<button class="tb" id="bApp" title="Приложения">📱</button>
-<button class="tb" id="bGrp" title="Группа">➕</button>
-<button class="tb" id="bSet" title="Настройки">⚙️</button>
-<div class="avt" id="myA" onclick="showProf()">?</div>
-</div>
-</div>
-<div class="st" id="sBar"></div>
-<div class="sr"><input id="srch" placeholder="Поиск @username или текст..."></div>
-<div class="ls" id="chats"></div>
+    <div id="registerForm" class="auth-form hidden">
+      <input id="regUsername" type="text" placeholder="Юзернейм (латиница)" autocomplete="username">
+      <input id="regDisplayName" type="text" placeholder="Отображаемое имя">
+      <input id="regPhone" type="tel" placeholder="Телефон">
+      <input id="regPassword" type="password" placeholder="Пароль" autocomplete="new-password">
+      <button id="registerBtn" class="auth-submit">Создать аккаунт</button>
+      <div id="registerError" class="auth-error"></div>
+    </div>
+  </div>
 </div>
 
-<div class="fd" id="fdScr"><div style="padding:10px 4px"><h2 style="font-size:19px;font-weight:800">📰 Лента</h2></div><div id="fdL"></div></div>
-<div class="fc" id="fcBtn" style="display:none" onclick="openPost()">✏️</div>
+<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+<div id="app" class="app hidden">
 
-<div class="area" id="AR">
-<div class="chd" id="CH" style="display:none">
-<button class="bk" onclick="back()">←</button>
-<div class="hv" id="hA">?</div>
-<div class="hi" id="hI"><h3 id="hN">—</h3><div class="sub" id="hS"></div></div>
-<div class="ha"><button id="bStalk">🕵️</button><button id="bChatGallery" title="Галерея">🖼️</button><button id="bSrch">🔍</button><button id="bMenu">⋮</button></div>
-</div>
-<div class="ms" id="msgs" style="display:none"></div>
-<div class="rp" id="rP"><div class="br"></div><div class="cc"><div class="ca" id="rA"></div><div class="ct" id="rT"></div></div><button onclick="cancelRep()">✕</button></div>
+  <!-- ШАПКА -->
+  <header class="app-header">
+    <div class="header-left">
+      <span class="header-logo">🚀</span>
+      <span class="header-title">Spacegram</span>
+    </div>
+    <div class="header-actions">
+      <button id="searchBtn" class="icon-btn" title="Поиск">🔍</button>
+      <button id="menuBtn" class="icon-btn" title="Меню">⋮</button>
+    </div>
+    <div id="headerMenu" class="header-menu hidden">
+      <button data-action="settings">⚙️ Настройки</button>
+      <button data-action="saved">💾 Избранное</button>
+      <button data-action="friends">👥 Друзья</button>
+      <button data-action="stories">📸 Сторис</button>
+      <button data-action="shop">🛒 Магазин</button>
+      <button data-action="mods">🧩 Моды</button>
+      <button data-action="balance">💰 Баланс</button>
+      <button data-action="verification">✅ Верификация</button>
+      <button data-action="logout" class="danger">🚪 Выйти</button>
+    </div>
+  </header>
 
-<div class="pnl h" id="stkP"><div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:8px">СТИКЕРЫ</div><div id="stkG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px"></div></div>
-<div class="pnl h" id="gifP"><input style="width:100%;padding:10px 14px;border-radius:10px;background:var(--p2);color:var(--t);margin-bottom:8px" id="gifS" placeholder="Поиск GIF..."><div id="gifG" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px"></div></div>
-<div class="pnl h" id="brnP"><div style="font-size:12px;color:var(--r);font-weight:700;margin-bottom:8px">🔥 САМОУНИЧТОЖЕНИЕ</div><div class="tg" id="brnO"><button data-b="0" class="on">Выкл</button><button data-b="5">5с</button><button data-b="30">30с</button><button data-b="60">1м</button></div></div>
-<div class="pnl h" id="attP"><div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:10px">ВЛОЖЕНИЯ</div><div class="ag">
-<button class="agb" id="ap"><span class="ic">🖼️</span><span>Фото</span></button>
-<button class="agb" id="af"><span class="ic">📎</span><span>Файл</span></button>
-<button class="agb" id="as"><span class="ic">😊</span><span>Стикер</span></button>
-<button class="agb" id="ag"><span class="ic">🎬</span><span>GIF</span></button>
-<button class="agb" id="avn"><span class="ic">⭕</span><span>Кружок</span></button>
-<button class="agb" id="ab"><span class="ic">🔥</span><span>Сжечь</span></button>
-<button class="agb" id="apo"><span class="ic">📊</span><span>Опрос</span></button>
-</div></div>
+  <!-- КОНТЕНТ -->
+  <main id="mainContent" class="main-content">
 
-<div class="inp" id="inp" style="display:none">
-<button class="ib" id="bPlus">📎</button>
-<div class="ep" id="emW"><button class="ib" id="bEmo">😊</button></div>
-<emoji-picker id="ep" locale="ru"></emoji-picker>
-<input id="msgI" placeholder="Сообщение">
-<button class="ib" id="bMic">🎤</button>
-<button class="ib sn" id="bSend">➤</button>
-</div>
-<div class="emp" id="emp"><div class="ic">💬</div><div>Выбери чат</div></div>
-</div>
+    <!-- ВКЛАДКА ЧАТЫ -->
+    <section id="tabChats" class="tab-panel">
+      <div class="tab-toolbar">
+        <button id="newChatBtn" class="toolbar-btn">＋ Новый чат</button>
+        <button id="newGroupBtn" class="toolbar-btn">👥 Группа</button>
+        <button id="newChannelBtn" class="toolbar-btn">📢 Канал</button>
+      </div>
+      <div id="chatList" class="chat-list"></div>
+    </section>
 
-<div class="bn" id="bnv">
-<button class="on" data-tab="chats"><span class="bi">💬</span>Чаты</button>
-<button data-tab="feed"><span class="bi">📰</span>Лента</button>
-<button data-tab="profile"><span class="bi">👤</span>Профиль</button>
-</div>
-</div>
+    <!-- ВКЛАДКА ЛЕНТА -->
+    <section id="tabFeed" class="tab-panel hidden">
+      <div class="tab-toolbar">
+        <button id="newPostBtn" class="toolbar-btn">＋ Пост</button>
+      </div>
+      <div id="feedList" class="feed-list"></div>
+    </section>
 
-<div class="md" id="profM"><div class="mb">
-<h2 id="profT">Профиль</h2>
-<div style="display:flex;justify-content:center;padding:14px 0"><div class="avp" id="avP">?</div></div>
-<div id="profileStats"></div>
-<div class="st">Имя</div><input id="pN">
-<div class="st">Username</div><input id="pU" disabled style="opacity:.6">
-<div class="st">Телефон</div><input id="pPh" placeholder="+7...">
-<div class="st">О себе</div><textarea id="pB" rows="2" maxlength="200"></textarea>
-<div class="st">Эмодзи-статус</div>
-<div style="display:flex;gap:6px;flex-wrap:wrap" id="emSt"></div>
-<button id="bSaveP">💾 Сохранить</button>
-<button class="gh" id="bCosmetics" style="background:linear-gradient(135deg,#ff6bcb,#9c27b0);color:#fff;font-weight:700">🎨 Косметика</button>
-<button class="gh" id="bProfileViews" style="background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700">👀 Кто смотрел</button>
-<button class="gh" id="bAnalytics" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-weight:700">📊 Аналитика</button>
-<button class="gh" id="bAgeVerify" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">🔞 Подтвердить 16+</button>
-<button class="gh" id="bBal" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700">💰 Баланс</button>
-<button class="gh" id="bPromo" style="background:var(--go);color:#000;font-weight:700">🎁 Промокоды</button>
-<button class="gh" id="bMods">🧩 Моды</button>
-<button class="gh" id="bGifts" style="background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-weight:700">🎁 Подарки</button>
-<button class="gh" id="bQR">📱 QR-код</button>
-<button class="gh" id="bExport">📥 Скачать данные</button>
-<button class="gh" id="bShare">🔗 Поделиться</button>
-<button class="gh" id="bActivity">📊 График активности</button>
-<button class="dg" id="bOut">🚪 Выйти</button>
-<button class="gh" onclick="document.getElementById('profM').classList.remove('show')">Закрыть</button>
-</div></div>
+    <!-- ВКЛАДКА ПРОФИЛЬ -->
+    <section id="tabProfile" class="tab-panel hidden">
+      <div id="profileContent" class="profile-content"></div>
+    </section>
 
-<div class="md" id="setM"><div class="mb">
-<h2>⚙️ Настройки</h2>
-<div class="st">Тема</div><div class="tgr" id="tgr"></div>
-<div class="st">Режим</div><div class="tg" id="modeT"><button data-m="dark" class="on">🌙 Тёмный</button><button data-m="light">☀️ Светлый</button></div>
-<div class="st">Язык</div><div class="tg" id="langT"><button data-l="ru" class="on">🇷🇺 RU</button><button data-l="en">🇺🇸 EN</button></div>
-<div class="st">📏 Размер шрифта</div>
-<div class="tg" id="fontSizeT"><button data-fs="small">Мелкий</button><button data-fs="normal" class="on">Средний</button><button data-fs="large">Крупный</button><button data-fs="huge">Огромный</button></div>
-<div class="st">⬜ Скругление углов</div>
-<div class="tg" id="cornerT"><button data-cr="small">Малое</button><button data-cr="medium" class="on">Среднее</button><button data-cr="large">Большое</button></div>
-<div class="st">🕐 Формат времени</div>
-<div class="tg" id="timeT"><button data-tf="24h" class="on">24 часа</button><button data-tf="12h">12 часов</button></div>
-<div class="st">🗑 Авто-удаление</div>
-<div class="tg" id="autoDelT"><button data-ad="off" class="on">Выкл</button><button data-ad="24h">24ч</button><button data-ad="7d">7д</button><button data-ad="30d">30д</button></div>
-<div class="st">Уведомления</div>
-<div class="rw"><div>🔔 Уведомления</div><label class="sw"><input type="checkbox" id="cbN" checked><span class="sl"></span></label></div>
-<div class="rw"><div>🔊 Звук</div><label class="sw"><input type="checkbox" id="cbS" checked><span class="sl"></span></label></div>
-<div class="rw"><div>📳 Вибрация</div><label class="sw"><input type="checkbox" id="cbV" checked><span class="sl"></span></label></div>
-<div class="rw"><div>💬 Превью</div><label class="sw"><input type="checkbox" id="cbP" checked><span class="sl"></span></label></div>
-<div class="rw"><div>✨ Анимации</div><label class="sw"><input type="checkbox" id="cbAnim" checked><span class="sl"></span></label></div>
-<div class="rw"><div>🌙 Тихие часы (23:00-08:00)</div><label class="sw"><input type="checkbox" id="cbQuiet"><span class="sl"></span></label></div>
-<div class="rw"><div>👻 Ghost-режим</div><label class="sw"><input type="checkbox" id="cbGhost"><span class="sl"></span></label></div>
-<div class="rw"><div>🔔 Push-уведомления</div><label class="sw"><input type="checkbox" id="cbPush"><span class="sl"></span></label></div>
-<div class="rw"><div>🌐 Автоперевод</div><label class="sw"><input type="checkbox" id="cbTranslate"><span class="sl"></span></label></div>
-<div class="rw"><div>🎭 Анонимный режим</div><label class="sw"><input type="checkbox" id="cbAnon"><span class="sl"></span></label></div>
-<div class="rw"><div>⌨️ Показывать «печатает»</div><label class="sw"><input type="checkbox" id="cbTyping" checked><span class="sl"></span></label></div>
-<div class="st">Звук уведомлений</div>
-<button class="gh" id="bCustomSound">🎵 Свой звук</button>
-<div class="st">Обои чата</div>
-<button class="gh" id="bWallpaper">🖼️ Обои</button>
-<div class="st">Чаты</div>
-<div class="rw"><div>✓✓ Прочтение</div><label class="sw"><input type="checkbox" id="cbR" checked><span class="sl"></span></label></div>
-<div class="rw"><div>⌨️ Enter отправить</div><label class="sw"><input type="checkbox" id="cbE" checked><span class="sl"></span></label></div>
-<div class="st">Прочее</div>
-<button class="gh" id="bPriv">🔒 Приватность</button>
-<button class="gh" id="bPin">🔒 PIN-код</button>
-<button class="gh" id="bSess">📱 Активные сессии</button>
-<button class="gh" onclick="document.getElementById('setM').classList.remove('show')">Закрыть</button>
-</div></div>
+  </main>
 
-<div class="md" id="privM"><div class="mb">
-<h2>🔒 Приватность</h2>
-<div class="rw"><div>Скрыть «был(а)»</div><label class="sw"><input type="checkbox" id="cbHL"><span class="sl"></span></label></div>
-<div class="rw"><div>Скрыть телефон</div><label class="sw"><input type="checkbox" id="cbHP"><span class="sl"></span></label></div>
-<div class="rw"><div>Скрыть аватар</div><label class="sw"><input type="checkbox" id="cbHA"><span class="sl"></span></label></div>
-<button id="bSavePriv">💾 Сохранить</button>
-<button class="gh" onclick="document.getElementById('privM').classList.remove('show')">Закрыть</button>
-</div></div>
+  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
+  <nav class="bottom-nav">
+    <button data-tab="chats" class="nav-btn active">💬<span>Чаты</span></button>
+    <button data-tab="feed" class="nav-btn">📰<span>Лента</span></button>
+    <button data-tab="profile" class="nav-btn">👤<span>Профиль</span></button>
+  </nav>
 
-<div class="md" id="promoM"><div class="mb">
-<h2>🎁 Промокод</h2>
-<div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;color:var(--t2);line-height:1.5">Введи промокод — получишь Plus, мод или SG-монеты.</div>
-<input id="promoI" placeholder="SPACEGRAM2025" style="text-transform:uppercase;font-weight:700;letter-spacing:1px;text-align:center">
-<div id="promoS" style="font-size:12px;color:var(--t2);text-align:center;min-height:16px"></div>
-<button id="bActP" style="background:var(--go);color:#000;font-weight:800">🎁 Активировать</button>
-<button class="gh" onclick="document.getElementById('promoM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="modsM"><div class="mb">
-<h2>🧩 Моды Spacegram</h2>
-<div style="font-size:12px;color:var(--t2);background:var(--p2);padding:12px;border-radius:12px;line-height:1.5">Моды активируются промокодом или покупаются за 💰 SG.</div>
-<div id="modsL"></div>
-<button class="gh" onclick="document.getElementById('modsM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="shopM"><div class="mb">
-<h2>🛒 Магазин</h2>
-<div id="shopBal" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;margin-bottom:14px">💰 0 SG</div>
-<div class="st">Рамки для аватарки</div>
-<div id="shopFrames" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
-<div class="st">Цвета имени</div>
-<div id="shopColors" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
-<div class="st">Обои чата</div>
-<div id="shopWalls" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px"></div>
-<button class="gl" id="bBuyPlus">👑 Купить Plus за 5000 SG</button>
-<button class="gh" onclick="document.getElementById('shopM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="cosmeticsM"><div class="mb">
-<h2>🎨 Косметика</h2>
-<div id="cosmBal" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;margin-bottom:14px">💰 0 SG</div>
-<div class="tg" id="cosmTabs" style="margin-bottom:14px">
-<button data-ct="frame" class="on">🖼 Рамки</button>
-<button data-ct="badge">🏅 Бейджи</button>
-<button data-ct="effect">✨ Эффекты</button>
-<button data-ct="avatar">👤 Аватары</button>
-<button data-ct="banner">🎨 Баннеры</button>
-</div>
-<div id="cosmList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
-<button class="gh" onclick="document.getElementById('cosmeticsM').classList.remove('show')" style="margin-top:16px">Закрыть</button>
-</div></div>
-
-<div class="md" id="myStickersM"><div class="mb">
-<h2>🎨 Мои стикеры</h2>
-<div style="background:var(--p2);border-radius:12px;padding:12px;font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:10px">Загружай свои стикеры — они будут доступны в чате.</div>
-<div id="myStkList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px"></div>
-<button id="bUploadSticker">➕ Загрузить стикер</button>
-<button class="gh" onclick="document.getElementById('myStickersM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="verM"><div class="mb">
-<h2>🤖 @Spacegramverificationbot</h2>
-<div style="background:var(--p2);border-radius:14px;padding:14px;font-size:13px;line-height:1.5;color:var(--t2)">Выбери галочку, напиши сообщение и отправь заявку.</div>
-<div class="st">Галочка</div>
-<div class="tg" id="verT"><button data-b="verified" class="on">🔵 Синяя</button><button data-b="youtuber">▶ YouTube</button><button data-b="bot">🤖 Бот</button><button data-b="official">📢 Канал</button></div>
-<div class="st">Сообщение</div>
-<textarea id="verMsg" rows="4" placeholder="Ссылки, портфолио..."></textarea>
-<button id="bSendVer">📤 Отправить заявку</button>
-<button class="gh" onclick="document.getElementById('verM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="usrM"><div class="mb" id="usrC"></div></div>
-
-<div class="md" id="postM"><div class="mb">
-<h2>✏️ Новый пост</h2>
-<textarea id="postT" rows="5" placeholder="Что нового?"></textarea>
-<button class="gh" id="bPostImg">📷 Фото</button>
-<div id="postImgPrev"></div>
-<button id="bPubP">🚀 Опубликовать</button>
-<button class="gh" onclick="document.getElementById('postM').classList.remove('show')">Отмена</button>
-</div></div>
-
-<div class="md" id="grpM"><div class="mb">
-<h2 id="grpMT">Новая группа</h2>
-<div class="tg" id="typeTG"><button data-t="group" class="on">👥 Группа</button><button data-t="channel">📢 Канал</button><button data-t="secret">🔒 Секретный</button></div>
-<input id="gN" placeholder="Название">
-<input id="gS" placeholder="Поиск участников...">
-<div id="gR" style="max-height:180px;overflow-y:auto"></div>
-<div id="gSel" style="display:flex;flex-wrap:wrap;gap:5px"></div>
-<button id="bCrG">Создать</button>
-<button class="gh" onclick="document.getElementById('grpM').classList.remove('show')">Отмена</button>
-</div></div>
-
-<div class="md" id="pollM"><div class="mb">
-<h2>📊 Опрос</h2>
-<input id="pollQ" placeholder="Вопрос">
-<input class="poll-i" placeholder="Вариант 1">
-<input class="poll-i" placeholder="Вариант 2">
-<input class="poll-i" placeholder="Вариант 3">
-<button id="bCrPoll">Создать</button>
-<button class="gh" onclick="document.getElementById('pollM').classList.remove('show')">Отмена</button>
-</div></div>
-
-<div class="md" id="botM"><div class="mb">
-<h2>🤖 Боты</h2>
-<button id="bCrBot" class="gl">+ Создать бота</button>
-<div id="botL" style="margin-top:10px"></div>
-<button class="gh" onclick="document.getElementById('botM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="appM"><div class="mb">
-<h2>📱 Web Apps</h2>
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px" id="appG"></div>
-<button class="gh" onclick="document.getElementById('appM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="sessM"><div class="mb">
-<h2>📱 Активные сессии</h2>
-<div id="sessL"></div>
-<button class="gh" onclick="document.getElementById('sessM').classList.remove('show')">Закрыть</button>
-</div></div>
-
-<div class="md" id="reportM"><div class="mb">
-<h2>🚩 Жалоба</h2>
-<div class="st">Причина</div>
-<div class="tg" id="repT"><button data-r="spam" class="on">Спам</button><button data-r="abuse">Оскорбление</button><button data-r="fraud">Мошенничество</button><button data-r="other">Другое</button></div>
-<textarea id="repMsg" rows="3" placeholder="Опиши проблему"></textarea>
-<button class="dg" id="bSendRep">🚩 Отправить</button>
-<button class="gh" onclick="document.getElementById('reportM').classList.remove('show')">Отмена</button>
-</div></div>
-
-<div class="md" id="ticketM"><div class="mb">
-<h2 id="ticketTitle">🎫 Обращение</h2>
-<div id="ticketDesc" style="background:var(--p2);border-radius:12px;padding:12px;font-size:12.5px;color:var(--t2);line-height:1.6;margin-bottom:8px"></div>
-<input id="ticketEmail" placeholder="Email от аккаунта" style="text-transform:lowercase">
-<input id="ticketSubject" placeholder="Тема (кратко)" maxlength="80">
-<textarea id="ticketText" rows="4" placeholder="Опиши ситуацию..."></textarea>
-<div id="ticketMsg" style="font-size:12px;color:var(--t2);min-height:16px;text-align:center"></div>
-<button id="bSendTicket" style="background:var(--ab);color:#fff;font-weight:700">📤 Отправить</button>
-<button class="gh" onclick="document.getElementById('ticketM').classList.remove('show')">Отмена</button>
-</div></div>
-
-<div class="apn" id="apn"><div style="display:flex;flex-direction:column;min-height:100%">
-<div class="atp"><h2>🔐 Админ-панель</h2><button onclick="closeAdm()">✕</button></div>
-<div class="ast" id="astat"></div>
-<div class="atb" id="atab">
-<button data-t="users" class="on">👥 Юзеры</button>
-<button data-t="tickets">🎫 Тикеты <span id="tkBadge" style="background:var(--r);color:#fff;font-size:9px;padding:1px 5px;border-radius:8px;display:none">0</span></button>
-<button data-t="abuse">👑 Абьюз</button>
-<button data-t="flagged">🚨 Флаг</button>
-<button data-t="admins">🛡️ Админы</button>
-<button data-t="bans">🚫 Баны</button>
-<button data-t="channels">📢 Каналы</button>
-<button data-t="promo">🎁 Промо</button>
-<button data-t="gifts">💝 Подарки</button>
-<button data-t="verify">📥 Заявки</button>
-<button data-t="reports">🚩 Жалобы</button>
-<button data-t="modlog">📝 Лог</button>
-<button data-t="mods">🧩 Моды</button>
-<button data-t="stickers">🎨 Стикеры</button>
-<button data-t="stats">📊 Стата</button>
-</div>
-<div class="abd" id="abod"></div>
-</div></div>
-
-<div id="bm"><div id="bmc"></div></div>
-
-<div id="pinLock" style="position:fixed;inset:0;background:var(--p);display:none;flex-direction:column;justify-content:center;align-items:center;gap:20px;z-index:99999">
-<div style="font-size:60px">🔒</div>
-<div style="font-size:20px;font-weight:700">Введи PIN</div>
-<div id="pinDots" style="font-size:32px;letter-spacing:14px;font-family:monospace">○ ○ ○ ○</div>
-<div style="font-size:14px;color:var(--r);min-height:20px" id="pinErr"></div>
-<div id="pinKb" style="display:grid;grid-template-columns:repeat(3,70px);gap:10px"></div>
 </div>
 
-<div class="sv" id="svV">
-<div class="sp2" id="svP"></div>
-<div class="sh" id="svH"></div>
-<div class="sc" id="svC"></div>
-<div class="stl l" onclick="prevS()"></div>
-<div class="stl r" onclick="nextS()"></div>
-<div class="sf" id="svF"></div>
-<button style="position:absolute;top:calc(58px + var(--st));right:12px;z-index:15;background:rgba(0,0,0,.4);width:36px;height:36px;border-radius:50%;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="closeSV()">✕</button>
+<!-- ЭКРАН ЧАТА -->
+<div id="chatScreen" class="chat-screen hidden">
+  <header class="chat-header">
+    <button id="chatBack" class="icon-btn">←</button>
+    <div id="chatHeaderInfo" class="chat-header-info">
+      <div id="chatAvatar" class="chat-avatar"></div>
+      <div>
+        <div id="chatTitle" class="chat-title"></div>
+        <div id="chatSubtitle" class="chat-subtitle"></div>
+      </div>
+    </div>
+    <button id="chatMenuBtn" class="icon-btn">⋮</button>
+  </header>
+
+  <div id="messagesList" class="messages-list"></div>
+
+  <div id="replyBar" class="reply-bar hidden">
+    <div id="replyBarText" class="reply-bar-text"></div>
+    <button id="replyBarClose" class="icon-btn">✕</button>
+  </div>
+
+  <footer class="chat-input-bar">
+    <button id="emojiBtn" class="icon-btn">😊</button>
+    <button id="attachBtn" class="icon-btn">📎</button>
+    <input id="messageInput" type="text" placeholder="Сообщение..." autocomplete="off">
+    <button id="sendBtn" class="send-btn">➤</button>
+  </footer>
+
+  <input id="fileInput" type="file" hidden multiple>
 </div>
 
-<div class="cs" id="crS">
-<div class="ch"><button onclick="closeCS()">✕</button><button class="pb" onclick="pubS()">Опубликовать</button></div>
-<div class="cb" id="csB"><div class="emp"><div class="ic">📷</div><div style="margin-bottom:14px">Выбери фото или видео</div><button style="padding:14px 28px;border-radius:14px;background:var(--ab);color:#fff;font-size:15px;font-weight:600" onclick="pickSM()">Открыть галерею</button></div></div>
-<div class="bgp" id="bgP"></div>
-<div style="padding:14px calc(14px + var(--sb));display:flex;gap:10px;background:linear-gradient(transparent,rgba(0,0,0,.7))">
-<button onclick="addST()" style="flex:1;padding:14px;border-radius:14px;background:rgba(255,255,255,.15);color:#fff;font-size:20px">✏️</button>
-<button onclick="pickSM()" style="flex:1;padding:14px;border-radius:14px;background:rgba(255,255,255,.15);color:#fff;font-size:20px">📷</button>
-<button onclick="pickSB()" style="flex:1;padding:14px;border-radius:14px;background:rgba(255,255,255,.15);color:#fff;font-size:20px">🎨</button>
-</div>
+<!-- МОДАЛЬНОЕ ОКНО (общее) -->
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div id="modalBox" class="modal-box"></div>
 </div>
 
-<script type="module" src="app.js?v=333"></script>
+<!-- ТОСТ -->
+<div id="toast" class="toast hidden"></div>
+
+<script type="module" src="app.js"></script>
 </body>
 </html>
