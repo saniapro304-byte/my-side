@@ -23,6 +23,26 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&
 const fmtTime = (d) => { const x = new Date(d); return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0'); };
 const fmtDate = (d) => { if (!d) return '—'; const x = new Date(d); return x.getDate().toString().padStart(2,'0')+'.'+(x.getMonth()+1).toString().padStart(2,'0')+'.'+x.getFullYear(); };
 
+// Нормализуем дату (поддержка строк и объектов)
+function toTime(d) {
+  if (!d) return 0;
+  if (typeof d === 'object' && typeof d.getTime === 'function') return d.getTime();
+  const t = new Date(d).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+// Единая сортировка сообщений
+function sortMessages(arr) {
+  return [...arr].sort((a, b) => {
+    const ta = toTime(a.created_at);
+    const tb = toTime(b.created_at);
+    if (ta !== tb) return ta - tb;
+    const ia = Number(a.id) || 0;
+    const ib = Number(b.id) || 0;
+    return ia - ib;
+  });
+}
+
 function toast(msg, ms=2000) {
   const t = $('toast'); if (!t) return;
   t.textContent = msg; t.classList.remove('hidden');
@@ -116,12 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ============ REALTIME + FALLBACK ============
   function setupRealtime() {
-    // Канал чатов
     state.realtimeChats = sb.channel('rt-chats-' + state.user.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { loadChats(); })
       .subscribe((status) => console.log('📡 chats:', status));
 
-    // Канал сообщений
     state.realtimeMsgs = sb.channel('rt-msgs-' + state.user.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
         if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) {
@@ -133,22 +151,20 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .subscribe((status) => console.log('📡 messages:', status));
 
-    // FALLBACK POLLING каждые 2 сек
+    // FALLBACK POLLING
     if (state.pollTimer) clearInterval(state.pollTimer);
-    let lastMsgId = null;
+    let lastMsgKey = null;
     state.pollTimer = setInterval(async () => {
       if (!state.user) return;
       if (state.currentChat) {
         const { data } = await sb.from('messages')
-          .select('id')
+          .select('id,created_at')
           .eq('chat_id', state.currentChat.id)
-          .order('id', { ascending: false })
+          .order('created_at', { ascending: false })
           .limit(1)
           .maybeSingle();
-        if (data && data.id !== lastMsgId) {
-          lastMsgId = data.id;
-          loadMessages();
-        }
+        const key = data ? data.id + ':' + data.created_at : null;
+        if (key !== lastMsgKey) { lastMsgKey = key; loadMessages(); }
       }
     }, 2000);
   }
@@ -203,16 +219,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadMessages() {
     if (!state.currentChat) return;
-    const { data } = await sb.from('messages').select('*').eq('chat_id', state.currentChat.id).order('id', { ascending: true }).limit(200);
-    state.messages = data || [];
+    const { data } = await sb.from('messages')
+      .select('*')
+      .eq('chat_id', state.currentChat.id)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .limit(200);
+    state.messages = sortMessages(data || []);
     renderMessages();
     const unread = state.messages.filter(m => m.sender !== state.user.id && !m.is_read);
     if (unread.length) await sb.from('messages').update({ is_read: true }).in('id', unread.map(m => m.id));
   }
 
   function renderMessages() {
+    const sorted = sortMessages(state.messages);
     const el = $('messagesList');
-    el.innerHTML = state.messages.map(m => {
+    el.innerHTML = sorted.map(m => {
       const own = m.sender === state.user.id;
       const time = fmtTime(m.created_at || Date.now());
       let content = '';
@@ -243,7 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
       chat_id: state.currentChat.id,
       sender: state.user.id,
       sender_name: state.profile.display_name,
-      text, is_read: false, deleted: false
+      text, is_read: false, deleted: false,
+      created_at: new Date().toISOString()
     };
     if (state.replyTo) { payload.reply_to = state.replyTo.id; state.replyTo = null; $('replyBar').classList.add('hidden'); }
     let { error } = await sb.from('messages').insert(payload);
@@ -762,7 +785,8 @@ document.addEventListener('DOMContentLoaded', () => {
       chat_id: state.currentChat.id, sender: state.user.id,
       sender_name: state.profile.display_name,
       file_url: urlData.publicUrl, file_type: file.type, file_name: file.name,
-      is_read: false, deleted: false
+      is_read: false, deleted: false,
+      created_at: new Date().toISOString()
     };
     let { error } = await sb.from('messages').insert(payload);
     if (error && /sender_name/.test(error.message)) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
