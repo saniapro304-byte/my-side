@@ -7,7 +7,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const state = {
   user: null, profile: null, chats: [], currentChat: null,
-  messages: [], replyTo: null, pollTimer: null,
+  messages: [], replyTo: null,
+  realtimeChannels: [],
   adminUsers: [], adminFilter: '',
   settings: {
     theme: localStorage.getItem('theme') || 'midnight',
@@ -90,7 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isAdmin()) $('adminMenuItem').classList.remove('hidden');
     await refreshProfile();
     await loadChats();
-    startPolling();
+    setupRealtime();
+    console.log('✅ Realtime активен');
   }
 
   async function refreshProfile() {
@@ -103,7 +105,48 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function logout() { localStorage.removeItem('sg_user_id'); location.reload(); }
+  function logout() {
+    state.realtimeChannels.forEach(ch => sb.removeChannel(ch));
+    localStorage.removeItem('sg_user_id');
+    location.reload();
+  }
+
+  // ============ REALTIME ============
+  function setupRealtime() {
+    // Канал чатов
+    const chatCh = sb.channel('rt-chats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
+        loadChats();
+      })
+      .subscribe();
+    state.realtimeChannels.push(chatCh);
+
+    // Канал сообщений
+    const msgCh = sb.channel('rt-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
+        // если открыт чат и сообщение для него — обновить мгновенно
+        if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) {
+          loadMessages();
+          if (payload.new.sender !== state.user.id && state.settings.vibrate && navigator.vibrate) navigator.vibrate(30);
+        } else {
+          // иначе обновить список чатов
+          loadChats();
+        }
+      })
+      .subscribe();
+    state.realtimeChannels.push(msgCh);
+
+    // Канал профилей (для обновлений юзера)
+    const profCh = sb.channel('rt-profiles')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+        if (payload.new && payload.new.id === state.user.id) {
+          state.profile = payload.new;
+          if (isAdmin()) $('adminMenuItem').classList.remove('hidden');
+        }
+      })
+      .subscribe();
+    state.realtimeChannels.push(profCh);
+  }
 
   // ============ ЧАТЫ ============
   async function loadChats() {
@@ -194,36 +237,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = {
       chat_id: state.currentChat.id,
       sender: state.user.id,
+      sender_name: state.profile.display_name,
       text, is_read: false, deleted: false
     };
     if (state.replyTo) { payload.reply_to = state.replyTo.id; state.replyTo = null; $('replyBar').classList.add('hidden'); }
     let { error } = await sb.from('messages').insert(payload);
     if (error && /sender_name/.test(error.message)) {
-      // fallback: колонки нет — пробуем без неё (и не падаем)
-      const { error: e2 } = await sb.from('messages').insert(payload);
-      error = e2;
+      delete payload.sender_name;
+      const r = await sb.from('messages').insert(payload);
+      error = r.error;
     }
     if (error) { toast('Ошибка: ' + error.message); return; }
     await sb.from('chats').update({ last_message: text.slice(0,80) }).eq('id', state.currentChat.id);
+    // Не ждём поллинга — сразу подгружаем
     await loadMessages();
-  }
-
-  function startPolling() {
-    if (state.pollTimer) clearInterval(state.pollTimer);
-    let lastKey = '';
-    state.pollTimer = setInterval(async () => {
-      if (!state.user) return;
-      if (state.currentChat) {
-        await loadMessages();
-      } else {
-        const uid = state.user.id;
-        const { data } = await sb.from('chats').select('*')
-          .or(`user1.eq.${uid},user2.eq.${uid},created_by.eq.${uid}`)
-          .order('id', { ascending: false });
-        const key = JSON.stringify((data||[]).map(c => c.id + ':' + (c.last_message||'') + ':' + (c.group_name||'')));
-        if (key !== lastKey) { lastKey = key; await loadChats(); }
-      }
-    }, 3000);
   }
 
   // ============ МЕНЮ ============
@@ -292,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
 
-    // Клики по бейджам
     setTimeout(() => {
       document.querySelectorAll('[data-badge]').forEach(b => {
         b.style.cursor = 'pointer';
@@ -449,7 +475,6 @@ document.addEventListener('DOMContentLoaded', () => {
   window.storyReply = async (sid, uid) => {
     window.closeModal();
     if (uid === state.user.id) { toast('Это твоя сторис 🙂'); return; }
-    // Открываем/создаём чат с автором
     const { data: other } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
     if (!other) return;
     const { data: existing } = await sb.from('chats').select('*').or(`and(user1.eq.${state.user.id},user2.eq.${other.id}),and(user1.eq.${other.id},user2.eq.${state.user.id})`).maybeSingle();
@@ -611,11 +636,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const { data: urlData } = sb.storage.from('files').getPublicUrl(path);
     const payload = {
       chat_id: state.currentChat.id, sender: state.user.id,
+      sender_name: state.profile.display_name,
       file_url: urlData.publicUrl, file_type: file.type, file_name: file.name,
       is_read: false, deleted: false
     };
     let { error } = await sb.from('messages').insert(payload);
-    if (error && /sender_name/.test(error.message)) { const r = await sb.from('messages').insert(payload); error = r.error; }
+    if (error && /sender_name/.test(error.message)) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
     if (error) { toast('Ошибка: ' + error.message); return; }
     $('fileInput').value = '';
     await loadMessages();
@@ -739,7 +765,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  // ============ 👥 УПРАВЛЕНИЕ ЮЗЕРАМИ ============
   function renderAdminUsers() {
     return `
       <input id="adminUserSearch" placeholder="🔍 Поиск по @username или имени..." value="${esc(state.adminFilter)}" style="margin-bottom:10px">
@@ -798,7 +823,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
-  // Привязка кнопок через делегирование (не спамит обработчиками)
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
     if (b && document.querySelector('.admin-tabs')) adminUserAction(b.dataset.act, b.dataset.uid);
@@ -1018,7 +1042,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Экспортировано 📤');
   };
 
-  // ============ ОСТАЛЬНЫЕ ВКЛАДКИ ============
   function renderAdminStats(users, chats, messages) {
     const bannedCount = users.filter(u => u.is_banned).length;
     const plusCount = users.filter(u => u.is_plus).length;
