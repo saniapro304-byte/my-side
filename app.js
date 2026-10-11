@@ -1,8 +1,9 @@
 /* ============================================================
-   SPACEGRAM v13 — FULL FIX
-   Часть 1: Ядро, Supabase, helpers
+   SPACEGRAM v14 — app.js
+   Часть 1: Ядро, Supabase, Auth, Чаты, Сообщения, Уровень 1
    ============================================================ */
 
+// ============ МУЛЬТИ-CDN ЗАГРУЗЧИК ============
 const CDNS = [
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/+esm',
   'https://esm.sh/@supabase/supabase-js@2.39.7',
@@ -26,11 +27,13 @@ async function loadSupabase() {
   throw lastErr || new Error('Все CDN упали');
 }
 
+// ============ КОНСТАНТЫ ============
 const SUPABASE_URL = 'https://qtuvtxbxtypvttfjiydv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF0dXZ0eGJ4dHlwdnR0ZmppeWR2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTExMDg1NzEsImV4cCI6MjEwNjY4NDU3MX0.hxLhZNqjMoxJmGDgNdfb8eiFg3yGBKwwkioZJG74EpA';
 
 let sb = null;
 
+// ============ STATE ============
 const state = {
   user: null,
   profile: null,
@@ -41,13 +44,14 @@ const state = {
   burnAfter: 0,
   stickers: [],
   pollTimer: null,
+  typingWatchTimer: null,
   realtimeChats: null,
   realtimeMsgs: null,
   typingTimer: null,
   draftTimer: null,
-  adminUsers: [],
-  adminFilter: '',
-  adminTab: 'users',
+  currentStoryUser: null,
+  currentStoryIndex: 0,
+  storyList: [],
   settings: {
     theme: localStorage.getItem('sg_theme') || 'midnight',
     mode: localStorage.getItem('sg_mode') || 'dark',
@@ -69,6 +73,7 @@ const state = {
   }
 };
 
+// ============ HELPERS ============
 const $ = (id) => document.getElementById(id);
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -122,6 +127,51 @@ const sortMessages = (arr) => [...arr].sort((a, b) => {
   return (Number(a.id) || 0) - (Number(b.id) || 0);
 });
 
+// ============ ГАЛОЧКИ (SVG) ============
+function renderBadge(type) {
+  const cfg = {
+    verified:  { color: '#2AABEE', shape: 'circle' },
+    creator:   { color: '#000000', shape: 'circle' },
+    premium:   { color: '#2AABEE', shape: 'star' },
+    owner:     { color: '#000000', shape: 'star' },
+    youtuber:  { color: '#FF0000', shape: 'circle' },
+    official:  { color: '#FF9800', shape: 'star' }
+  }[type];
+
+  if (!cfg) return '';
+
+  const checkPath = 'M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l7.6-7.6 1.4 1.4z';
+
+  if (cfg.shape === 'circle') {
+    return '<span class="sg-badge ' + type + '" title="' + type + '">' +
+      '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+        '<circle cx="12" cy="12" r="11" fill="' + cfg.color + '"/>' +
+        '<path d="' + checkPath + '" fill="#fff" transform="translate(-1, 1) scale(0.9)"/>' +
+      '</svg>' +
+    '</span>';
+  }
+
+  return '<span class="sg-badge ' + type + '" title="' + type + '">' +
+    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+      '<path d="M12 0.5l2.1 2.6 3.3-.6.5 3.3 2.9 1.7-1.5 3 1.5 3-2.9 1.7-.5 3.3-3.3-.6L12 23.5l-2.1-2.6-3.3.6-.5-3.3-2.9-1.7 1.5-3-1.5-3 2.9-1.7.5-3.3 3.3.6L12 0.5z" fill="' + cfg.color + '"/>' +
+      '<path d="' + checkPath + '" fill="#fff" transform="translate(-1, 1) scale(0.9)"/>' +
+    '</svg>' +
+  '</span>';
+}
+
+// Получить HTML с галочками для юзера (приоритет: creator > admin > verified > plus)
+function userBadgeHtml(user) {
+  if (!user) return '';
+  if (user.is_creator) return renderBadge('creator');
+  if (user.role === 'admin') return renderBadge('owner');
+  if (user.is_verified) return renderBadge('verified');
+  if (user.is_plus) return renderBadge('premium');
+  if (user.is_youtuber) return renderBadge('youtuber');
+  if (user.is_bot_verified) return renderBadge('premium');
+  return '';
+}
+
+// ============ TOAST ============
 function toast(msg, ms = 2200) {
   let t = $('sgToast');
   if (!t) {
@@ -149,6 +199,7 @@ function showBanBanner(reason) {
   b.innerHTML = '🚫 Вы забанены: ' + esc(reason || 'нарушение правил');
 }
 
+// ============ ТЕМА ============
 function applyTheme(theme) {
   document.body.className = document.body.className.replace(/theme-\S+/g, '').trim();
   if (theme && theme !== 'midnight') {
@@ -173,14 +224,18 @@ function applyCorners(c) {
   document.documentElement.style.setProperty('--radius', r[c] || '14px');
 }
 
+// ============ ПРОВЕРКИ ============
 function isAdmin() {
   return state.profile?.is_creator === true || state.profile?.role === 'admin';
 }
-
+function isMod() {
+  return isAdmin() || state.profile?.role === 'moderator' || (state.profile?.mods?.length > 0);
+}
 function canPostStories() {
   return state.profile?.is_plus || state.profile?.is_creator || state.profile?.role === 'admin';
 }
 
+// ============ МОДАЛКА ============
 function openModal(html) {
   let ov = $('sgModalOverlay');
   if (!ov) {
@@ -201,6 +256,7 @@ function closeModal() {
 }
 window.closeModal = closeModal;
 
+// ============ ЗАГРУЗКА ФАЙЛА ============
 async function uploadFile(bucket, file, folder = '') {
   const ext = file.name.split('.').pop() || 'bin';
   const path = (folder ? folder + '/' : '') + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '.' + ext;
@@ -209,10 +265,8 @@ async function uploadFile(bucket, file, folder = '') {
   const { data } = sb.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
 }
-/* ============================================================
-   Часть 2: Авторизация, чаты, сообщения
-   ============================================================ */
 
+// ============ АВТОРИЗАЦИЯ ============
 function initAuth() {
   const bL = $('bL'), bR = $('bR');
   const em = $('em'), pw = $('pw'), un = $('un');
@@ -272,25 +326,25 @@ function initAuth() {
 
   const bUnban = $('bTUnban');
   if (bUnban) bUnban.onclick = () => {
-    openModal(`
-      <h2>🚫 Запрос на разбан</h2>
-      <input id="unbanEmail" placeholder="Email аккаунта">
-      <textarea id="unbanMsg" rows="4" placeholder="Объясни ситуацию..."></textarea>
-      <button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>
-      <button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>
-    `);
+    openModal(
+      '<h2>🚫 Запрос на разбан</h2>' +
+      '<input id="unbanEmail" placeholder="Email аккаунта">' +
+      '<textarea id="unbanMsg" rows="4" placeholder="Объясни ситуацию..."></textarea>' +
+      '<button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+      '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+    );
   };
 
   const bContact = $('bTContact');
   if (bContact) bContact.onclick = () => {
-    openModal(`
-      <h2>💬 Связаться с админом</h2>
-      <input id="ticketEmail" placeholder="Email">
-      <input id="ticketSubject" placeholder="Тема" maxlength="80">
-      <textarea id="ticketText" rows="4" placeholder="Опиши проблему..."></textarea>
-      <button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>
-      <button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>
-    `);
+    openModal(
+      '<h2>💬 Связаться с админом</h2>' +
+      '<input id="ticketEmail" placeholder="Email">' +
+      '<input id="ticketSubject" placeholder="Тема" maxlength="80">' +
+      '<textarea id="ticketText" rows="4" placeholder="Опиши проблему..."></textarea>' +
+      '<button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+      '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+    );
   };
 
   const bAge = $('bTAge');
@@ -325,6 +379,7 @@ window.sendTicket = async () => {
   } catch (e) { toast('Ошибка: ' + e.message); }
 };
 
+// ============ ВХОД В APP ============
 async function enterApp() {
   const auth = $('A'), app = $('APP');
   if (auth) auth.style.display = 'none';
@@ -337,10 +392,14 @@ async function enterApp() {
   await loadStickers();
   setupRealtime();
   setupPolling();
-
   renderProfileMini();
   bindButtons();
+  startTypingWatch();
+  setupDoubleTap();
+  setupSwipeReply();
+  attachTypingToInput();
 
+  if (typeof loadStoriesBar === 'function') loadStoriesBar();
   if (typeof loadFeed === 'function') loadFeed();
 
   console.log('✅ Вошли в Spacegram');
@@ -364,11 +423,13 @@ function logout() {
   if (state.realtimeChats) sb.removeChannel(state.realtimeChats);
   if (state.realtimeMsgs) sb.removeChannel(state.realtimeMsgs);
   if (state.pollTimer) clearInterval(state.pollTimer);
+  if (state.typingWatchTimer) clearInterval(state.typingWatchTimer);
   localStorage.removeItem('sg_user_id');
   location.reload();
 }
 window.logout = logout;
 
+// ============ REALTIME ============
 function setupRealtime() {
   state.realtimeChats = sb.channel('rt-chats-' + state.user.id)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { loadChats(); })
@@ -404,6 +465,7 @@ function setupPolling() {
   }, 2000);
 }
 
+// ============ ЧАТЫ ============
 async function loadChats() {
   if (!state.user) return;
   const uid = state.user.id;
@@ -422,10 +484,7 @@ async function loadChats() {
       continue;
     }
     const otherId = c.user1 === uid ? c.user2 : c.user1;
-    if (!otherId || otherId === uid) {
-      console.warn('⚠️ Чат без собеседника:', c.id);
-      continue;
-    }
+    if (!otherId || otherId === uid) continue;
     const { data: prof } = await sb.from('profiles').select('*').eq('id', otherId).maybeSingle();
     list.push({ ...c, other: prof });
   }
@@ -447,15 +506,16 @@ function renderChats() {
     const initial = (name[0] || '?').toUpperCase();
     const avatar = c.group_avatar || c.other?.avatar_url;
     const emoji = c.is_channel ? '📢' : c.is_group ? '👥' : c.is_secret ? '🔒' : '';
-    const plus = c.other?.is_plus ? '⭐' : '';
     const last = c.last_message || 'Нет сообщений';
+    const badge = c.other ? userBadgeHtml(c.other) : '';
+
     return '<div class="ch" data-id="' + c.id + '">' +
       '<div class="cv">' +
         (avatar ? '<img src="' + esc(avatar) + '">' : initial) +
       '</div>' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-weight:600;font-size:15px;margin-bottom:3px;display:flex;align-items:center;gap:5px">' +
-          esc(name) + ' ' + emoji + ' ' + plus +
+          esc(name) + ' ' + emoji + ' ' + badge +
         '</div>' +
         '<div style="color:var(--t2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(last) + '</div>' +
       '</div>' +
@@ -467,6 +527,7 @@ function renderChats() {
   });
 }
 
+// ============ ОТКРЫТИЕ ЧАТА ============
 async function openChat(chatId) {
   const chat = state.chats.find(c => String(c.id) === String(chatId));
   if (!chat) return;
@@ -475,14 +536,20 @@ async function openChat(chatId) {
   state.replyTo = null;
 
   const ch = $('CH'), msgs = $('msgs'), inp = $('inp'), emp = $('emp'), ar = $('AR');
-  if (ch) ch.style.display = 'flex';
-  if (msgs) msgs.style.display = 'flex';
-  if (inp) inp.style.display = 'flex';
+  if (ch) { ch.style.display = 'flex'; ch.classList.add('active'); }
+  if (msgs) { msgs.style.display = 'flex'; msgs.classList.add('active'); }
+  if (inp) { inp.style.display = 'flex'; inp.classList.add('active'); }
   if (emp) emp.style.display = 'none';
   if (ar) ar.classList.add('active');
 
   const name = (chat.is_group || chat.is_channel) ? (chat.group_name || 'Группа') : (chat.other?.display_name || 'Юзер');
-  if ($('hN')) $('hN').textContent = name;
+
+  if ($('hN')) {
+    let badgeHtml = '';
+    if (chat.other) badgeHtml = userBadgeHtml(chat.other);
+    $('hN').innerHTML = esc(name) + badgeHtml;
+  }
+
   if ($('hS')) {
     if (chat.is_channel) $('hS').textContent = 'канал';
     else if (chat.is_group) $('hS').textContent = 'группа';
@@ -506,9 +573,9 @@ async function openChat(chatId) {
 
 function back() {
   const ch = $('CH'), msgs = $('msgs'), inp = $('inp'), emp = $('emp'), ar = $('AR');
-  if (ch) ch.style.display = 'none';
-  if (msgs) msgs.style.display = 'none';
-  if (inp) inp.style.display = 'none';
+  if (ch) { ch.style.display = 'none'; ch.classList.remove('active'); }
+  if (msgs) { msgs.style.display = 'none'; msgs.classList.remove('active'); }
+  if (inp) { inp.style.display = 'none'; inp.classList.remove('active'); }
   if (emp) emp.style.display = 'flex';
   if (ar) ar.classList.remove('active');
   state.currentChat = null;
@@ -516,6 +583,7 @@ function back() {
 }
 window.back = back;
 
+// ============ СООБЩЕНИЯ ============
 async function loadMessages() {
   if (!state.currentChat) return;
   const { data, error } = await sb.from('messages')
@@ -666,7 +734,7 @@ window.sendMessage = sendMessage;
 function cancelRep() {
   state.replyTo = null;
   const rp = $('rP');
-  if (rp) rp.style.display = 'none';
+  if (rp) { rp.style.display = 'none'; rp.classList.remove('active'); }
 }
 window.cancelRep = cancelRep;
 
@@ -721,25 +789,205 @@ async function loadStickers() {
   const { data } = await sb.from('stickers').select('*').limit(100);
   state.stickers = data || [];
 }
-/* ============================================================
-   Часть 3: Профиль, настройки, сторис, лента, магазин
-   ============================================================ */
 
-const EMOJI_STATUSES = ['😀','😎','🤔','😴','🥳','😭','❤️','🔥','🚀','⭐','💯','🙏','👀','💀','🤡','🎮','📚','🎧','☕','🍕'];
-
+// ============ УРОВЕНЬ 1: АВАТАРКА ============
 function renderProfileMini() {
   const p = state.profile;
   if (!p || !$('myA')) return;
   const init = (p.display_name || '?')[0].toUpperCase();
-  $('myA').innerHTML = p.avatar_url
-    ? '<img src="' + esc(p.avatar_url) + '">'
-    : init;
+  if (p.avatar_url) {
+    $('myA').innerHTML = '<img src="' + esc(p.avatar_url) + '" alt="">';
+    $('myA').style.background = 'transparent';
+  } else {
+    $('myA').innerHTML = init;
+    $('myA').style.background = 'linear-gradient(135deg, var(--a), var(--a2))';
+  }
 }
 
+// ============ УРОВЕНЬ 1: ТИПИНГ ============
+function startTypingWatch() {
+  if (state.typingWatchTimer) clearInterval(state.typingWatchTimer);
+  state.typingWatchTimer = setInterval(async () => {
+    if (!state.currentChat || !state.user) return;
+    if (state.currentChat.is_group || state.currentChat.is_channel) return;
+    const otherId = state.currentChat.user1 === state.user.id
+      ? state.currentChat.user2
+      : state.currentChat.user1;
+    if (!otherId) return;
+
+    try {
+      const { data } = await sb.from('profiles')
+        .select('typing_until')
+        .eq('id', otherId)
+        .maybeSingle();
+      const sub = $('hS');
+      if (!sub) return;
+      if (data?.typing_until && new Date(data.typing_until) > new Date()) {
+        sub.innerHTML = 'печатает <span class="typing-dots"><span></span><span></span><span></span></span>';
+        sub.style.color = 'var(--a)';
+      } else {
+        sub.textContent = 'был(а) недавно';
+        sub.style.color = '';
+      }
+    } catch(e) {}
+  }, 1500);
+}
+
+function sendTypingStatus() {
+  if (!state.user || !state.settings.showTyping) return;
+  clearTimeout(state.typingTimer);
+  try {
+    sb.from('profiles').update({
+      typing_until: new Date(Date.now() + 3000).toISOString()
+    }).eq('id', state.user.id);
+  } catch(e) {}
+  state.typingTimer = setTimeout(() => {
+    try {
+      sb.from('profiles').update({ typing_until: null }).eq('id', state.user.id);
+    } catch(e) {}
+  }, 3000);
+}
+
+// ============ УРОВЕНЬ 1: ДВОЙНОЙ ТАП ============
+function setupDoubleTap() {
+  const el = $('msgs');
+  if (!el || el._dtBound) return;
+  el._dtBound = true;
+
+  const doHeart = async (msgEl, x, y) => {
+    const msgId = msgEl.dataset.id;
+    if (!msgId || !state.currentChat) return;
+    try {
+      const { data: m } = await sb.from('messages').select('reactions').eq('id', msgId).single();
+      if (!m) return;
+      const reactions = m.reactions || {};
+      reactions['❤️'] = reactions['❤️'] || [];
+      const uid = state.user.id;
+      if (reactions['❤️'].indexOf(uid) !== -1) {
+        reactions['❤️'] = reactions['❤️'].filter(x => x !== uid);
+      } else {
+        reactions['❤️'].push(uid);
+      }
+      if (!reactions['❤️'].length) delete reactions['❤️'];
+      await sb.from('messages').update({ reactions }).eq('id', msgId);
+      if (navigator.vibrate) navigator.vibrate(20);
+      const heart = document.createElement('div');
+      heart.textContent = '❤️';
+      heart.style.cssText = 'position:fixed;font-size:40px;pointer-events:none;z-index:99999;left:' + x + 'px;top:' + y + 'px;animation:heartPop .6s ease-out forwards';
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 700);
+      await loadMessages();
+    } catch(err) {}
+  };
+
+  el.addEventListener('dblclick', (e) => {
+    const msgEl = e.target.closest('.m');
+    if (!msgEl) return;
+    doHeart(msgEl, e.clientX, e.clientY);
+  });
+
+  let lastTap = 0;
+  el.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    const msgEl = e.target.closest('.m');
+    if (!msgEl) { lastTap = now; return; }
+    if (now - lastTap < 300) {
+      const rect = msgEl.getBoundingClientRect();
+      doHeart(msgEl, rect.right - 20, rect.top);
+    }
+    lastTap = now;
+  });
+}
+
+// ============ УРОВЕНЬ 1: СВАЙП ============
+function setupSwipeReply() {
+  const el = $('msgs');
+  if (!el || el._swBound) return;
+  el._swBound = true;
+
+  let startX = 0, startY = 0, currentMsg = null, currentEl = null;
+
+  el.addEventListener('touchstart', (e) => {
+    const msgEl = e.target.closest('.m');
+    if (!msgEl) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    currentMsg = msgEl;
+    currentEl = msgEl;
+    msgEl.style.transition = 'none';
+  }, { passive: true });
+
+  el.addEventListener('touchmove', (e) => {
+    if (!currentEl) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dy > 20) { currentEl.style.transform = ''; currentMsg = null; currentEl = null; return; }
+    if (dx > 0 && dx < 80) {
+      currentEl.style.transform = 'translateX(' + dx + 'px)';
+    }
+  }, { passive: true });
+
+  el.addEventListener('touchend', (e) => {
+    if (!currentEl) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    currentEl.style.transition = 'transform .2s';
+    currentEl.style.transform = '';
+    if (dx > 60 && currentMsg) {
+      const msgId = currentMsg.dataset.id;
+      const msg = state.messages.find(m => String(m.id) === String(msgId));
+      if (msg) {
+        state.replyTo = msg;
+        const rp = $('rP');
+        if (rp) {
+          rp.style.display = 'flex';
+          rp.classList.add('active');
+          const rA = $('rA');
+          const rT = $('rT');
+          if (rA) rA.textContent = msg.sender === state.user.id ? 'Себе' : (msg.sender_name || 'Юзер');
+          if (rT) rT.textContent = (msg.text || '[медиа]').slice(0, 60);
+        }
+        if (navigator.vibrate) navigator.vibrate(15);
+      }
+    }
+    currentMsg = null;
+    currentEl = null;
+  });
+}
+
+function attachTypingToInput() {
+  const inp = $('msgI');
+  if (!inp || inp._typingBound) return;
+  inp._typingBound = true;
+  inp.addEventListener('input', () => {
+    sendTypingStatus();
+    if (state.currentChat) {
+      clearTimeout(state.draftTimer);
+      state.draftTimer = setTimeout(() => {
+        if (inp.value.trim()) localStorage.setItem('sg_draft_' + state.currentChat.id, inp.value);
+        else localStorage.removeItem('sg_draft_' + state.currentChat.id);
+      }, 500);
+    }
+  });
+}
+/* ============================================================
+   Часть 2: Профиль, Настройки, Сторис, Лента, Магазин, Бот
+   ============================================================ */
+
+const EMOJI_STATUSES = ['😀','😎','🤔','😴','🥳','😭','❤️','🔥','🚀','⭐','💯','🙏','👀','💀','🤡','🎮','📚','🎧','☕','🍕'];
+
+// ============ ПРОФИЛЬ ============
 function showProf() {
   const p = state.profile;
   if (!p) return;
   const initial = (p.display_name || '?')[0].toUpperCase();
+
+  let badgesHtml = '';
+  if (p.is_creator) badgesHtml += '<span class="badge-pill creator">👑 Создатель</span>';
+  if (p.role === 'admin') badgesHtml += '<span class="badge-pill admin">⚡ Админ</span>';
+  if (p.is_verified) badgesHtml += '<span class="badge-pill verified">✅ Верифицирован</span>';
+  if (p.is_plus) badgesHtml += '<span class="badge-pill plus">⭐ Plus</span>';
+  if (p.is_youtuber) badgesHtml += '<span class="badge-pill youtuber">▶️ YouTuber</span>';
+  if (p.is_bot_verified) badgesHtml += '<span class="badge-pill bot">🤖 Bot</span>';
 
   openModal(
     '<h2>👤 Профиль</h2>' +
@@ -748,7 +996,10 @@ function showProf() {
         (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" style="width:100%;height:100%;object-fit:cover">' : initial) +
       '</div>' +
     '</div>' +
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">' +
+    '<div style="text-align:center;font-weight:800;font-size:20px;margin-bottom:4px">' + esc(p.display_name || '') + '</div>' +
+    '<div style="text-align:center;color:var(--t2);font-size:13px;margin-bottom:8px">@' + esc(p.username || '') + ' ' + (p.emoji_status || '') + '</div>' +
+    (badgesHtml ? '<div class="profile-badges">' + badgesHtml + '</div>' : '') +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0">' +
       '<div style="background:var(--p2);border-radius:12px;padding:10px;text-align:center">' +
         '<div style="font-size:18px;font-weight:800">' + (p.balance || 0) + '</div>' +
         '<div style="font-size:10px;color:var(--t2)">💰 SG</div>' +
@@ -817,16 +1068,20 @@ function showProf() {
 }
 window.showProf = showProf;
 
+// ============ КТО СМОТРЕЛ ============
 window.openProfileViews = async () => {
-  const { data } = await sb.from('profile_views')
-    .select('*').eq('profile_id', state.user.id)
-    .order('id', { ascending: false }).limit(50);
-  const views = data || [];
-  const uids = [...new Set(views.map(v => v.viewer_id))];
+  let views = [];
+  try {
+    const r = await sb.from('profile_views').select('*').eq('profile_id', state.user.id).order('id', { ascending: false }).limit(50);
+    views = r.data || [];
+  } catch(e) {}
+  const uids = [...new Set(views.map(v => v.viewer_id).filter(Boolean))];
   const profs = {};
   if (uids.length) {
-    const { data: ps } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', uids);
-    (ps || []).forEach(p => profs[p.id] = p);
+    try {
+      const r = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', uids);
+      (r.data || []).forEach(p => profs[p.id] = p);
+    } catch(e) {}
   }
 
   openModal(
@@ -840,10 +1095,8 @@ window.openProfileViews = async () => {
           '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4a9eff,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0">' +
             (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '" style="width:100%;height:100%;object-fit:cover">' : init) +
           '</div>' +
-          '<div style="flex:1">' +
-            '<div style="font-weight:600;font-size:13px">' + esc(p.display_name) + '</div>' +
-            '<div style="font-size:11px;color:var(--t2)">@' + esc(p.username) + ' · ' + fmtDate(v.viewed_at || v.created_at) + '</div>' +
-          '</div>' +
+          '<div style="flex:1"><div style="font-weight:600;font-size:13px">' + esc(p.display_name) + '</div>' +
+          '<div style="font-size:11px;color:var(--t2)">@' + esc(p.username) + ' · ' + fmtDate(v.viewed_at || v.created_at) + '</div></div>' +
         '</div>';
       }).join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Пока никто не смотрел 😢</div>') +
     '</div>' +
@@ -853,29 +1106,20 @@ window.openProfileViews = async () => {
 
 window.openAnalytics = async () => {
   let msgCount = 0, chatCount = 0, storyCount = 0;
-  try {
-    const r1 = await sb.from('messages').select('id', { count: 'exact', head: true }).eq('sender', state.user.id);
-    msgCount = r1.count || 0;
-  } catch(e) {}
-  try {
-    const r2 = await sb.from('chats').select('id', { count: 'exact', head: true }).or(`user1.eq.${state.user.id},user2.eq.${state.user.id}`);
-    chatCount = r2.count || 0;
-  } catch(e) {}
-  try {
-    const r3 = await sb.from('stories').select('id', { count: 'exact', head: true }).eq('user_id', state.user.id);
-    storyCount = r3.count || 0;
-  } catch(e) {}
+  try { const r = await sb.from('messages').select('id', { count: 'exact', head: true }).eq('sender', state.user.id); msgCount = r.count || 0; } catch(e) {}
+  try { const r = await sb.from('chats').select('id', { count: 'exact', head: true }).or(`user1.eq.${state.user.id},user2.eq.${state.user.id}`); chatCount = r.count || 0; } catch(e) {}
+  try { const r = await sb.from('stories').select('id', { count: 'exact', head: true }).eq('user_id', state.user.id); storyCount = r.count || 0; } catch(e) {}
 
   const created = new Date(state.profile.created_at || Date.now());
   const days = Math.max(1, Math.floor((Date.now() - created.getTime()) / 86400000));
 
   openModal(
-    '<h2>📊 Аналитика профиля</h2>' +
+    '<h2>📊 Аналитика</h2>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
       '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800">' + msgCount + '</div><div style="font-size:11px;color:var(--t2);margin-top:4px">💬 Сообщений</div></div>' +
       '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800">' + chatCount + '</div><div style="font-size:11px;color:var(--t2);margin-top:4px">💭 Чатов</div></div>' +
       '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800">' + storyCount + '</div><div style="font-size:11px;color:var(--t2);margin-top:4px">📸 Статусов</div></div>' +
-      '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800">' + days + '</div><div style="font-size:11px;color:var(--t2);margin-top:4px">📅 Дней в SG</div></div>' +
+      '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800">' + days + '</div><div style="font-size:11px;color:var(--t2);margin-top:4px">📅 Дней</div></div>' +
     '</div>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
   );
@@ -896,11 +1140,10 @@ window.openQR = () => {
   const url = location.origin + '?u=' + state.profile.username;
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(url);
   openModal(
-    '<h2 style="text-align:center">📱 QR-код профиля</h2>' +
+    '<h2 style="text-align:center">📱 QR профиля</h2>' +
     '<div style="background:#fff;padding:16px;border-radius:16px;display:flex;justify-content:center;margin-bottom:14px">' +
       '<img src="' + qrUrl + '" style="width:100%;max-width:250px;display:block">' +
     '</div>' +
-    '<div style="text-align:center;color:var(--t2);font-size:13px;margin-bottom:14px">@' + esc(state.profile.username) + '</div>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>'
   );
 };
@@ -915,7 +1158,7 @@ window.exportData = async () => {
   toast('Экспортировано 📥');
 };
 
-/* ============ НАСТРОЙКИ ============ */
+// ============ НАСТРОЙКИ ============
 function toggleRow(id, label, checked) {
   return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--br)">' +
     '<div style="font-size:14px">' + label + '</div>' +
@@ -995,7 +1238,10 @@ window.openSettings = function() {
   bindToggle('cbTyping', v => { state.settings.showTyping = v; localStorage.setItem('sg_typing', v ? '1' : '0'); });
 };
 
-window.openStories = async () => {
+// ============ СТОРИС ============
+async function loadStoriesBar() {
+  const bar = $('sBar');
+  if (!bar) return;
   let stories = [];
   try {
     const r = await sb.from('stories').select('*').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(100);
@@ -1007,49 +1253,47 @@ window.openStories = async () => {
     byUser[s.user_id].push(s);
   });
   const uids = Object.keys(byUser);
-  const authors = {};
-  if (uids.length) {
-    try {
-      const r = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', uids);
-      (r.data || []).forEach(p => authors[p.id] = p);
-    } catch(e) {}
-  }
-  const canPost = canPostStories();
-  const myStories = byUser[state.user.id] || [];
-  const others = Object.keys(byUser).filter(u => u !== state.user.id);
+  if (!uids.length) { bar.innerHTML = ''; return; }
 
-  openModal(
-    '<h2>📸 Статусы</h2>' +
-    (canPost
-      ? '<button onclick="window.addStory()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:14px">＋ Добавить статус</button>'
-      : '<div style="text-align:center;padding:12px;background:var(--p2);border-radius:12px;margin-bottom:14px;color:var(--t2);font-size:13px">⭐ Статусы только для Plus</div>') +
-    (myStories.length ? '<div style="font-size:11px;color:var(--t2);margin-bottom:8px;font-weight:700">МОИ СТАТУСЫ</div>' +
-      '<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;margin-bottom:14px">' +
-        myStories.map(s => '<div style="text-align:center;flex-shrink:0;cursor:pointer" onclick="window.viewStory(\'' + s.id + '\')">' +
-          '<div style="width:68px;height:68px;border-radius:50%;background:' + (s.bg_color || 'var(--a)') + ';border:3px solid var(--a);display:flex;align-items:center;justify-content:center;font-size:26px;overflow:hidden;margin-bottom:4px">' +
-            (s.media_url ? '<img src="' + esc(s.media_url) + '" style="width:100%;height:100%;object-fit:cover">' : '📝') +
-          '</div>' +
-          '<div style="font-size:10px;color:var(--t2)">' + fmtTime(s.created_at) + '</div>' +
-        '</div>').join('') +
-      '</div>' : '') +
-    (others.length ? '<div style="font-size:11px;color:var(--t2);margin-bottom:8px;font-weight:700">ДРУГИЕ</div>' +
-      '<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">' +
-        others.map(uid => {
-          const a = authors[uid];
-          const userStories = byUser[uid];
-          const latest = userStories[0];
-          const init = (a?.display_name || '?')[0].toUpperCase();
-          return '<div style="text-align:center;flex-shrink:0;cursor:pointer;min-width:70px" onclick="window.viewStory(\'' + latest.id + '\')">' +
-            '<div style="width:68px;height:68px;border-radius:50%;background:' + (latest.bg_color || 'var(--a)') + ';border:3px solid var(--a);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;margin:0 auto 4px">' +
-              (latest.media_url ? '<img src="' + esc(latest.media_url) + '" style="width:100%;height:100%;object-fit:cover">' : (a?.avatar_url ? '<img src="' + esc(a.avatar_url) + '" style="width:100%;height:100%;object-fit:cover">' : init)) +
-            '</div>' +
-            '<div style="font-size:10px;color:var(--t2);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 auto">' + esc(a?.display_name || '?') + '</div>' +
-          '</div>';
-        }).join('') +
-      '</div>' : '') +
-    (!myStories.length && !others.length ? '<div style="text-align:center;padding:30px;color:var(--t2)">Пока нет статусов 😢</div>' : '') +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
-  );
+  const authors = {};
+  try {
+    const r = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', uids);
+    (r.data || []).forEach(p => authors[p.id] = p);
+  } catch(e) {}
+
+  let html = '';
+  // Мой статус (кнопка добавления)
+  if (canPostStories()) {
+    html += '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer" onclick="window.addStory()">' +
+      '<div class="story-circle" style="background:linear-gradient(135deg,#4a9eff,#7c3aed)">' +
+        '<div class="story-circle-inner" style="font-size:28px;color:#fff">＋</div>' +
+      '</div>' +
+      '<div class="story-label">Статус</div>' +
+    '</div>';
+  }
+
+  // Другие юзеры
+  uids.forEach(uid => {
+    const a = authors[uid];
+    const userStories = byUser[uid];
+    const latest = userStories[0];
+    const init = (a?.display_name || '?')[0].toUpperCase();
+    html += '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer" onclick="window.viewStory(\'' + latest.id + '\')">' +
+      '<div class="story-circle">' +
+        '<div class="story-circle-inner">' +
+          (latest.media_url ? '<img src="' + esc(latest.media_url) + '">' : (a?.avatar_url ? '<img src="' + esc(a.avatar_url) + '">' : '<span style="font-size:22px">' + init + '</span>')) +
+        '</div>' +
+      '</div>' +
+      '<div class="story-label">' + esc(a?.display_name || '?') + '</div>' +
+    '</div>';
+  });
+
+  bar.innerHTML = html;
+}
+
+window.openStories = async () => {
+  await loadStoriesBar();
+  toast('Статусы сверху 👆');
 };
 
 window.addStory = () => {
@@ -1059,7 +1303,7 @@ window.addStory = () => {
     '<input type="file" id="storyFile" accept="image/*,video/*" style="width:100%;margin-bottom:10px">' +
     '<textarea id="storyText" placeholder="Текст" rows="2"></textarea>' +
     '<button id="bPubStory" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">📸 Опубликовать</button>' +
-    '<button onclick="window.openStories()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">← Назад</button>'
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Отмена</button>'
   );
   $('bPubStory').onclick = async () => {
     const file = $('storyFile').files[0];
@@ -1081,7 +1325,8 @@ window.addStory = () => {
         duration: 5, expires_at: expires, views: []
       });
       toast('Опубликовано 📸');
-      window.openStories();
+      closeModal();
+      loadStoriesBar();
     } catch(e) { toast('Ошибка: ' + e.message); }
   };
 };
@@ -1095,36 +1340,50 @@ window.viewStory = async (sid) => {
     views.push(state.user.id);
     try { await sb.from('stories').update({ views }).eq('id', sid); } catch(e) {}
   }
+  const isMine = story.user_id === state.user.id;
   openModal(
-    '<div style="background:' + (story.bg_color || '#000') + ';border-radius:14px;padding:20px;min-height:360px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;margin-bottom:14px">' +
+    '<div class="story-card" style="background:' + (story.bg_color || '#000') + '">' +
       (story.media_url
         ? (story.media_type === 'video'
-          ? '<video src="' + esc(story.media_url) + '" style="max-width:100%;max-height:360px;border-radius:10px" autoplay controls></video>'
-          : '<img src="' + esc(story.media_url) + '" style="max-width:100%;max-height:360px;border-radius:10px;object-fit:contain">')
+          ? '<video src="' + esc(story.media_url) + '" autoplay controls></video>'
+          : '<img src="' + esc(story.media_url) + '">')
         : '') +
-      (story.text_content ? '<div style="font-size:18px;font-weight:600;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7);margin-top:14px;padding:10px;background:rgba(0,0,0,.35);border-radius:10px;text-align:center">' + esc(story.text_content) + '</div>' : '') +
-      '<div style="position:absolute;top:10px;left:10px;right:10px;display:flex;align-items:center;gap:8px">' +
-        '<div style="width:32px;height:32px;border-radius:50%;background:#4a9eff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0">' +
-          (author?.avatar_url ? '<img src="' + esc(author.avatar_url) + '" style="width:100%;height:100%;object-fit:cover">' : (author?.display_name || '?')[0].toUpperCase()) +
+      (story.text_content ? '<div class="text-overlay">' + esc(story.text_content) + '</div>' : '') +
+      '<div class="story-author">' +
+        '<div class="story-avatar">' +
+          (author?.avatar_url ? '<img src="' + esc(author.avatar_url) + '">' : (author?.display_name || '?')[0].toUpperCase()) +
         '</div>' +
-        '<div style="flex:1;color:#fff;font-size:12px;text-shadow:0 1px 4px rgba(0,0,0,.8)">' +
+        '<div class="story-info">' +
           '<b>' + esc(author?.display_name || 'Юзер') + '</b><br>' +
           '<span style="opacity:.8">' + fmtTime(story.created_at) + ' · 👁 ' + views.length + '</span>' +
         '</div>' +
       '</div>' +
     '</div>' +
-    '<div style="display:flex;gap:8px">' +
-      '<button onclick="window.openStories()" class="gh" style="flex:1;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">← Назад</button>' +
-      (story.user_id !== state.user.id
-        ? '<button onclick="window.storyReply(\'' + sid + '\',\'' + story.user_id + '\')" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer">💬 Ответить</button>'
-        : '<button onclick="window.deleteStory(\'' + sid + '\')" style="flex:1;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:700;font-size:13px;border:1px solid rgba(229,57,53,.3);cursor:pointer">🗑 Удалить</button>') +
+    '<div class="story-reactions">' +
+      ['❤️','🔥','😂','😮','👏'].map(e =>
+        '<button onclick="window.reactStory(\'' + sid + '\',\'' + e + '\')">' + e + '</button>'
+      ).join('') +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:8px">' +
+      (isMine
+        ? '<button onclick="window.deleteStory(\'' + sid + '\')" style="flex:1;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:700;font-size:13px;border:1px solid rgba(229,57,53,.3);cursor:pointer">🗑 Удалить</button>'
+        : '<button onclick="window.storyReply(\'' + sid + '\',\'' + story.user_id + '\')" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer">💬 Ответить</button>') +
+      '<button onclick="window.closeModal()" class="gh" style="flex:1;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Закрыть</button>' +
     '</div>'
   );
 };
 
+window.reactStory = async (sid, emoji) => {
+  toast(emoji + ' Реакция отправлена');
+  try {
+    await sb.from('story_reactions').insert({ story_id: sid, user_id: state.user.id, emoji });
+  } catch(e) {}
+};
+
 window.deleteStory = async (sid) => {
-  if (!confirm('Удалить?')) return;
-  try { await sb.from('stories').delete().eq('id', sid); toast('Удалено'); window.openStories(); } catch(e) { toast('Ошибка'); }
+  if (!confirm('Удалить статус?')) return;
+  try { await sb.from('stories').delete().eq('id', sid); toast('Удалено'); closeModal(); loadStoriesBar(); }
+  catch(e) { toast('Ошибка'); }
 };
 
 window.storyReply = async (sid, uid) => {
@@ -1143,38 +1402,46 @@ window.storyReply = async (sid, uid) => {
   if (chat) openChat(chat.id);
 };
 
+// ============ ЛЕНТА ============
 async function loadFeed() {
   const el = $('fdL');
   if (!el) return;
-  const { data } = await sb.from('posts').select('*').order('id', { ascending: false }).limit(30);
-  if (!data || !data.length) {
-    el.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--t2)">📰 Пока нет постов</div>';
+  let posts = [];
+  try {
+    const r = await sb.from('posts').select('*').order('id', { ascending: false }).limit(30);
+    posts = r.data || [];
+  } catch(e) {}
+  if (!posts.length) {
+    el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Пока нет постов</div>';
     return;
   }
-  const uids = [...new Set(data.map(p => p.user_id))];
+  const uids = [...new Set(posts.map(p => p.user_id).filter(Boolean))];
   const profs = {};
   if (uids.length) {
-    const { data: ps } = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus').in('id', uids);
-    (ps || []).forEach(p => profs[p.id] = p);
+    try {
+      const r = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,role').in('id', uids);
+      (r.data || []).forEach(p => profs[p.id] = p);
+    } catch(e) {}
   }
-  el.innerHTML = data.map(p => {
+  el.innerHTML = posts.map(p => {
     const a = profs[p.user_id] || {};
     const init = (a.display_name || '?')[0].toUpperCase();
-    return '<div style="background:var(--p);border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid var(--br)">' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">' +
-        '<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#4a9eff,#7c3aed);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0">' +
-          (a.avatar_url ? '<img src="' + esc(a.avatar_url) + '" style="width:100%;height:100%;object-fit:cover">' : init) +
+    const badge = userBadgeHtml(a);
+    return '<div class="post-card">' +
+      '<div class="post-header">' +
+        '<div class="post-avatar">' +
+          (a.avatar_url ? '<img src="' + esc(a.avatar_url) + '">' : init) +
         '</div>' +
-        '<div style="flex:1">' +
-          '<div style="font-weight:700;font-size:14px">' + esc(a.display_name || 'Юзер') + ' ' + (a.is_verified ? '✅' : '') + ' ' + (a.is_plus ? '⭐' : '') + '</div>' +
-          '<div style="font-size:11px;color:var(--t2)">@' + esc(a.username || '?') + ' · ' + fmtTime(p.created_at) + '</div>' +
+        '<div class="post-meta">' +
+          '<div class="post-author">' + esc(a.display_name || 'Юзер') + badge + '</div>' +
+          '<div class="post-time">@' + esc(a.username || '?') + ' · ' + fmtTime(p.created_at) + '</div>' +
         '</div>' +
       '</div>' +
-      (p.text ? '<div style="font-size:14px;line-height:1.5;margin-bottom:10px;white-space:pre-wrap">' + esc(p.text) + '</div>' : '') +
-      (p.image_url ? '<img src="' + esc(p.image_url) + '" style="width:100%;border-radius:10px;margin-bottom:10px;cursor:pointer" onclick="window.openImage(\'' + esc(p.image_url) + '\')">' : '') +
-      '<div style="display:flex;gap:10px;font-size:13px;color:var(--t2)">' +
-        '<span>❤️ ' + (p.likes_count || 0) + '</span>' +
-        '<span>💬 ' + (p.comments_count || 0) + '</span>' +
+      (p.text ? '<div class="post-text">' + esc(p.text) + '</div>' : '') +
+      (p.image_url ? '<img class="post-image" src="' + esc(p.image_url) + '" onclick="window.openImage(\'' + esc(p.image_url) + '\')">' : '') +
+      '<div class="post-actions">' +
+        '<button>❤️ ' + (p.likes_count || 0) + '</button>' +
+        '<button>💬 ' + (p.comments_count || 0) + '</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -1207,13 +1474,24 @@ window.openPost = () => {
   };
 };
 
+window.openImage = (url) => {
+  openModal(
+    '<img src="' + esc(url) + '" style="width:100%;border-radius:14px;display:block;margin-bottom:10px">' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Закрыть</button>'
+  );
+};
+
+// ============ БАЛАНС ============
 window.openBalance = async () => {
-  const { data } = await sb.from('balance_log').select('*')
-    .eq('user_id', state.user.id).order('id', { ascending: false }).limit(30);
+  let logs = [];
+  try {
+    const r = await sb.from('balance_log').select('*').eq('user_id', state.user.id).order('id', { ascending: false }).limit(30);
+    logs = r.data || [];
+  } catch(e) {}
   openModal(
     '<h2>💰 ' + (state.profile.balance || 0) + ' SG</h2>' +
     '<div style="max-height:400px;overflow-y:auto">' +
-      ((data || []).length ? data.map(l =>
+      (logs.length ? logs.map(l =>
         '<div style="padding:10px;border-bottom:1px solid var(--br);display:flex;justify-content:space-between;align-items:center">' +
           '<div style="font-size:13px">' + esc(l.reason || 'Начисление') + '</div>' +
           '<b style="color:' + (l.amount > 0 ? '#4caf50' : '#e53935') + ';font-size:14px">' + (l.amount > 0 ? '+' : '') + l.amount + '</b>' +
@@ -1224,6 +1502,7 @@ window.openBalance = async () => {
   );
 };
 
+// ============ ПРОМОКОД ============
 window.openPromo = () => {
   openModal(
     '<h2>🎁 Промокод</h2>' +
@@ -1263,13 +1542,18 @@ window.openPromo = () => {
   };
 };
 
+// ============ МАГАЗИН ============
 window.openShop = async () => {
-  const { data: items } = await sb.from('shop_items').select('*').limit(50);
+  let items = [];
+  try {
+    const r = await sb.from('shop_items').select('*').limit(50);
+    items = r.data || [];
+  } catch(e) {}
   openModal(
     '<h2>🛒 Магазин</h2>' +
     '<div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;margin-bottom:14px">💰 ' + (state.profile.balance || 0) + ' SG</div>' +
     '<div style="max-height:400px;overflow-y:auto">' +
-      ((items || []).length ? items.map(i =>
+      (items.length ? items.map(i =>
         '<div style="padding:12px;background:var(--p2);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
           '<div><div style="font-weight:700;font-size:14px">' + esc(i.name) + '</div><div style="font-size:11px;color:var(--t2)">' + esc(i.category || '') + '</div></div>' +
           '<button onclick="window.buyItem(\'' + i.id + '\')" style="padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer">' + i.price + ' SG</button>' +
@@ -1298,7 +1582,7 @@ window.openMods = () => {
   const mods = [
     { code: 'stalker', name: '🕵️ StalkerGram', desc: 'Видеть удалённые' },
     { code: 'ghost', name: '👻 GhostGram', desc: 'Невидимка' },
-    { code: 'antidelete', name: '🛡️ AntiDelete', desc: 'Восстанавливать удалённые' }
+    { code: 'antidelete', name: '🛡️ AntiDelete', desc: 'Восстанавливать' }
   ];
   const active = state.profile.mods || [];
   openModal(
@@ -1315,11 +1599,15 @@ window.openMods = () => {
 };
 
 window.openGifts = async () => {
-  const { data: gifts } = await sb.from('gifts').select('*').limit(20);
+  let gifts = [];
+  try {
+    const r = await sb.from('gifts').select('*').limit(20);
+    gifts = r.data || [];
+  } catch(e) {}
   openModal(
     '<h2>🎁 Подарки</h2>' +
     '<div style="max-height:400px;overflow-y:auto">' +
-      ((gifts || []).length ? gifts.map(g =>
+      (gifts.length ? gifts.map(g =>
         '<div style="padding:12px;background:var(--p2);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
           '<div><div style="font-weight:700;font-size:14px">' + esc(g.name || '🎁') + '</div><div style="font-size:11px;color:var(--t2)">' + esc(g.description || '') + '</div></div>' +
           '<button onclick="window.sendGift(\'' + g.id + '\')" style="padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,#e91e63,#9c27b0);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer">' + (g.price || 0) + ' SG</button>' +
@@ -1349,19 +1637,787 @@ window.sendGift = async (giftId) => {
   } catch(e) { toast('Ошибка: ' + e.message); }
 };
 
-window.openImage = (url) => {
+// ============ ВЕРИФИКАЦИЯ (пользовательская форма) ============
+window.openVerification = function() {
   openModal(
-    '<img src="' + esc(url) + '" style="width:100%;border-radius:14px;display:block;margin-bottom:10px">' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Закрыть</button>'
+    '<h2>✅ Заявка на галочку</h2>' +
+    '<div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:14px">' +
+      'Отправь заявку — админ рассмотрит. Галочку нельзя подделать, она ставится только через админку.' +
+    '</div>' +
+    '<div style="font-size:12px;color:var(--t2);margin-bottom:6px">Какую галочку?</div>' +
+    '<div class="tg" id="verType" style="margin-bottom:14px">' +
+      '<button data-t="verified" class="on">✅ Верифицирован</button>' +
+      '<button data-t="youtuber">▶️ YouTuber</button>' +
+      '<button data-t="bot">🤖 Бот</button>' +
+    '</div>' +
+    '<textarea id="verMsg" rows="4" placeholder="Ссылки на соцсети, портфолио, объяснение..."></textarea>' +
+    '<button id="bSendVer" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Отмена</button>'
   );
+  let badgeType = 'verified';
+  document.querySelectorAll('#verType button').forEach(b => b.onclick = () => {
+    badgeType = b.dataset.t;
+    document.querySelectorAll('#verType button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+  });
+  $('bSendVer').onclick = async () => {
+    const msg = $('verMsg').value.trim();
+    if (!msg) { toast('Напиши что-нибудь'); return; }
+    try {
+      await sb.from('verification_requests').insert({
+        user_id: state.user.id,
+        badge_type: badgeType,
+        message: msg,
+        status: 'pending'
+      });
+      toast('Заявка отправлена ✅');
+      closeModal();
+    } catch(e) { toast('Ошибка: ' + e.message); }
+  };
+};
+
+// ============ БОТ (7 API) ============
+async function apiWeather(city) {
+  try {
+    const geo = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(city) + '&count=1&language=ru').then(r => r.json());
+    if (!geo.results?.length) return '❌ Город не найден';
+    const { latitude, longitude, name } = geo.results[0];
+    const w = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + latitude + '&longitude=' + longitude + '&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto').then(r => r.json());
+    const c = w.current;
+    const codes = {0:'☀️ Ясно',1:'🌤 Малооблачно',2:'⛅ Облачно',3:'☁️ Пасмурно',45:'🌫 Туман',61:'🌧 Дождь',71:'❄️ Снег',80:'🌦 Ливень',95:'⛈ Гроза'};
+    const desc = codes[c.weather_code] || '🌡 ' + c.weather_code;
+    return '🌍 **' + name + '**\n' + desc + '\n🌡 ' + c.temperature_2m + '°C\n💨 ' + c.wind_speed_10m + ' км/ч';
+  } catch(e) { return '❌ Ошибка погоды'; }
+}
+
+async function apiJoke() {
+  try {
+    const j = await fetch('https://v2.jokeapi.dev/joke/Any?lang=ru&blacklistFlags=nsfw,racist,sexist').then(r => r.json());
+    if (j.type === 'single') return '😄 ' + j.joke;
+    return '😄 ' + j.setup + '\n\n' + j.delivery;
+  } catch(e) { return '❌ Ошибка шутки'; }
+}
+
+async function apiCrypto(symbol) {
+  try {
+    const d = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + symbol + '&vs_currencies=usd,rub&include_24hr_change=true').then(r => r.json());
+    const c = d[symbol];
+    if (!c) return '❌ Не найдено';
+    const ch = c.usd_24h_change || 0;
+    const arrow = ch >= 0 ? '📈' : '📉';
+    return arrow + ' **' + symbol.toUpperCase() + '**\n💵 $' + c.usd + '\n🇷🇺 ' + c.rub + ' ₽\n24ч: ' + ch.toFixed(2) + '%';
+  } catch(e) { return '❌ Ошибка крипты'; }
+}
+
+async function apiTrivia() {
+  try {
+    const d = await fetch('https://opentdb.com/api.php?amount=1&type=multiple').then(r => r.json());
+    const q = d.results[0];
+    const dec = (s) => s.replace(/&quot;/g,'"').replace(/&#039;/g,"'").replace(/&amp;/g,'&');
+    const ans = [...q.incorrect_answers, q.correct_answer].sort(() => Math.random() - 0.5);
+    const letters = ['A','B','C','D'];
+    return '❓ ' + dec(q.question) + '\n\n' + ans.map((a,i) => letters[i] + ') ' + dec(a)).join('\n') + '\n\nПравильно: ' + dec(q.correct_answer);
+  } catch(e) { return '❌ Ошибка викторины'; }
+}
+
+async function apiTranslate(text, to) {
+  try {
+    const d = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=auto|' + to).then(r => r.json());
+    return '🌐 ' + (d.responseData?.translatedText || '❌ Не смог');
+  } catch(e) { return '❌ Ошибка перевода'; }
+}
+
+function apiAIImage(prompt) {
+  return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=512&height=512&nologo=true&seed=' + Date.now();
+}
+
+async function botReply(text) {
+  const t = text.toLowerCase().trim();
+
+  if (/^\/?(start|help|помощь|хелп)$/.test(t)) {
+    return '👋 Привет! Я Spacegram Helper Bot.\n\n🌤 погода Москва\n😂 шутка\n🐱 котик\n💰 биткоин\n❓ викторина\n🌐 переведи hello на русский\n🎨 нарисуй космонавта';
+  }
+
+  const wm = t.match(/(?:погод[ауы]?|weather)\s+(.+)/i);
+  if (wm) return await apiWeather(wm[1].trim());
+
+  if (/шутк|анекдот|joke/.test(t)) return await apiJoke();
+
+  if (/котик|кошк|кот[^е]|cat/i.test(t)) return 'https://cataas.com/cat?t=' + Date.now();
+
+  const cm = t.match(/(биткоин|btc|bitcoin|эфир|eth|ethereum|додж|doge|bnb|sol)/i);
+  if (cm) {
+    const map = { 'биткоин':'bitcoin','btc':'bitcoin','bitcoin':'bitcoin','эфир':'ethereum','eth':'ethereum','ethereum':'ethereum','додж':'dogecoin','doge':'dogecoin','bnb':'binancecoin','sol':'solana' };
+    return await apiCrypto(map[cm[1].toLowerCase()] || 'bitcoin');
+  }
+
+  if (/викторин|trivia|вопрос/.test(t)) return await apiTrivia();
+
+  const tm = t.match(/(?:переведи|translate)\s+(.+?)(?:\s+на\s+(\w+))?$/i);
+  if (tm) {
+    const langMap = { 'русский':'ru','английский':'en','немецкий':'de','французский':'fr','испанский':'es','украинский':'uk','китайский':'zh','японский':'ja' };
+    const to = langMap[(tm[2] || '').toLowerCase()] || 'ru';
+    return await apiTranslate(tm[1], to);
+  }
+
+  const im = t.match(/(?:нарисуй|сгенерируй|draw|imagine)\s+(.+)/i);
+  if (im) {
+    const prompt = im[1].trim();
+    const url = apiAIImage(prompt);
+    return '🎨 ' + prompt + '\n\n' + url;
+  }
+
+  return '🤔 Не понял. Напиши **помощь**';
+}
+
+window.openBotChat = async () => {
+  const BOT_USERNAME = 'spacegramhelperbot';
+  const { data: botProfile } = await sb.from('profiles').select('*').eq('username', BOT_USERNAME).maybeSingle();
+  if (!botProfile) {
+    openModal(
+      '<h2>🤖 @Spacegramhelperbot</h2>' +
+      '<div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;line-height:1.6;color:var(--t2);margin-bottom:14px">' +
+        'погода Москва<br>шутка<br>котик<br>биткоин<br>викторина<br>переведи hello на русский<br>нарисуй космонавта' +
+      '</div>' +
+      '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Понятно</button>'
+    );
+    return;
+  }
+  const { data: existing } = await sb.from('chats').select('*')
+    .or(`and(user1.eq.${state.user.id},user2.eq.${botProfile.id}),and(user1.eq.${botProfile.id},user2.eq.${state.user.id})`).maybeSingle();
+  let chat = existing;
+  if (!chat) {
+    const { data } = await sb.from('chats').insert({ user1: state.user.id, user2: botProfile.id, created_by: state.user.id }).select().single();
+    chat = data;
+  }
+  await loadChats();
+  if (chat) openChat(chat.id);
 };
 /* ============================================================
-   Часть 4: Обработчики, бот, голос, main
+   Часть 3: АДМИН-ПАНЕЛЬ (полная) + ГОЛОСОВЫЕ + BINDINGS + MAIN
    ============================================================ */
 
+// ============ ЗАПИСЬ ГОЛОСОВЫХ ============
 let mediaRecorder = null;
 let audioChunks = [];
+let recordingStart = 0;
 
+async function startVoice() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    recordingStart = Date.now();
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const dur = Math.round((Date.now() - recordingStart) / 1000);
+      if (dur < 1) { toast('Слишком коротко'); return; }
+      const file = new File([blob], 'voice_' + Date.now() + '.webm', { type: 'audio/webm' });
+      if (!state.currentChat) return;
+      toast('Отправка...');
+      try {
+        const url = await uploadFile('files', file, 'voice');
+        const payload = {
+          chat_id: state.currentChat.id,
+          sender: state.user.id,
+          sender_name: state.profile.display_name,
+          file_url: url,
+          file_type: 'audio/webm',
+          file_name: file.name,
+          is_voice: true,
+          is_read: false,
+          deleted: false
+        };
+        let { error } = await sb.from('messages').insert(payload);
+        if (error && error.message.indexOf('sender_name') !== -1) {
+          delete payload.sender_name;
+          const r = await sb.from('messages').insert(payload);
+          error = r.error;
+        }
+        if (error) { toast('Ошибка'); return; }
+        await sb.from('chats').update({ last_message: '🎤 Голосовое' }).eq('id', state.currentChat.id);
+        await loadMessages();
+      } catch (e) { toast('Ошибка: ' + e.message); }
+    };
+    mediaRecorder.start();
+    const bMic = $('bMic');
+    if (bMic) { bMic.textContent = '⏹'; bMic.style.background = '#e53935'; }
+    toast('🎤 Запись... нажми ещё раз');
+  } catch (e) { toast('Нет доступа к микрофону'); }
+}
+
+// ============ АДМИН-ПАНЕЛЬ ============
+let adminTab = 'users';
+let adminUsersCache = [];
+let adminTicketsCache = [];
+let adminReportsCache = [];
+let adminVerCache = [];
+
+window.openAdmin = function() {
+  if (!isAdmin()) { toast('Нет доступа'); return; }
+  const apn = $('apn');
+  if (!apn) return;
+  apn.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  renderAdminStats();
+  renderAdminTabs();
+  switchAdminTab('users');
+};
+
+window.closeAdm = function() {
+  const apn = $('apn');
+  if (apn) apn.classList.remove('show');
+  document.body.style.overflow = '';
+};
+
+async function renderAdminStats() {
+  const el = $('astat');
+  if (!el) return;
+  let u = 0, c = 0, m = 0, r = 0;
+  try { const x = await sb.from('profiles').select('id', { count: 'exact', head: true }); u = x.count || 0; } catch(e) {}
+  try { const x = await sb.from('chats').select('id', { count: 'exact', head: true }); c = x.count || 0; } catch(e) {}
+  try { const x = await sb.from('messages').select('id', { count: 'exact', head: true }); m = x.count || 0; } catch(e) {}
+  try { const x = await sb.from('verification_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'); r = x.count || 0; } catch(e) {}
+
+  el.innerHTML =
+    '<div class="admin-stat"><div class="admin-stat-value">' + u + '</div><div class="admin-stat-label">Юзеров</div></div>' +
+    '<div class="admin-stat"><div class="admin-stat-value">' + c + '</div><div class="admin-stat-label">Чатов</div></div>' +
+    '<div class="admin-stat"><div class="admin-stat-value">' + m + '</div><div class="admin-stat-label">Сообщений</div></div>' +
+    '<div class="admin-stat"><div class="admin-stat-value" style="color:#ffd700">' + r + '</div><div class="admin-stat-label">Заявок ✅</div></div>';
+}
+
+function renderAdminTabs() {
+  const el = $('atab');
+  if (!el) return;
+  const tabs = [
+    { id: 'users', icon: '👥', name: 'Юзеры' },
+    { id: 'verifications', icon: '✅', name: 'Заявки' },
+    { id: 'tickets', icon: '🎫', name: 'Тикеты' },
+    { id: 'reports', icon: '🚩', name: 'Жалобы' },
+    { id: 'promo', icon: '🎁', name: 'Промо' },
+    { id: 'channels', icon: '📢', name: 'Каналы' }
+  ];
+  el.innerHTML = tabs.map(t =>
+    '<button data-tab="' + t.id + '" class="' + (adminTab === t.id ? 'on' : '') + '">' + t.icon + ' ' + t.name + '</button>'
+  ).join('');
+  el.querySelectorAll('button').forEach(b => {
+    b.onclick = () => switchAdminTab(b.dataset.tab);
+  });
+}
+
+function switchAdminTab(tab) {
+  adminTab = tab;
+  renderAdminTabs();
+  const bod = $('abod');
+  if (!bod) return;
+  bod.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t2)">Загрузка...</div>';
+
+  if (tab === 'users') renderAdminUsers();
+  else if (tab === 'verifications') renderAdminVerifications();
+  else if (tab === 'tickets') renderAdminTickets();
+  else if (tab === 'reports') renderAdminReports();
+  else if (tab === 'promo') renderAdminPromo();
+  else if (tab === 'channels') renderAdminChannels();
+}
+
+// ============ АДМИН: ЮЗЕРЫ ============
+async function renderAdminUsers() {
+  const bod = $('abod');
+  if (!bod) return;
+  let users = [];
+  try {
+    const r = await sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(200);
+    users = r.data || [];
+  } catch(e) {}
+  adminUsersCache = users;
+
+  bod.innerHTML =
+    '<input id="adminUserSearch" placeholder="🔍 Поиск по @username или имени..." style="margin-bottom:10px;width:100%;padding:10px 14px;border-radius:10px;background:var(--p2);color:var(--t);border:1px solid var(--br)">' +
+    '<div id="adminUserList">' + renderAdminUsersList('') + '</div>';
+
+  const search = $('adminUserSearch');
+  if (search) {
+    search.oninput = () => {
+      const list = $('adminUserList');
+      if (list) list.innerHTML = renderAdminUsersList(search.value.toLowerCase().trim());
+    };
+  }
+}
+
+function renderAdminUsersList(filter) {
+  const list = adminUsersCache.filter(u =>
+    !filter ||
+    (u.username || '').toLowerCase().indexOf(filter) !== -1 ||
+    (u.display_name || '').toLowerCase().indexOf(filter) !== -1
+  );
+
+  if (!list.length) return '<div style="text-align:center;padding:30px;color:var(--t2)">Никого не найдено</div>';
+
+  return list.map(u => {
+    let badges = '';
+    if (u.is_creator) badges += renderBadge('creator');
+    if (u.role === 'admin') badges += renderBadge('owner');
+    if (u.is_verified) badges += renderBadge('verified');
+    if (u.is_plus) badges += renderBadge('premium');
+    if (u.is_youtuber) badges += renderBadge('youtuber');
+
+    const banned = u.is_banned ? '<span style="color:#e53935;font-size:10px;font-weight:700">🚫 БАН</span>' : '';
+    const plus = u.is_plus ? '<span style="color:#ffd700;font-size:10px;font-weight:700">⭐ PLUS</span>' : '';
+
+    return '<div class="admin-user-row">' +
+      '<div class="admin-user-head">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="admin-user-name">' + esc(u.display_name || '—') + badges + ' ' + banned + ' ' + plus + '</div>' +
+          '<div class="admin-user-info">@' + esc(u.username || '—') + ' · ID: ' + (u.id || '').slice(0,8) + '<br>' +
+          '💰 ' + (u.balance||0) + ' SG · 🎯 lvl ' + (u.level||1) + ' · 💬 ' + (u.messages_count||0) + '<br>' +
+          '⚠️ варны: ' + (u.warns||0) + '/3 · рег: ' + fmtDate(u.created_at) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="admin-user-actions">' +
+        '<button onclick="window.adminEditUser(\'' + u.id + '\')" style="background:var(--a);color:#fff">✏️ Изменить</button>' +
+        '<button onclick="window.adminGiveBalance(\'' + u.id + '\')" style="background:#10b981;color:#fff">💰 Баланс</button>' +
+        '<button onclick="window.adminSetPass(\'' + u.id + '\')" style="background:var(--p3);color:var(--t)">🔑 Пароль</button>' +
+        '<button onclick="window.adminToggleVerified(\'' + u.id + '\')" style="background:' + (u.is_verified ? '#e53935' : '#2196f3') + ';color:#fff">' + (u.is_verified ? '❌ Снять✅' : '✅ Вериф') + '</button>' +
+        '<button onclick="window.adminTogglePlus(\'' + u.id + '\')" style="background:' + (u.is_plus ? '#e53935' : '#ffd700') + ';color:' + (u.is_plus ? '#fff' : '#000') + '">' + (u.is_plus ? '❌ Снять⭐' : '⭐ Plus') + '</button>' +
+        '<button onclick="window.adminToggleCreator(\'' + u.id + '\')" style="background:' + (u.is_creator ? '#e53935' : '#000') + ';color:#fff">' + (u.is_creator ? '❌ Создатель' : '👑 Создатель') + '</button>' +
+        '<button onclick="window.adminToggleBan(\'' + u.id + '\')" style="background:' + (u.is_banned ? '#4caf50' : '#e53935') + ';color:#fff">' + (u.is_banned ? '✅ Разбан' : '🚫 Бан') + '</button>' +
+        '<button onclick="window.adminDeleteUser(\'' + u.id + '\')" style="background:rgba(229,57,53,.15);color:#e53935;border:1px solid rgba(229,57,53,.3)">🗑 Удалить</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+window.adminEditUser = (uid) => {
+  const u = adminUsersCache.find(x => x.id === uid);
+  if (!u) return;
+  openModal(
+    '<h2>✏️ ' + esc(u.username) + '</h2>' +
+    '<input id="auName" placeholder="Имя" value="' + esc(u.display_name || '') + '">' +
+    '<input id="auAvatar" placeholder="URL аватара" value="' + esc(u.avatar_url || '') + '">' +
+    '<input id="auPhone" placeholder="Телефон" value="' + esc(u.phone || '') + '">' +
+    '<textarea id="auBio" rows="2" placeholder="Био">' + esc(u.bio || '') + '</textarea>' +
+    '<input id="auStatus" placeholder="Emoji-статус" value="' + esc(u.emoji_status || '') + '">' +
+    '<input id="auLevel" type="number" placeholder="Уровень" value="' + (u.level || 1) + '">' +
+    '<input id="auBalance" type="number" placeholder="Баланс SG" value="' + (u.balance || 0) + '">' +
+    '<select id="auRole">' +
+      '<option value="user" ' + (u.role === 'user' ? 'selected' : '') + '>user</option>' +
+      '<option value="moderator" ' + (u.role === 'moderator' ? 'selected' : '') + '>moderator</option>' +
+      '<option value="admin" ' + (u.role === 'admin' ? 'selected' : '') + '>admin</option>' +
+    '</select>' +
+    '<button id="bSaveUser" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">💾 Сохранить</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+  );
+  $('bSaveUser').onclick = async () => {
+    const updates = {
+      display_name: $('auName').value.trim() || u.display_name,
+      avatar_url: $('auAvatar').value.trim() || null,
+      phone: $('auPhone').value.trim() || null,
+      bio: $('auBio').value.trim(),
+      emoji_status: $('auStatus').value.trim() || null,
+      level: parseInt($('auLevel').value) || 1,
+      balance: parseInt($('auBalance').value) || 0,
+      role: $('auRole').value
+    };
+    try {
+      const { error } = await sb.from('profiles').update(updates).eq('id', uid);
+      if (error) { toast('Ошибка: ' + error.message); return; }
+      toast('Сохранено ✅');
+      closeModal();
+      renderAdminUsers();
+    } catch(e) { toast('Ошибка: ' + e.message); }
+  };
+};
+
+window.adminGiveBalance = (uid) => {
+  const u = adminUsersCache.find(x => x.id === uid);
+  if (!u) return;
+  const amount = prompt('Сколько SG начислить? (+ или -)', '100');
+  if (!amount) return;
+  const n = parseInt(amount);
+  if (isNaN(n)) { toast('Неверное число'); return; }
+  (async () => {
+    const newBal = Math.max(0, (u.balance || 0) + n);
+    try {
+      await sb.from('profiles').update({ balance: newBal }).eq('id', uid);
+      try { await sb.from('balance_log').insert({ user_id: uid, amount: n, reason: 'Начисление админом' }); } catch(e) {}
+      toast('Баланс: ' + newBal + ' SG');
+      renderAdminUsers();
+    } catch(e) { toast('Ошибка'); }
+  })();
+};
+
+window.adminSetPass = (uid) => {
+  const pass = prompt('Новый пароль (мин. 4):');
+  if (!pass || pass.length < 4) { toast('Минимум 4 символа'); return; }
+  (async () => {
+    try {
+      await sb.from('profiles').update({ pin_code: pass }).eq('id', uid);
+      toast('Пароль изменён ✅');
+    } catch(e) { toast('Ошибка'); }
+  })();
+};
+
+window.adminToggleVerified = async (uid) => {
+  const u = adminUsersCache.find(x => x.id === uid);
+  if (!u) return;
+  const newVal = !u.is_verified;
+  try {
+    await sb.from('profiles').update({ is_verified: newVal }).eq('id', uid);
+    try {
+      await sb.from('verification_log').insert({
+        user_id: uid,
+        badge_type: 'verified',
+        granted_by: state.user.id,
+        revoked: !newVal
+      });
+    } catch(e) {}
+    toast(newVal ? '✅ Галочка выдана' : '❌ Галочка снята');
+    renderAdminUsers();
+  } catch(e) { toast('Ошибка: ' + e.message); }
+};
+
+window.adminTogglePlus = async (uid) => {
+  const u = adminUsersCache.find(x => x.id === uid);
+  if (!u) return;
+  try {
+    await sb.from('profiles').update({ is_plus: !u.is_plus }).eq('id', uid);
+    toast(!u.is_plus ? '⭐ Plus выдан' : '❌ Plus снят');
+    renderAdminUsers();
+  } catch(e) { toast('Ошибка'); }
+};
+
+window.adminToggleCreator = async (uid) => {
+  if (uid === state.user.id) { toast('Себя нельзя'); return; }
+  const u = adminUsersCache.find(x => x.id === uid);
+  if (!u) return;
+  if (u.is_creator) {
+    if (!confirm('Снять статус Создателя?')) return;
+  }
+  try {
+    await sb.from('profiles').update({ is_creator: !u.is_creator }).eq('id', uid);
+    toast(!u.is_creator ? '👑 Создатель выдан' : '❌ Снят');
+    renderAdminUsers();
+  } catch(e) { toast('Ошибка: ' + e.message); }
+};
+
+window.adminToggleBan = async (uid) => {
+  const u = adminUsersCache.find(x => x.id === uid);
+  if (!u) return;
+  if (uid === state.user.id) { toast('Себя нельзя'); return; }
+  try {
+    if (u.is_banned) {
+      await sb.from('profiles').update({ is_banned: false, ban_reason: null }).eq('id', uid);
+      toast('✅ Разбанен');
+    } else {
+      const reason = prompt('Причина бана:', 'Нарушение') || 'Нарушение';
+      await sb.from('profiles').update({ is_banned: true, ban_reason: reason }).eq('id', uid);
+      toast('🚫 Забанен');
+    }
+    renderAdminUsers();
+  } catch(e) { toast('Ошибка'); }
+};
+
+window.adminDeleteUser = async (uid) => {
+  if (uid === state.user.id) { toast('Себя нельзя'); return; }
+  if (!confirm('УДАЛИТЬ юзера? Это необратимо!')) return;
+  try {
+    await sb.from('messages').delete().eq('sender', uid);
+    await sb.from('profiles').delete().eq('id', uid);
+    toast('🗑 Удалён');
+    renderAdminUsers();
+  } catch(e) { toast('Ошибка: ' + e.message); }
+};
+
+// ============ АДМИН: ЗАЯВКИ НА ГАЛОЧКУ ============
+async function renderAdminVerifications() {
+  const bod = $('abod');
+  if (!bod) return;
+  let reqs = [];
+  try {
+    const r = await sb.from('verification_requests').select('*').eq('status', 'pending').order('id', { ascending: false }).limit(50);
+    reqs = r.data || [];
+  } catch(e) {}
+  adminVerCache = reqs;
+
+  if (!reqs.length) {
+    bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Заявок нет</div>';
+    return;
+  }
+
+  // Подтягиваем юзеров
+  const uids = [...new Set(reqs.map(r => r.user_id).filter(Boolean))];
+  const profs = {};
+  if (uids.length) {
+    try {
+      const r = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', uids);
+      (r.data || []).forEach(p => profs[p.id] = p);
+    } catch(e) {}
+  }
+
+  bod.innerHTML = reqs.map(req => {
+    const u = profs[req.user_id] || {};
+    const badgeNames = { verified: 'Синяя галочка', youtuber: 'YouTube', bot: 'Bot', official: 'Официальный' };
+    return '<div class="ver-card">' +
+      '<div class="ver-card-head">' +
+        '<div>' +
+          '<div class="ver-card-name">' + esc(u.display_name || '—') +
+            '<span class="ver-card-badge ' + req.badge_type + '">' + (badgeNames[req.badge_type] || req.badge_type) + '</span>' +
+          '</div>' +
+          '<div class="ver-card-user">@' + esc(u.username || '?') + ' · ID: ' + (req.user_id || '').slice(0,8) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ver-card-msg">' + esc(req.message || '') + '</div>' +
+      '<div class="ver-card-actions">' +
+        '<button class="approve" onclick="window.adminApproveVer(\'' + req.id + '\',\'' + req.user_id + '\',\'' + req.badge_type + '\')">✅ Одобрить</button>' +
+        '<button class="reject" onclick="window.adminRejectVer(\'' + req.id + '\')">❌ Отклонить</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+window.adminApproveVer = async (reqId, uid, badgeType) => {
+  try {
+    // Выдать галочку
+    const updates = {};
+    if (badgeType === 'verified') updates.is_verified = true;
+    else if (badgeType === 'youtuber') updates.is_youtuber = true;
+    else if (badgeType === 'bot') updates.is_bot_verified = true;
+    await sb.from('profiles').update(updates).eq('id', uid);
+
+    // Лог
+    try {
+      await sb.from('verification_log').insert({
+        user_id: uid,
+        badge_type: badgeType,
+        granted_by: state.user.id
+      });
+    } catch(e) {}
+
+    // Обновить заявку
+    await sb.from('verification_requests').update({
+      status: 'approved',
+      reviewed_by: state.user.id,
+      reviewed_at: new Date().toISOString()
+    }).eq('id', reqId);
+
+    toast('✅ Галочка выдана!');
+    renderAdminVerifications();
+    renderAdminStats();
+  } catch(e) { toast('Ошибка: ' + e.message); }
+};
+
+window.adminRejectVer = async (reqId) => {
+  const reason = prompt('Причина отказа (опционально):') || 'Не соответствует требованиям';
+  try {
+    await sb.from('verification_requests').update({
+      status: 'rejected',
+      reject_reason: reason,
+      reviewed_by: state.user.id,
+      reviewed_at: new Date().toISOString()
+    }).eq('id', reqId);
+    toast('Отклонено');
+    renderAdminVerifications();
+    renderAdminStats();
+  } catch(e) { toast('Ошибка'); }
+};
+
+// ============ АДМИН: ТИКЕТЫ ============
+async function renderAdminTickets() {
+  const bod = $('abod');
+  if (!bod) return;
+  let tickets = [];
+  try {
+    const r = await sb.from('tickets').select('*').order('id', { ascending: false }).limit(50);
+    tickets = r.data || [];
+  } catch(e) {}
+  adminTicketsCache = tickets;
+
+  if (!tickets.length) {
+    bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎫 Тикетов нет</div>';
+    return;
+  }
+
+  bod.innerHTML = tickets.map(t =>
+    '<div class="ver-card">' +
+      '<div class="ver-card-head">' +
+        '<div style="flex:1">' +
+          '<div class="ver-card-name">' + esc(t.subject || 'Без темы') + '</div>' +
+          '<div class="ver-card-user">' + esc(t.email || '') + ' · ' + esc(t.type || '') + ' · ' + esc(t.status || 'pending') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ver-card-msg">' + esc(t.message || '') + '</div>' +
+      '<div class="ver-card-actions">' +
+        '<button class="approve" onclick="window.adminResolveTicket(\'' + t.id + '\')">✅ Решено</button>' +
+        '<button class="reject" onclick="window.adminDeleteTicket(\'' + t.id + '\')">🗑 Удалить</button>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+window.adminResolveTicket = async (tid) => {
+  try {
+    await sb.from('tickets').update({ status: 'resolved' }).eq('id', tid);
+    toast('Решено ✅');
+    renderAdminTickets();
+  } catch(e) { toast('Ошибка'); }
+};
+
+window.adminDeleteTicket = async (tid) => {
+  if (!confirm('Удалить тикет?')) return;
+  try {
+    await sb.from('tickets').delete().eq('id', tid);
+    toast('Удалено');
+    renderAdminTickets();
+  } catch(e) { toast('Ошибка'); }
+};
+
+// ============ АДМИН: ЖАЛОБЫ ============
+async function renderAdminReports() {
+  const bod = $('abod');
+  if (!bod) return;
+  let reports = [];
+  try {
+    const r = await sb.from('reports').select('*').eq('status', 'pending').limit(50);
+    reports = r.data || [];
+  } catch(e) {}
+  adminReportsCache = reports;
+
+  if (!reports.length) {
+    bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Жалоб нет</div>';
+    return;
+  }
+
+  bod.innerHTML = reports.map(r =>
+    '<div class="ver-card">' +
+      '<div class="ver-card-head">' +
+        '<div style="flex:1">' +
+          '<div class="ver-card-name">🚩 ' + esc(r.reason || 'Без причины') + '</div>' +
+          '<div class="ver-card-user">msg: ' + (r.message_id || '—') + ' · от ' + (r.reporter_id || '?').slice(0,8) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ver-card-actions">' +
+        '<button class="approve" onclick="window.adminResolveReport(\'' + r.id + '\')">✅ Решено</button>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+window.adminResolveReport = async (rid) => {
+  try {
+    await sb.from('reports').update({ status: 'resolved', reviewed_by: state.user.id }).eq('id', rid);
+    toast('Решено ✅');
+    renderAdminReports();
+  } catch(e) { toast('Ошибка'); }
+};
+
+// ============ АДМИН: ПРОМО ============
+async function renderAdminPromo() {
+  const bod = $('abod');
+  if (!bod) return;
+  let promos = [];
+  try {
+    const r = await sb.from('promocodes').select('*').order('id', { ascending: false }).limit(50);
+    promos = r.data || [];
+  } catch(e) {}
+
+  bod.innerHTML =
+    '<button onclick="window.adminCreatePromo()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:14px">＋ Создать промокод</button>' +
+    (promos.length ? promos.map(p =>
+      '<div class="ver-card">' +
+        '<div class="ver-card-head">' +
+          '<div style="flex:1">' +
+            '<div class="ver-card-name">🎁 ' + esc(p.code) + '</div>' +
+            '<div class="ver-card-user">' + (p.days || 0) + ' дней · ' + (p.bonus_coins || 0) + ' SG · ' + (p.uses || 0) + '/' + (p.max_uses || 0) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="ver-card-actions">' +
+          '<button class="reject" onclick="window.adminDeletePromo(\'' + p.id + '\')">🗑 Удалить</button>' +
+        '</div>' +
+      '</div>'
+    ).join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Промокодов нет</div>');
+}
+
+window.adminCreatePromo = () => {
+  openModal(
+    '<h2>🎁 Новый промокод</h2>' +
+    '<input id="npCode" placeholder="КОД" style="text-transform:uppercase">' +
+    '<input id="npDays" type="number" placeholder="Дней Plus" value="0">' +
+    '<input id="npCoins" type="number" placeholder="SG монет" value="0">' +
+    '<input id="npMax" type="number" placeholder="Макс использований" value="100">' +
+    '<button id="bCreatePromo" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Создать</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+  );
+  $('bCreatePromo').onclick = async () => {
+    const code = $('npCode').value.trim().toUpperCase();
+    if (!code) { toast('Введи код'); return; }
+    try {
+      await sb.from('promocodes').insert({
+        code,
+        days: parseInt($('npDays').value) || 0,
+        bonus_coins: parseInt($('npCoins').value) || 0,
+        max_uses: parseInt($('npMax').value) || 100,
+        uses: 0,
+        created_by: state.user.id
+      });
+      toast('Создан ✅');
+      closeModal();
+      renderAdminPromo();
+    } catch(e) { toast('Ошибка: ' + e.message); }
+  };
+};
+
+window.adminDeletePromo = async (pid) => {
+  if (!confirm('Удалить промокод?')) return;
+  try {
+    await sb.from('promocodes').delete().eq('id', pid);
+    toast('Удалено');
+    renderAdminPromo();
+  } catch(e) { toast('Ошибка'); }
+};
+
+// ============ АДМИН: КАНАЛЫ ============
+async function renderAdminChannels() {
+  const bod = $('abod');
+  if (!bod) return;
+  let chats = [];
+  try {
+    const r = await sb.from('chats').select('*').or('is_channel.eq.true,is_group.eq.true').order('id', { ascending: false }).limit(50);
+    chats = r.data || [];
+  } catch(e) {}
+
+  if (!chats.length) {
+    bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">📢 Каналов нет</div>';
+    return;
+  }
+
+  bod.innerHTML = chats.map(c =>
+    '<div class="ver-card">' +
+      '<div class="ver-card-head">' +
+        '<div style="flex:1">' +
+          '<div class="ver-card-name">' + (c.is_channel ? '📢' : '👥') + ' ' + esc(c.group_name || 'Чат #' + c.id) + '</div>' +
+          '<div class="ver-card-user">ID: ' + c.id + ' · last: ' + esc((c.last_message || '').slice(0, 40)) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ver-card-actions">' +
+        '<button class="reject" onclick="window.adminDeleteChat(\'' + c.id + '\')">🗑 Удалить</button>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+window.adminDeleteChat = async (cid) => {
+  if (!confirm('Удалить чат и все сообщения?')) return;
+  try {
+    await sb.from('messages').delete().eq('chat_id', cid);
+    await sb.from('chats').delete().eq('id', cid);
+    toast('Удалено');
+    renderAdminChannels();
+  } catch(e) { toast('Ошибка'); }
+};
+
+// ============ BINDINGS (все кнопки) ============
 function bindButtons() {
   const bSidebar = $('bSidebar');
   if (bSidebar) bSidebar.onclick = () => openSidebar();
@@ -1374,12 +2430,10 @@ function bindButtons() {
     'bGrp': () => window.openGroupCreate(),
     'bStickers': () => window.openMyStickers(),
     'bSaved': () => toast('📌 Избранное — скоро'),
-    'bFriends': () => toast('👥 Друзья — скоро'),
     'bVer': () => window.openVerification(),
     'bHelp': () => window.openBotChat(),
-    'bApp': () => window.openWebApps()
+    'bApp': () => toast('📱 Web Apps — скоро')
   };
-
   Object.keys(bindings).forEach(id => {
     const el = $(id);
     if (el) el.onclick = bindings[id];
@@ -1410,13 +2464,6 @@ function bindButtons() {
         e.preventDefault();
         sendMessage();
       }
-      if (state.currentChat) {
-        clearTimeout(state.draftTimer);
-        state.draftTimer = setTimeout(() => {
-          if (msgI.value.trim()) localStorage.setItem('sg_draft_' + state.currentChat.id, msgI.value);
-          else localStorage.removeItem('sg_draft_' + state.currentChat.id);
-        }, 500);
-      }
     };
   }
   if (bSend) bSend.onclick = sendMessage;
@@ -1434,15 +2481,17 @@ function bindButtons() {
   };
 
   const bMic = $('bMic');
-  if (bMic) bMic.onclick = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      bMic.textContent = '🎤';
-      bMic.style.background = '';
-    } else {
-      startVoice();
-    }
-  };
+  if (bMic) {
+    bMic.onclick = () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        bMic.textContent = '🎤';
+        bMic.style.background = '';
+      } else {
+        startVoice();
+      }
+    };
+  }
 
   ['ap','af','as','ag','avn','ab','apo'].forEach(id => {
     const el = $(id);
@@ -1481,8 +2530,7 @@ function bindButtons() {
 function switchTab(tab) {
   const sd = $('SD'), fd = $('fdScr');
   if (sd) sd.style.display = 'none';
-  if (fd) fd.style.display = 'none';
-  if (fd) fd.classList.remove('active');
+  if (fd) { fd.style.display = 'none'; fd.classList.remove('active'); }
 
   if (tab === 'chats') {
     if (sd) sd.style.display = 'flex';
@@ -1497,6 +2545,7 @@ function switchTab(tab) {
   }
 }
 
+// ============ ФАЙЛЫ / СТИКЕРЫ / GIF / СЖЕЧЬ / ОПРОС ============
 function pickFile(accept) {
   const inp = document.createElement('input');
   inp.type = 'file';
@@ -1506,49 +2555,6 @@ function pickFile(accept) {
     if (file && state.currentChat) sendFile(file);
   };
   inp.click();
-}
-
-async function startVoice() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
-    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunks.push(e.data); };
-    mediaRecorder.onstop = async () => {
-      stream.getTracks().forEach(t => t.stop());
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
-      const file = new File([blob], 'voice_' + Date.now() + '.webm', { type: 'audio/webm' });
-      if (!state.currentChat) return;
-      toast('Отправка...');
-      try {
-        const url = await uploadFile('files', file, 'voice');
-        const payload = {
-          chat_id: state.currentChat.id,
-          sender: state.user.id,
-          sender_name: state.profile.display_name,
-          file_url: url,
-          file_type: 'audio/webm',
-          file_name: file.name,
-          is_voice: true,
-          is_read: false,
-          deleted: false
-        };
-        let { error } = await sb.from('messages').insert(payload);
-        if (error && error.message.indexOf('sender_name') !== -1) {
-          delete payload.sender_name;
-          const r = await sb.from('messages').insert(payload);
-          error = r.error;
-        }
-        if (error) { toast('Ошибка'); return; }
-        await sb.from('chats').update({ last_message: '🎤 Голосовое' }).eq('id', state.currentChat.id);
-        await loadMessages();
-      } catch (e) { toast('Ошибка: ' + e.message); }
-    };
-    mediaRecorder.start();
-    const bMic = $('bMic');
-    if (bMic) { bMic.textContent = '⏹'; bMic.style.background = '#e53935'; }
-    toast('🎤 Запись... нажми ещё раз');
-  } catch (e) { toast('Нет доступа к микрофону'); }
 }
 
 function openStickerPicker() {
@@ -1634,7 +2640,7 @@ function toggleBurn() {
         state.burnAfter = parseInt(b.dataset.b) || 0;
         opts.querySelectorAll('button').forEach(x => x.classList.remove('on'));
         b.classList.add('on');
-        if (state.burnAfter > 0) toast('🔥 Самоуничтожение: ' + b.textContent);
+        if (state.burnAfter > 0) toast('🔥 ' + b.textContent);
       };
     });
   }
@@ -1647,8 +2653,8 @@ function openPollCreate() {
     '<input class="poll-i" placeholder="Вариант 1">' +
     '<input class="poll-i" placeholder="Вариант 2">' +
     '<input class="poll-i" placeholder="Вариант 3 (опц.)">' +
-    '<button id="bCrPoll" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Отмена</button>'
+    '<button id="bCrPoll" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
   $('bCrPoll').onclick = async () => {
     const q = $('pollQ').value.trim();
@@ -1673,6 +2679,7 @@ function openPollCreate() {
   };
 }
 
+// ============ SIDEBAR ============
 function openSidebar() {
   let sb2 = document.querySelector('.sg-sidebar');
   if (!sb2) {
@@ -1684,12 +2691,13 @@ function openSidebar() {
 
     const menu = [
       { i:'👤', t:'Мой профиль', a:() => { closeSidebar(); showProf(); } },
-      { i:'📸', t:'Статусы', a:() => { closeSidebar(); window.openStories(); } },
+      { i:'📸', t:'Статусы', a:() => { closeSidebar(); loadStoriesBar(); toast('Смотри статусы сверху 👆'); } },
       { i:'🛒', t:'Магазин', a:() => { closeSidebar(); window.openShop(); } },
       { i:'💰', t:'Баланс', a:() => { closeSidebar(); window.openBalance(); } },
       { i:'🎁', t:'Промокод', a:() => { closeSidebar(); window.openPromo(); } },
       { i:'🧩', t:'Моды', a:() => { closeSidebar(); window.openMods(); } },
       { i:'🎁', t:'Подарки', a:() => { closeSidebar(); window.openGifts(); } },
+      { i:'✅', t:'Верификация', a:() => { closeSidebar(); window.openVerification(); } },
       { i:'⚙️', t:'Настройки', a:() => { closeSidebar(); window.openSettings(); } }
     ];
     if (isAdmin()) menu.push({ i:'👑', t:'Админ-панель', a:() => { closeSidebar(); window.openAdmin(); } });
@@ -1700,7 +2708,6 @@ function openSidebar() {
         '<span style="font-size:18px">' + m.i + '</span> ' + m.t +
       '</button>'
     ).join('');
-
     $('sbMenu').querySelectorAll('button').forEach(b => {
       b.onclick = () => menu[+b.dataset.i].a();
     });
@@ -1724,6 +2731,7 @@ function closeSidebar() {
 }
 window.closeSidebar = closeSidebar;
 
+// ============ CREATE GROUP ============
 window.openGroupCreate = function() {
   openModal(
     '<h2>➕ Новая группа/канал</h2>' +
@@ -1732,8 +2740,8 @@ window.openGroupCreate = function() {
       '<button data-t="channel" style="flex:1;padding:10px;border-radius:10px;background:var(--p2);color:var(--t);font-weight:600;border:none;cursor:pointer">📢 Канал</button>' +
     '</div>' +
     '<input id="grpName" placeholder="Название">' +
-    '<button id="bCreateGrp" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Отмена</button>'
+    '<button id="bCreateGrp" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
   let type = 'group';
   document.querySelectorAll('#typeGrp button').forEach(b => b.onclick = () => {
@@ -1756,23 +2764,7 @@ window.openGroupCreate = function() {
   };
 };
 
-window.openBotChat = async () => {
-  openModal(
-    '<h2>🤖 @Spacegramhelperbot</h2>' +
-    '<div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;line-height:1.6;color:var(--t2);margin-bottom:14px">' +
-      'Напиши мне:<br><br>' +
-      '🌤 <b>погода Москва</b><br>' +
-      '😂 <b>шутка</b><br>' +
-      '🐱 <b>котик</b><br>' +
-      '💰 <b>биткоин</b><br>' +
-      '❓ <b>викторина</b><br>' +
-      '🌐 <b>переведи hello на русский</b><br>' +
-      '🎨 <b>нарисуй космонавта</b>' +
-    '</div>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Понятно</button>'
-  );
-};
-
+// ============ STALKER / GALLERY / SEARCH / MENU ============
 window.openStalker = function() {
   if (!state.currentChat) return;
   const deleted = state.messages.filter(m => m.deleted);
@@ -1782,7 +2774,7 @@ window.openStalker = function() {
     (deleted.length ? deleted.map(m =>
       '<div style="padding:10px;background:var(--p2);border-radius:10px;margin-bottom:6px;font-size:13px;opacity:.7"><b>' + esc(m.sender_name || '?') + ':</b> ' + esc(m.text || '[медиа]') + '</div>'
     ).join('') : '<div style="text-align:center;padding:20px;color:var(--t2)">Пусто</div>') +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
   );
 };
 
@@ -1791,10 +2783,10 @@ window.openChatGallery = function() {
   const media = state.messages.filter(m => m.file_url && (m.file_type || '').indexOf('image') === 0);
   openModal(
     '<h2>🖼️ Галерея чата</h2>' +
-    (media.length ? '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' + media.map(m =>
-      '<img src="' + esc(m.file_url) + '" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;cursor:pointer" onclick="window.openImage(\'' + esc(m.file_url) + '\')">'
+    (media.length ? '<div class="chat-gallery">' + media.map(m =>
+      '<img src="' + esc(m.file_url) + '" onclick="window.openImage(\'' + esc(m.file_url) + '\')">'
     ).join('') + '</div>' : '<div style="text-align:center;padding:20px;color:var(--t2)">Нет фото</div>') +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
   );
 };
 
@@ -1803,7 +2795,7 @@ window.openChatSearch = function() {
     '<h2>🔍 Поиск в чате</h2>' +
     '<input id="chatSearchQ" placeholder="Что искать?">' +
     '<div id="chatSearchRes" style="max-height:300px;overflow-y:auto"></div>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
   );
   $('chatSearchQ').oninput = () => {
     const q = $('chatSearchQ').value.trim().toLowerCase();
@@ -1823,8 +2815,8 @@ window.openChatMenu = function() {
     ? state.currentChat.group_name : state.currentChat.other?.display_name;
   openModal(
     '<h2>' + esc(name || 'Чат') + '</h2>' +
-    '<button onclick="window.clearChatHistory()" style="width:100%;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:600;font-size:14px;border:1px solid rgba(229,57,53,.3);cursor:pointer;margin-bottom:8px">🗑 Очистить историю</button>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Закрыть</button>'
+    '<button onclick="window.clearChatHistory()" style="width:100%;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:600;border:1px solid rgba(229,57,53,.3);cursor:pointer;margin-bottom:8px">🗑 Очистить историю</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>'
   );
 };
 
@@ -1837,12 +2829,13 @@ window.clearChatHistory = async () => {
   toast('Очищено');
 };
 
+// ============ MY STICKERS ============
 window.openMyStickers = function() {
   openModal(
     '<h2>🎨 Мои стикеры</h2>' +
     '<input type="file" id="stkFile" accept="image/*" style="width:100%;margin-bottom:14px">' +
-    '<button onclick="window.uploadSticker()" style="width:100%;padding:11px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">➕ Загрузить</button>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Закрыть</button>'
+    '<button onclick="window.uploadSticker()" style="width:100%;padding:11px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">➕ Загрузить</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>'
   );
 };
 
@@ -1857,148 +2850,20 @@ window.uploadSticker = async () => {
   } catch(e) { toast('Ошибка: ' + e.message); }
 };
 
-window.openVerification = function() {
-  openModal(
-    '<h2>✅ Верификация</h2>' +
-    '<div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:14px">Отправь заявку на галочку.</div>' +
-    '<textarea id="verMsg" rows="4" placeholder="Ссылки, портфолио..."></textarea>' +
-    '<button id="bSendVer" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#7c3aed);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Отмена</button>'
-  );
-  $('bSendVer').onclick = async () => {
-    const msg = $('verMsg').value.trim();
-    if (!msg) { toast('Напиши что-нибудь'); return; }
-    try { await sb.from('verification_requests').insert({ user_id: state.user.id, message: msg, status: 'pending' }); } catch(e) {}
-    toast('Заявка отправлена ✅');
-    closeModal();
-  };
-};
+// ============ WATCH BAN ============
+function startBanWatch() {
+  setInterval(async () => {
+    if (!state.user) return;
+    try {
+      const { data } = await sb.from('profiles').select('is_banned,ban_reason').eq('id', state.user.id).single();
+      if (data?.is_banned) showBanBanner(data.ban_reason);
+    } catch(e) {}
+  }, 30000);
+}
 
-window.openWebApps = function() {
-  openModal(
-    '<h2>📱 Web Apps</h2>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<button onclick="toast(\'Скоро\')" class="gh" style="padding:16px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">📊 Опросы</button>' +
-      '<button onclick="toast(\'Скоро\')" class="gh" style="padding:16px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">🎮 Игры</button>' +
-      '<button onclick="toast(\'Скоро\')" class="gh" style="padding:16px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">💰 Финансы</button>' +
-      '<button onclick="toast(\'Скоро\')" class="gh" style="padding:16px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">🤖 AI</button>' +
-    '</div>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
-  );
-};
-
-/* ============ АДМИНКА (window.XXX!) ============ */
-window.openAdmin = function() {
-  if (!isAdmin()) { toast('Нет доступа'); return; }
-  openModal(
-    '<h2>👑 Админ-панель</h2>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
-      '<button onclick="window.adminLoadUsers()" class="gh" style="padding:14px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">👥 Юзеры</button>' +
-      '<button onclick="window.adminLoadTickets()" class="gh" style="padding:14px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">🎫 Тикеты</button>' +
-      '<button onclick="window.adminLoadReports()" class="gh" style="padding:14px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">🚩 Жалобы</button>' +
-      '<button onclick="window.adminLoadStats()" class="gh" style="padding:14px;border-radius:12px;background:var(--p2);border:1px solid var(--br);color:var(--t);font-weight:600;cursor:pointer">📊 Стата</button>' +
-    '</div>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
-  );
-};
-
-window.adminLoadUsers = async () => {
-  const { data } = await sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(100);
-  const users = data || [];
-  openModal(
-    '<h2>👥 Юзеры (' + users.length + ')</h2>' +
-    '<div style="max-height:55vh;overflow-y:auto">' +
-      users.map(u =>
-        '<div style="padding:10px;background:var(--p2);border-radius:10px;margin-bottom:6px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center">' +
-            '<div>' +
-              '<div style="font-weight:700;font-size:13px">' + esc(u.display_name) + ' ' + (u.is_creator?'👑':'') + ' ' + (u.is_verified?'✅':'') + ' ' + (u.is_banned?'🚫':'') + '</div>' +
-              '<div style="font-size:11px;color:var(--t2)">@' + esc(u.username) + ' · ' + (u.balance||0) + ' SG · lvl ' + (u.level||1) + '</div>' +
-            '</div>' +
-            '<div style="display:flex;gap:4px">' +
-              '<button onclick="window.adminToggleBan(\'' + u.id + '\',' + u.is_banned + ')" style="padding:5px 9px;border-radius:8px;background:' + (u.is_banned ? '#4caf50' : '#e53935') + ';color:#fff;font-size:11px;font-weight:600;border:none;cursor:pointer">' + (u.is_banned ? 'Разбан' : 'Бан') + '</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>'
-      ).join('') +
-    '</div>' +
-    '<button onclick="window.openAdmin()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">← Назад</button>'
-  );
-};
-
-window.adminToggleBan = async (uid, isBanned) => {
-  if (uid === state.user.id) { toast('Себя нельзя'); return; }
-  if (isBanned) {
-    await sb.from('profiles').update({ is_banned: false, ban_reason: null }).eq('id', uid);
-    toast('✅ Разбанен');
-  } else {
-    const reason = prompt('Причина:', 'Нарушение') || 'Нарушение';
-    await sb.from('profiles').update({ is_banned: true, ban_reason: reason }).eq('id', uid);
-    toast('🚫 Забанен');
-  }
-  window.adminLoadUsers();
-};
-
-window.adminLoadTickets = async () => {
-  let tickets = [];
-  try {
-    const r = await sb.from('tickets').select('*').order('id', { ascending: false }).limit(50);
-    tickets = r.data || [];
-  } catch(e) {}
-  openModal(
-    '<h2>🎫 Тикеты (' + tickets.length + ')</h2>' +
-    '<div style="max-height:55vh;overflow-y:auto">' +
-      (tickets.length ? tickets.map(t =>
-        '<div style="padding:10px;background:var(--p2);border-radius:10px;margin-bottom:6px">' +
-          '<div style="font-weight:700;font-size:13px">' + esc(t.subject || 'Без темы') + '</div>' +
-          '<div style="font-size:11px;color:var(--t2)">' + esc(t.email || '') + '</div>' +
-          '<div style="font-size:12px;margin-top:6px;opacity:.8">' + esc((t.message || '').slice(0, 200)) + '</div>' +
-        '</div>'
-      ).join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Тикетов нет</div>') +
-    '</div>' +
-    '<button onclick="window.openAdmin()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">← Назад</button>'
-  );
-};
-
-window.adminLoadReports = async () => {
-  let reports = [];
-  try {
-    const r = await sb.from('reports').select('*').eq('status', 'pending').limit(50);
-    reports = r.data || [];
-  } catch(e) {}
-  openModal(
-    '<h2>🚩 Жалобы (' + reports.length + ')</h2>' +
-    '<div style="max-height:55vh;overflow-y:auto">' +
-      (reports.length ? reports.map(r =>
-        '<div style="padding:10px;background:var(--p2);border-radius:10px;margin-bottom:6px">' +
-          '<div style="font-weight:700;font-size:13px">' + esc(r.reason || '?') + '</div>' +
-          '<div style="font-size:11px;color:var(--t2)">msg: ' + r.message_id + '</div>' +
-        '</div>'
-      ).join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Жалоб нет</div>') +
-    '</div>' +
-    '<button onclick="window.openAdmin()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">← Назад</button>'
-  );
-};
-
-window.adminLoadStats = async () => {
-  let u = 0, c = 0, m = 0;
-  try { const r = await sb.from('profiles').select('id', { count: 'exact', head: true }); u = r.count || 0; } catch(e) {}
-  try { const r = await sb.from('chats').select('id', { count: 'exact', head: true }); c = r.count || 0; } catch(e) {}
-  try { const r = await sb.from('messages').select('id', { count: 'exact', head: true }); m = r.count || 0; } catch(e) {}
-  openModal(
-    '<h2>📊 Статистика</h2>' +
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800">' + u + '</div><div style="font-size:11px;color:var(--t2)">👥 Юзеров</div></div>' +
-      '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center"><div style="font-size:24px;font-weight:800">' + c + '</div><div style="font-size:11px;color:var(--t2)">💬 Чатов</div></div>' +
-      '<div style="background:var(--p2);border-radius:12px;padding:14px;text-align:center;grid-column:1/-1"><div style="font-size:24px;font-weight:800">' + m + '</div><div style="font-size:11px;color:var(--t2)">📝 Сообщений</div></div>' +
-    '</div>' +
-    '<button onclick="window.openAdmin()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">← Назад</button>'
-  );
-};
-
-/* ============ MAIN ============ */
+// ============ MAIN ============
 (async function main() {
-  console.log('🚀 Spacegram v13 init...');
+  console.log('🚀 Spacegram v14 init...');
 
   try {
     const createClient = await loadSupabase();
@@ -2026,21 +2891,27 @@ window.adminLoadStats = async () => {
   const authEl = $('A');
 
   if (savedId) {
-    const { data } = await sb.from('profiles').select('*').eq('id', savedId).maybeSingle();
-    if (data && !data.is_banned) {
-      state.user = { id: data.id };
-      state.profile = data;
-      if (loadingEl) loadingEl.style.display = 'none';
-      await enterApp();
-      console.log('✅ Автологин OK');
-    } else {
-      if (data && data.is_banned) showBanBanner(data.ban_reason);
-      localStorage.removeItem('sg_user_id');
-      if (loadingEl) loadingEl.style.display = 'none';
+    try {
+      const { data } = await sb.from('profiles').select('*').eq('id', savedId).maybeSingle();
+      if (data && !data.is_banned) {
+        state.user = { id: data.id };
+        state.profile = data;
+        if (loadingEl) loadingEl.classList.add('hide');
+        await enterApp();
+        startBanWatch();
+        console.log('✅ Автологин OK');
+      } else {
+        if (data && data.is_banned) showBanBanner(data.ban_reason);
+        localStorage.removeItem('sg_user_id');
+        if (loadingEl) loadingEl.classList.add('hide');
+        if (authEl) authEl.style.display = 'flex';
+      }
+    } catch(e) {
+      if (loadingEl) loadingEl.classList.add('hide');
       if (authEl) authEl.style.display = 'flex';
     }
   } else {
-    if (loadingEl) loadingEl.style.display = 'none';
+    if (loadingEl) loadingEl.classList.add('hide');
     if (authEl) authEl.style.display = 'flex';
   }
 
