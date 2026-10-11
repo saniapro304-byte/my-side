@@ -8,7 +8,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const state = {
   user: null, profile: null, chats: [], currentChat: null,
   messages: [], replyTo: null,
-  realtimeChats: null, realtimeMsgs: null, realtimeStories: null,
+  pollTimer: null,
+  realtimeChats: null, realtimeMsgs: null,
   adminUsers: [], adminFilter: '',
   settings: {
     theme: localStorage.getItem('theme') || 'midnight',
@@ -92,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await refreshProfile();
     await loadChats();
     setupRealtime();
-    console.log('✅ Realtime активен');
+    console.log('✅ Realtime + Polling активны');
   }
 
   async function refreshProfile() {
@@ -108,17 +109,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function logout() {
     if (state.realtimeChats) sb.removeChannel(state.realtimeChats);
     if (state.realtimeMsgs) sb.removeChannel(state.realtimeMsgs);
-    if (state.realtimeStories) sb.removeChannel(state.realtimeStories);
+    if (state.pollTimer) clearInterval(state.pollTimer);
     localStorage.removeItem('sg_user_id');
     location.reload();
   }
 
-  // ============ REALTIME (без мигания) ============
+  // ============ REALTIME + FALLBACK ============
   function setupRealtime() {
+    // Канал чатов
     state.realtimeChats = sb.channel('rt-chats-' + state.user.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { loadChats(); })
-      .subscribe();
+      .subscribe((status) => console.log('📡 chats:', status));
 
+    // Канал сообщений
     state.realtimeMsgs = sb.channel('rt-msgs-' + state.user.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
         if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) {
@@ -128,7 +131,26 @@ document.addEventListener('DOMContentLoaded', () => {
           loadChats();
         }
       })
-      .subscribe();
+      .subscribe((status) => console.log('📡 messages:', status));
+
+    // FALLBACK POLLING каждые 2 сек
+    if (state.pollTimer) clearInterval(state.pollTimer);
+    let lastMsgId = null;
+    state.pollTimer = setInterval(async () => {
+      if (!state.user) return;
+      if (state.currentChat) {
+        const { data } = await sb.from('messages')
+          .select('id')
+          .eq('chat_id', state.currentChat.id)
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data && data.id !== lastMsgId) {
+          lastMsgId = data.id;
+          loadMessages();
+        }
+      }
+    }, 2000);
   }
 
   // ============ ЧАТЫ ============
@@ -387,9 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ============================================
-  // ============ 📸 СТАТУСЫ ============
-  // ============================================
+  // ============ СТАТУСЫ ============
   async function openStories() {
     const { data: stories } = await sb.from('stories')
       .select('*')
@@ -397,7 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
       .order('created_at', { ascending: false })
       .limit(100);
 
-    // Группируем по юзеру
     const byUser = {};
     (stories||[]).forEach(s => {
       if (!byUser[s.user_id]) byUser[s.user_id] = [];
