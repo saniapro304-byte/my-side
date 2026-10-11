@@ -8,6 +8,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const state = {
   user: null, profile: null, chats: [], currentChat: null,
   messages: [], replyTo: null, pollTimer: null,
+  adminUsers: [], adminFilter: '',
   settings: {
     theme: localStorage.getItem('theme') || 'midnight',
     sound: localStorage.getItem('sound') !== '0',
@@ -18,6 +19,7 @@ const state = {
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTime = (d) => { const x = new Date(d); return x.getHours().toString().padStart(2,'0')+':'+x.getMinutes().toString().padStart(2,'0'); };
+const fmtDate = (d) => { if (!d) return '—'; const x = new Date(d); return x.getDate().toString().padStart(2,'0')+'.'+(x.getMonth()+1).toString().padStart(2,'0')+'.'+x.getFullYear(); };
 
 function toast(msg, ms=2000) {
   const t = $('toast'); if (!t) return;
@@ -121,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function renderChats() {
     const el = $('chatList');
-    if (!state.chats.length) { el.innerHTML = '<div style="padding:60px 20px;text-align:center;color:var(--text2);font-size:15px">💬 Нет чатов<br><br>Нажми «＋ Чат» чтобы начать</div>'; return; }
+    if (!state.chats.length) { el.innerHTML = '<div style="padding:60px 20px;text-align:center;color:var(--text2)">💬 Нет чатов<br><br>Нажми «＋ Чат»</div>'; return; }
     el.innerHTML = state.chats.map(c => {
       const name = c.is_group || c.is_channel ? (c.group_name || 'Без названия') : (c.other?.display_name || 'Юзер');
       const initial = name[0]?.toUpperCase() || '?';
@@ -239,9 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (p.is_plus) badges.push('<span class="badge plus">⭐ Plus</span>');
     if (p.is_youtuber) badges.push('<span class="badge yt">▶️ YouTuber</span>');
     if (p.role === 'admin') badges.push('<span class="badge gold">⚡ Админ</span>');
-    if (p.is_bot_verified) badges.push('<span class="badge">🤖 Bot</span>');
 
-    const modsCount = (p.mods||[]).length;
     $('profileContent').innerHTML = `
       <div class="profile-cover"></div>
       <div class="profile-header">
@@ -336,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const { data } = await sb.from('balance_log').select('*').eq('user_id', state.user.id).order('id', { ascending: false }).limit(30);
     openModal(`
       <h3>💰 Баланс: ${state.profile.balance||0} SG</h3>
-      <button class="toolbar-btn" style="width:100%;margin-bottom:10px" onclick="window.promoPrompt()">🎁 Ввести промокод</button>
+      <button class="toolbar-btn" style="width:100%;margin-bottom:10px" onclick="window.promoPrompt()">🎁 Промокод</button>
       <div style="max-height:300px;overflow-y:auto">
         ${(data||[]).map(l => `<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">
           <span style="font-size:13px">${esc(l.reason||'Начисление')}</span>
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const code = prompt('Промокод:');
     if (!code) return;
     const { data: promo } = await sb.from('promocodes').select('*').eq('code', code.toUpperCase()).maybeSingle();
-    if (!promo) { toast('Промокод не найден ❌'); return; }
+    if (!promo) { toast('Не найден ❌'); return; }
     if (promo.uses >= promo.max_uses) { toast('Исчерпан'); return; }
     const updates = {};
     if (promo.bonus_coins) updates.balance = (state.profile.balance||0) + promo.bonus_coins;
@@ -359,13 +359,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const until = new Date(); until.setDate(until.getDate() + promo.days);
       updates.is_plus = true; updates.plus_until = until.toISOString();
     }
-    const { error } = await sb.from('profiles').update(updates).eq('id', state.user.id);
-    if (error) { toast('Ошибка: ' + error.message); return; }
+    await sb.from('profiles').update(updates).eq('id', state.user.id);
     await sb.from('promocodes').update({ uses: (promo.uses||0)+1 }).eq('id', promo.id);
     if (promo.bonus_coins) await sb.from('balance_log').insert({ user_id: state.user.id, amount: promo.bonus_coins, reason: 'Промокод ' + promo.code });
     await refreshProfile();
-    toast('Активирован! 🎉');
-    window.closeModal();
+    toast('Активирован! 🎉'); window.closeModal();
   };
 
   async function openShop() {
@@ -431,9 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (error) { toast('Ошибка: ' + error.message); return; }
       chat = data;
     }
-    window.closeModal();
-    await loadChats();
-    openChat(chat.id);
+    window.closeModal(); await loadChats(); openChat(chat.id);
   };
 
   $('newGroupBtn').onclick = () => createGroup(false);
@@ -536,7 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function renderAdmin() {
     const [users, chats, messages, promos, shopItems, reports] = await Promise.all([
-      sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(50).then(r => r.data || []),
+      sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(200).then(r => r.data || []),
       sb.from('chats').select('*').order('id', { ascending: false }).limit(30).then(r => r.data || []),
       sb.from('messages').select('*').order('id', { ascending: false }).limit(50).then(r => r.data || []),
       sb.from('promocodes').select('*').limit(50).then(r => r.data || []),
@@ -544,7 +540,9 @@ document.addEventListener('DOMContentLoaded', () => {
       sb.from('reports').select('*').eq('status', 'pending').limit(50).then(r => r.data || [])
     ]);
 
-    const content = adminTab === 'users' ? renderAdminUsers(users)
+    state.adminUsers = users;
+
+    const content = adminTab === 'users' ? renderAdminUsers()
       : adminTab === 'chats' ? renderAdminChats(chats)
       : adminTab === 'messages' ? renderAdminMessages(messages)
       : adminTab === 'promos' ? renderAdminPromos(promos)
@@ -571,8 +569,307 @@ document.addEventListener('DOMContentLoaded', () => {
     `);
 
     document.querySelectorAll('.admin-tab').forEach(t => t.onclick = () => { adminTab = t.dataset.atab; renderAdmin(); });
+
+    // поиск юзеров
+    const searchU = $('adminUserSearch');
+    if (searchU) searchU.oninput = () => {
+      state.adminFilter = searchU.value.toLowerCase().trim();
+      const list = $('adminUserList');
+      if (list) list.innerHTML = renderAdminUsersList();
+      list?.querySelectorAll('[data-act]').forEach(b => b.onclick = () => adminUserAction(b.dataset.act, b.dataset.uid));
+    };
   }
 
+  // ============ 👥 УПРАВЛЕНИЕ ЮЗЕРАМИ ============
+  function renderAdminUsers() {
+    return `
+      <input id="adminUserSearch" placeholder="🔍 Поиск по @username или имени..." value="${esc(state.adminFilter)}" style="margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <button class="admin-btn success" onclick="window.adminShowCreateUser()">＋ Создать</button>
+        <button class="admin-btn" onclick="window.adminExportUsers()">📤 Экспорт JSON</button>
+      </div>
+      <div id="adminUserList">${renderAdminUsersList()}</div>
+    `;
+  }
+
+  function renderAdminUsersList() {
+    const f = state.adminFilter;
+    const list = state.adminUsers.filter(u =>
+      !f || u.username?.toLowerCase().includes(f) || u.display_name?.toLowerCase().includes(f)
+    );
+
+    if (!list.length) return '<div style="text-align:center;padding:30px;color:var(--text2)">Никого не найдено</div>';
+
+    return list.map(u => {
+      const badges = [];
+      if (u.is_creator) badges.push('👑');
+      if (u.role === 'admin') badges.push('⚡');
+      if (u.is_verified) badges.push('✅');
+      if (u.is_plus) badges.push('⭐');
+      if (u.is_youtuber) badges.push('▶️');
+      if (u.is_bot_verified) badges.push('🤖');
+
+      return `
+        <div class="admin-row" style="flex-wrap:wrap">
+          <div class="admin-row-info" style="flex-basis:100%">
+            <div class="admin-row-name">
+              ${badges.join(' ')} ${esc(u.display_name||'—')}
+              ${u.is_banned ? '<span style="color:var(--danger)">🚫 БАН</span>' : ''}
+            </div>
+            <div class="admin-row-sub">
+              @${esc(u.username||'—')} · ID: <code style="font-size:10px">${u.id.slice(0,8)}</code><br>
+              💰 ${u.balance||0} SG · 🎯 lvl ${u.level||1} · 💬 ${u.messages_count||0}<br>
+              ⚠️ варны: ${u.warns||0}/3 · рег: ${fmtDate(u.created_at)}
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;flex-basis:100%;margin-top:6px">
+            <button class="admin-btn" data-act="edit" data-uid="${u.id}">✏️ Изменить</button>
+            <button class="admin-btn" data-act="balance" data-uid="${u.id}">💰 Баланс</button>
+            <button class="admin-btn" data-act="pass" data-uid="${u.id}">🔑 Пароль</button>
+            <button class="admin-btn" data-act="warn" data-uid="${u.id}">⚠️ Варн</button>
+            <button class="admin-btn" data-act="mute" data-uid="${u.id}">🔇 Мут</button>
+            <button class="admin-btn" data-act="verify" data-uid="${u.id}">${u.is_verified?'❌ Снять✅':'✅ Вериф'}</button>
+            <button class="admin-btn" data-act="plus" data-uid="${u.id}">${u.is_plus?'❌ Снять⭐':'⭐ Plus'}</button>
+            ${u.is_creator ? '' : `<button class="admin-btn" data-act="creator" data-uid="${u.id}">👑 Создатель</button>`}
+            <button class="admin-btn danger" data-act="delete" data-uid="${u.id}">🗑 Удалить</button>
+            <button class="admin-btn ${u.is_banned?'success':'danger'}" data-act="ban" data-uid="${u.id}">${u.is_banned?'✅ Разбан':'🚫 Бан'}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Привязка обработчиков (вызывается после обновления списка)
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (b) adminUserAction(b.dataset.act, b.dataset.uid);
+  });
+
+  async function adminUserAction(action, uid) {
+    if (!isAdmin()) return;
+    const u = state.adminUsers.find(x => x.id === uid);
+    if (!u) return;
+
+    switch(action) {
+      case 'edit': return window.adminShowEditUser(u);
+      case 'balance': return window.adminShowBalance(u);
+      case 'pass': return window.adminShowPass(u);
+      case 'warn': return window.adminAddWarn(u);
+      case 'mute': return window.adminMute(u);
+      case 'verify': return window.adminToggleVerified(u);
+      case 'plus': return window.adminTogglePlus(u);
+      case 'creator': return window.adminToggleCreator(u);
+      case 'delete': return window.adminDeleteUser(u);
+      case 'ban': return window.adminToggleBan(u);
+    }
+  }
+
+  // -------- РЕДАКТИРОВАНИЕ ЮЗЕРА --------
+  window.adminShowEditUser = (u) => {
+    openModal(`
+      <h3>✏️ ${esc(u.username)}</h3>
+      <label style="font-size:12px;color:var(--text2)">ID: <code>${u.id}</code></label>
+      <input id="auName" placeholder="Имя" value="${esc(u.display_name||'')}">
+      <input id="auAvatar" placeholder="URL аватара" value="${esc(u.avatar_url||'')}">
+      <input id="auPhone" placeholder="Телефон" value="${esc(u.phone||'')}">
+      <textarea id="auBio" placeholder="Био" rows="2">${esc(u.bio||'')}</textarea>
+      <input id="auStatus" placeholder="Emoji-статус" value="${esc(u.emoji_status||'')}">
+      <input id="auLevel" type="number" placeholder="Уровень" value="${u.level||1}">
+      <input id="auXP" type="number" placeholder="XP" value="${u.xp||0}">
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auVerified" ${u.is_verified?'checked':''}> ✅ Верифицирован</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auPlus" ${u.is_plus?'checked':''}> ⭐ Plus</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auCreator" ${u.is_creator?'checked':''}> 👑 Создатель</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auYt" ${u.is_youtuber?'checked':''}> ▶️ YouTuber</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auBot" ${u.is_bot_verified?'checked':''}> 🤖 Bot Verified</label>
+      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auGhost" ${u.ghost_mode?'checked':''}> 👻 Ghost mode</label>
+      <select id="auRole">
+        <option value="user" ${u.role==='user'?'selected':''}>user</option>
+        <option value="moderator" ${u.role==='moderator'?'selected':''}>moderator</option>
+        <option value="admin" ${u.role==='admin'?'selected':''}>admin</option>
+      </select>
+      <div class="modal-actions">
+        <button onclick="window.openAdmin()">← Назад</button>
+        <button class="primary" onclick="window.adminSaveUser('${uid}')">💾 Сохранить</button>
+      </div>
+    `);
+  };
+
+  window.adminSaveUser = async (uid) => {
+    const updates = {
+      display_name: $('auName').value.trim(),
+      avatar_url: $('auAvatar').value.trim() || null,
+      phone: $('auPhone').value.trim() || null,
+      bio: $('auBio').value.trim(),
+      emoji_status: $('auStatus').value.trim() || null,
+      level: parseInt($('auLevel').value) || 1,
+      xp: parseInt($('auXP').value) || 0,
+      is_verified: $('auVerified').checked,
+      is_plus: $('auPlus').checked,
+      is_creator: $('auCreator').checked,
+      is_youtuber: $('auYt').checked,
+      is_bot_verified: $('auBot').checked,
+      ghost_mode: $('auGhost').checked,
+      role: $('auRole').value
+    };
+    const { error } = await sb.from('profiles').update(updates).eq('id', uid);
+    if (error) { toast('Ошибка: ' + error.message); return; }
+    toast('Сохранено ✅'); renderAdmin();
+  };
+
+  // -------- БАЛАНС --------
+  window.adminShowBalance = (u) => {
+    openModal(`
+      <h3>💰 Баланс @${esc(u.username)}</h3>
+      <p style="margin-bottom:10px">Текущий: <b>${u.balance||0} SG</b></p>
+      <input id="abAmount" type="number" placeholder="Сумма (+ или -)" value="100">
+      <input id="abReason" placeholder="Причина" value="Начисление админа">
+      <div class="modal-actions">
+        <button onclick="window.openAdmin()">← Назад</button>
+        <button class="primary" onclick="window.adminChangeBalance('${u.id}')">💰 Применить</button>
+      </div>
+    `);
+  };
+  window.adminChangeBalance = async (uid) => {
+    const amount = parseInt($('abAmount').value) || 0;
+    const reason = $('abReason').value.trim() || 'Начисление';
+    const u = state.adminUsers.find(x => x.id === uid);
+    const newBal = Math.max(0, (u.balance||0) + amount);
+    await sb.from('profiles').update({ balance: newBal }).eq('id', uid);
+    await sb.from('balance_log').insert({ user_id: uid, amount, reason: reason + ' (админ)', from_admin: state.user.id });
+    toast(`Баланс: ${newBal} SG`); renderAdmin();
+  };
+
+  // -------- ПАРОЛЬ --------
+  window.adminShowPass = (u) => {
+    openModal(`
+      <h3>🔑 Смена пароля @${esc(u.username)}</h3>
+      <input id="apNew" placeholder="Новый пароль">
+      <div class="modal-actions">
+        <button onclick="window.openAdmin()">← Назад</button>
+        <button class="primary" onclick="window.adminSetPass('${u.id}')">🔑 Сменить</button>
+      </div>
+    `);
+  };
+  window.adminSetPass = async (uid) => {
+    const pass = $('apNew').value.trim();
+    if (pass.length < 4) { toast('Минимум 4 символа'); return; }
+    await sb.from('profiles').update({ pin_code: pass }).eq('id', uid);
+    toast('Пароль изменён ✅'); renderAdmin();
+  };
+
+  // -------- ВАРН --------
+  window.adminAddWarn = async (u) => {
+    const reason = prompt('Причина варна:');
+    if (!reason) return;
+    const warns = (u.warns||0) + 1;
+    await sb.from('profiles').update({ warns }).eq('id', u.id);
+    await sb.from('user_warns').insert({ user_id: u.id, admin_id: state.user.id, reason });
+    if (warns >= 3) {
+      await sb.from('profiles').update({ is_banned: true, ban_reason: 'Автобан: 3 варна' }).eq('id', u.id);
+      toast('🚫 3 варна — автобан!');
+    } else toast(`Варн ${warns}/3`);
+    renderAdmin();
+  };
+
+  // -------- МУТ --------
+  window.adminMute = (u) => {
+    openModal(`
+      <h3>🔇 Мут @${esc(u.username)}</h3>
+      <select id="amDur">
+        <option value="5">5 минут</option>
+        <option value="60">1 час</option>
+        <option value="1440">1 день</option>
+        <option value="10080">7 дней</option>
+        <option value="0">Снять мут</option>
+      </select>
+      <div class="modal-actions">
+        <button onclick="window.openAdmin()">← Назад</button>
+        <button class="primary" onclick="window.adminApplyMute('${u.id}')">🔇 Применить</button>
+      </div>
+    `);
+  };
+  window.adminApplyMute = async (uid) => {
+    const mins = parseInt($('amDur').value);
+    const until = mins === 0 ? null : new Date(Date.now() + mins*60000).toISOString();
+    await sb.from('profiles').update({ muted_until: until, mute_until: until }).eq('id', uid);
+    toast(mins === 0 ? 'Мут снят' : `Мут на ${mins} мин`); renderAdmin();
+  };
+
+  // -------- ГАЛОЧКИ --------
+  window.adminToggleVerified = async (u) => {
+    await sb.from('profiles').update({ is_verified: !u.is_verified }).eq('id', u.id);
+    toast(!u.is_verified ? '✅ Верифицирован' : '❌ Снята'); renderAdmin();
+  };
+  window.adminTogglePlus = async (u) => {
+    await sb.from('profiles').update({ is_plus: !u.is_plus }).eq('id', u.id);
+    toast(!u.is_plus ? '⭐ Plus выдан' : '❌ Снят'); renderAdmin();
+  };
+  window.adminToggleCreator = async (u) => {
+    if (u.id === state.user.id) { toast('Нельзя снять с себя'); return; }
+    await sb.from('profiles').update({ is_creator: !u.is_creator }).eq('id', u.id);
+    toast(!u.is_creator ? '👑 Создатель' : '❌ Снят'); renderAdmin();
+  };
+
+  // -------- БАН --------
+  window.adminToggleBan = async (u) => {
+    if (u.id === state.user.id) { toast('Нельзя забанить себя'); return; }
+    if (u.is_banned) {
+      await sb.from('profiles').update({ is_banned: false, ban_reason: null }).eq('id', u.id);
+      toast('✅ Разбанен');
+    } else {
+      const reason = prompt('Причина бана:', 'Нарушение') || 'Нарушение';
+      await sb.from('profiles').update({ is_banned: true, ban_reason: reason, banned_at: new Date().toISOString(), banned_by: state.user.id }).eq('id', u.id);
+      toast('🚫 Забанен');
+    }
+    renderAdmin();
+  };
+
+  // -------- УДАЛЕНИЕ --------
+  window.adminDeleteUser = async (u) => {
+    if (u.id === state.user.id) { toast('Нельзя удалить себя'); return; }
+    if (!confirm(`УДАЛИТЬ @${u.username}? Это необратимо!`)) return;
+    await sb.from('messages').delete().eq('sender', u.id);
+    await sb.from('chats').delete().or(`user1.eq.${u.id},user2.eq.${u.id}`);
+    await sb.from('profiles').delete().eq('id', u.id);
+    toast('🗑 Удалён'); renderAdmin();
+  };
+
+  // -------- СОЗДАНИЕ ЮЗЕРА --------
+  window.adminShowCreateUser = () => {
+    openModal(`
+      <h3>＋ Создать юзера</h3>
+      <input id="cuUsername" placeholder="username">
+      <input id="cuName" placeholder="Имя">
+      <input id="cuPassword" placeholder="Пароль">
+      <input id="cuBalance" type="number" placeholder="Баланс SG" value="100">
+      <div class="modal-actions">
+        <button onclick="window.openAdmin()">← Назад</button>
+        <button class="primary" onclick="window.adminCreateUser()">＋ Создать</button>
+      </div>
+    `);
+  };
+  window.adminCreateUser = async () => {
+    const username = $('cuUsername').value.trim().toLowerCase();
+    const display_name = $('cuName').value.trim();
+    const pin_code = $('cuPassword').value;
+    const balance = parseInt($('cuBalance').value) || 100;
+    if (!username || !display_name || !pin_code) { toast('Заполни поля'); return; }
+    const { error } = await sb.from('profiles').insert({ username, display_name, pin_code, balance, bio: '' });
+    if (error) { toast('Ошибка: ' + error.message); return; }
+    toast('Создан ✅'); renderAdmin();
+  };
+
+  // -------- ЭКСПОРТ --------
+  window.adminExportUsers = () => {
+    const blob = new Blob([JSON.stringify(state.adminUsers, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'spacegram_users_' + Date.now() + '.json';
+    a.click();
+    toast('Экспортировано 📤');
+  };
+
+  // ============ ОСТАЛЬНЫЕ ВКЛАДКИ ============
   function renderAdminStats(users, chats, messages) {
     const bannedCount = users.filter(u => u.is_banned).length;
     const plusCount = users.filter(u => u.is_plus).length;
@@ -588,67 +885,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `;
   }
-
-  function renderAdminUsers(users) {
-    return users.map(u => `
-      <div class="admin-row">
-        <div class="admin-row-info">
-          <div class="admin-row-name">${esc(u.display_name)} ${u.is_creator?'👑':''} ${u.is_verified?'✅':''} ${u.is_plus?'⭐':''}</div>
-          <div class="admin-row-sub">@${esc(u.username)} · ${u.balance||0} SG · ${u.is_banned?'🚫 БАН':'✓'}</div>
-        </div>
-        <button class="admin-btn" onclick="window.adminEditUser('${u.id}')">✏️</button>
-        <button class="admin-btn ${u.is_banned?'success':'danger'}" onclick="window.adminToggleBan('${u.id}', ${u.is_banned})">${u.is_banned?'✅':'🚫'}</button>
-      </div>
-    `).join('');
-  }
-
-  window.adminEditUser = async (uid) => {
-    const u = (await sb.from('profiles').select('*').eq('id', uid).single()).data;
-    if (!u) return;
-    openModal(`
-      <h3>✏️ ${esc(u.username)}</h3>
-      <input id="auName" placeholder="Имя" value="${esc(u.display_name||'')}">
-      <input id="auBio" placeholder="Био" value="${esc(u.bio||'')}">
-      <input id="auBalance" type="number" placeholder="Баланс" value="${u.balance||0}">
-      <input id="auLevel" type="number" placeholder="Уровень" value="${u.level||1}">
-      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auVerified" ${u.is_verified?'checked':''}> ✅ Верифицирован</label>
-      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auPlus" ${u.is_plus?'checked':''}> ⭐ Plus</label>
-      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auCreator" ${u.is_creator?'checked':''}> 👑 Создатель</label>
-      <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="auYt" ${u.is_youtuber?'checked':''}> ▶️ YouTuber</label>
-      <input id="auPass" placeholder="Новый пароль (пусто = не менять)">
-      <div class="modal-actions">
-        <button onclick="window.openAdmin()">← Назад</button>
-        <button class="primary" onclick="window.adminSaveUser('${uid}')">💾 Сохранить</button>
-      </div>
-    `);
-  };
-
-  window.adminSaveUser = async (uid) => {
-    const updates = {
-      display_name: $('auName').value.trim(),
-      bio: $('auBio').value.trim(),
-      balance: parseInt($('auBalance').value) || 0,
-      level: parseInt($('auLevel').value) || 1,
-      is_verified: $('auVerified').checked,
-      is_plus: $('auPlus').checked,
-      is_creator: $('auCreator').checked,
-      is_youtuber: $('auYt').checked
-    };
-    const newPass = $('auPass').value.trim();
-    if (newPass) updates.pin_code = newPass;
-    const { error } = await sb.from('profiles').update(updates).eq('id', uid);
-    if (error) { toast('Ошибка: ' + error.message); return; }
-    toast('Сохранено ✅');
-    renderAdmin();
-  };
-
-  window.adminToggleBan = async (uid, isBanned) => {
-    const reason = isBanned ? null : (prompt('Причина бана:') || 'Нарушение');
-    const { error } = await sb.from('profiles').update({ is_banned: !isBanned, ban_reason: reason }).eq('id', uid);
-    if (error) { toast('Ошибка'); return; }
-    toast(!isBanned ? 'Забанен 🚫' : 'Разбанен ✅');
-    renderAdmin();
-  };
 
   function renderAdminChats(chats) {
     return chats.map(c => `
@@ -692,19 +928,18 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="admin-row">
           <div class="admin-row-info">
             <div class="admin-row-name">🎁 ${esc(p.code)}</div>
-            <div class="admin-row-sub">${p.days||0} дней · ${p.bonus_coins||0} SG · использован ${p.uses||0}/${p.max_uses||0}</div>
+            <div class="admin-row-sub">${p.days||0} дней · ${p.bonus_coins||0} SG · ${p.uses||0}/${p.max_uses||0}</div>
           </div>
           <button class="admin-btn danger" onclick="window.adminDeletePromo('${p.id}')">🗑</button>
         </div>
       `).join('')}
     `;
   }
-
   window.adminCreatePromo = () => {
     openModal(`
       <h3>🎁 Новый промокод</h3>
       <input id="npCode" placeholder="КОД" style="text-transform:uppercase">
-      <input id="npDays" type="number" placeholder="Дней Plus (0 = нет)" value="0">
+      <input id="npDays" type="number" placeholder="Дней Plus" value="0">
       <input id="npCoins" type="number" placeholder="SG монет" value="0">
       <input id="npMax" type="number" placeholder="Макс использований" value="100">
       <div class="modal-actions">
@@ -713,22 +948,17 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `);
   };
-
   window.adminSavePromo = async () => {
     const code = $('npCode').value.trim().toUpperCase();
     if (!code) { toast('Введи код'); return; }
     const { error } = await sb.from('promocodes').insert({
-      code,
-      days: parseInt($('npDays').value) || 0,
+      code, days: parseInt($('npDays').value) || 0,
       bonus_coins: parseInt($('npCoins').value) || 0,
-      max_uses: parseInt($('npMax').value) || 100,
-      uses: 0,
-      created_by: state.user.id
+      max_uses: parseInt($('npMax').value) || 100, uses: 0, created_by: state.user.id
     });
     if (error) { toast('Ошибка: ' + error.message); return; }
     toast('Создан ✅'); renderAdmin();
   };
-
   window.adminDeletePromo = async (pid) => {
     if (!confirm('Удалить?')) return;
     await sb.from('promocodes').delete().eq('id', pid);
@@ -749,7 +979,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `).join('')}
     `;
   }
-
   window.adminCreateShop = () => {
     openModal(`
       <h3>🛒 Новый товар</h3>
@@ -762,17 +991,13 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     `);
   };
-
   window.adminSaveShop = async () => {
     const { error } = await sb.from('shop_items').insert({
-      name: $('nsName').value.trim(),
-      category: $('nsCat').value,
-      price: parseInt($('nsPrice').value) || 100
+      name: $('nsName').value.trim(), category: $('nsCat').value, price: parseInt($('nsPrice').value) || 100
     });
     if (error) { toast('Ошибка: ' + error.message); return; }
     toast('Создан ✅'); renderAdmin();
   };
-
   window.adminDeleteShop = async (sid) => {
     if (!confirm('Удалить?')) return;
     await sb.from('shop_items').delete().eq('id', sid);
