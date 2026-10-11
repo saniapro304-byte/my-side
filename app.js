@@ -8,7 +8,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const state = {
   user: null, profile: null, chats: [], currentChat: null,
   messages: [], replyTo: null,
-  realtimeChannels: [],
+  realtimeChannels: [], realtimeChats: null, realtimeMsgs: null,
   adminUsers: [], adminFilter: '',
   settings: {
     theme: localStorage.getItem('theme') || 'midnight',
@@ -106,46 +106,34 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function logout() {
-    state.realtimeChannels.forEach(ch => sb.removeChannel(ch));
+    if (state.realtimeChats) sb.removeChannel(state.realtimeChats);
+    if (state.realtimeMsgs) sb.removeChannel(state.realtimeMsgs);
     localStorage.removeItem('sg_user_id');
     location.reload();
   }
 
-  // ============ REALTIME ============
+  // ============ REALTIME (без поллинга — нет мигания) ============
   function setupRealtime() {
-    // Канал чатов
-    const chatCh = sb.channel('rt-chats')
+    // ЧАТЫ
+    state.realtimeChats = sb.channel('rt-chats-' + state.user.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
         loadChats();
       })
       .subscribe();
-    state.realtimeChannels.push(chatCh);
 
-    // Канал сообщений
-    const msgCh = sb.channel('rt-messages')
+    // СООБЩЕНИЯ
+    state.realtimeMsgs = sb.channel('rt-msgs-' + state.user.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
-        // если открыт чат и сообщение для него — обновить мгновенно
         if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) {
           loadMessages();
-          if (payload.new.sender !== state.user.id && state.settings.vibrate && navigator.vibrate) navigator.vibrate(30);
+          if (payload.new.sender !== state.user.id) {
+            if (state.settings.vibrate && navigator.vibrate) navigator.vibrate(30);
+          }
         } else {
-          // иначе обновить список чатов
           loadChats();
         }
       })
       .subscribe();
-    state.realtimeChannels.push(msgCh);
-
-    // Канал профилей (для обновлений юзера)
-    const profCh = sb.channel('rt-profiles')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
-        if (payload.new && payload.new.id === state.user.id) {
-          state.profile = payload.new;
-          if (isAdmin()) $('adminMenuItem').classList.remove('hidden');
-        }
-      })
-      .subscribe();
-    state.realtimeChannels.push(profCh);
   }
 
   // ============ ЧАТЫ ============
@@ -249,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (error) { toast('Ошибка: ' + error.message); return; }
     await sb.from('chats').update({ last_message: text.slice(0,80) }).eq('id', state.currentChat.id);
-    // Не ждём поллинга — сразу подгружаем
     await loadMessages();
   }
 
@@ -267,9 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (a === 'shop') openShop();
     else if (a === 'admin') openAdmin();
     else if (a === 'stories') openStories();
-    else if (a === 'friends') toast('Друзья скоро 🚀');
-    else if (a === 'saved') toast('Избранное скоро 🚀');
-    else if (a === 'mods') toast('Моды скоро 🚀');
+    else if (a === 'friends') toast('Скоро 🚀');
+    else if (a === 'saved') toast('Скоро 🚀');
+    else if (a === 'mods') toast('Скоро 🚀');
   });
 
   // ============ НАВИГАЦИЯ ============
