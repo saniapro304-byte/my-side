@@ -1056,3 +1056,123 @@ const showD=function(m){let d=$('D');if(d)d.textContent=m};
 setTimeout(function(){if($('L')&&!$('L').classList.contains('h')){hl();if(!me)$('A').classList.add('show')}},12000);
 
 console.log('[Spacegram v11] Мульти-устройства + все фичи ✅');
+// ==================== STORIES (loadStories) ====================
+async function loadStories(){
+  try{
+    const r=await sb.from('stories').select('*').gt('expires_at',new Date().toISOString()).order('created_at',{ascending:true});
+    stories=r.data||[];
+    storiesByU={};
+    const uids=[...new Set(stories.map(function(s){return s.user_id}))].filter(function(id){return !profiles[id]});
+    if(uids.length){const rp=await sb.from('profiles').select('*').in('id',uids);(rp.data||[]).forEach(function(p){profiles[p.id]=p})}
+    const rv=await sb.from('story_views').select('story_id').eq('viewer_id',me.id);
+    const vs=new Set((rv.data||[]).map(function(x){return x.story_id}));
+    stories.forEach(function(s){if(!storiesByU[s.user_id])storiesByU[s.user_id]=[];s._viewed=vs.has(s.id);storiesByU[s.user_id].push(s)});
+    const su=Object.keys(storiesByU).sort(function(a,b){
+      if(a===me.id)return -1;
+      if(b===me.id)return 1;
+      const au=storiesByU[a].some(function(s){return !s._viewed});
+      const bu=storiesByU[b].some(function(s){return !s._viewed});
+      if(au&&!bu)return -1;
+      if(!au&&bu)return 1;
+      return 0;
+    });
+    renderSBar(su);
+  }catch(e){console.error('loadStories',e)}
+}
+window.loadStories=loadStories;
+
+function renderSBar(su){
+  const b=$('sBar');if(!b)return;
+  b.innerHTML='';
+  const ms=storiesByU[me.id]||[];
+  const mi=el('div',{class:'sti'});
+  const ma=el('div',{class:'sa '+(ms.length?'':'mine')+(ms.length&&ms.every(function(s){return s._viewed})?' seen':'')});
+  ma.innerHTML=myP&&myP.avatar_url?'<img src="'+myP.avatar_url+'">':'<div class="ini">'+esc((myP?.display_name||'?')[0].toUpperCase())+'</div>';
+  ma.innerHTML+='<div class="plus">+</div>';
+  ma.onclick=function(){if(ms.length)return openSV(me.id);if(!myP?.is_plus)return tst('Только Plus');openCS()};
+  mi.appendChild(ma);
+  mi.appendChild(el('div',{class:'sn mine',text:ms.length?'Моя':'Добавить'}));
+  b.appendChild(mi);
+  su.filter(function(u){return u!==me.id}).forEach(function(u){
+    const us=storiesByU[u];const p=profiles[u];if(!p)return;
+    const av=us.every(function(s){return s._viewed});
+    const i=el('div',{class:'sti'});
+    const a=el('div',{class:'sa'+(av?' seen':'')});
+    a.innerHTML=p.avatar_url?'<img src="'+p.avatar_url+'">':'<div class="ini">'+esc((p.display_name||'?')[0].toUpperCase())+'</div>';
+    a.onclick=function(){openSV(u)};
+    i.appendChild(a);
+    i.appendChild(el('div',{class:'sn',text:p.display_name||'?'}));
+    b.appendChild(i);
+  });
+}
+window.renderSBar=renderSBar;
+
+function openCS(){if(!myP?.is_plus)return tst('Только Plus');sFile=null;sBg=null;sText='';$('csB').innerHTML='<div class="emp"><div class="ic">📷</div><div style="margin-bottom:14px">Выбери фото или видео</div><button style="padding:14px 28px;border-radius:14px;background:var(--ab);color:#fff;font-size:15px;font-weight:600" onclick="pickSM()">Открыть галерею</button></div>';renderBGP();$('crS').classList.add('show')}
+window.openCS=openCS;
+
+function renderBGP(){const p=$('bgP');p.innerHTML=BG.map(function(c){return '<button style="background:'+c+'" data-c="'+c+'" class="'+(sBg===c?'on':'')+'"></button>'}).join('')+'<button style="background:transparent;border:2px dashed #666;color:#fff;font-size:16px" data-c="none">✕</button>';p.querySelectorAll('button').forEach(function(b){b.onclick=function(){sBg=b.dataset.c==='none'?null:b.dataset.c;renderBGP();applySBG()}})}
+function applySBG(){const b=$('csB');if(sBg)b.style.background=sBg;else b.style.background=''}
+window.pickSB=function(){renderBGP()};
+
+window.pickSM=function(){const i=document.createElement('input');i.type='file';i.accept='image/*,video/*';i.onchange=function(e){const f=e.target.files[0];if(!f)return;if(f.size>50*1024*1024)return alert('> 50 МБ');sFile=f;sType=f.type.indexOf('video')===0?'video':'image';const u=URL.createObjectURL(f);$('csB').innerHTML=sType==='video'?'<video src="'+u+'" autoplay muted loop playsinline style="max-width:100%;max-height:100%;object-fit:contain"></video>':'<img src="'+u+'" style="max-width:100%;max-height:100%;object-fit:contain">';applySBG()};i.click()};
+
+window.addST=function(){const t=prompt('Текст:',sText||'');if(t===null)return;sText=t.trim();let o=$('csOv');if(!o){o=el('div',{id:'csOv',style:'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:40px;text-align:center;color:#fff;font-size:24px;font-weight:700;text-shadow:0 2px 12px rgba(0,0,0,.5);pointer-events:none'});$('csB').appendChild(o)}o.textContent=sText};
+
+window.closeCS=function(){$('crS').classList.remove('show');$('csB').style.background='';sFile=null;sBg=null;sText=''};
+
+window.pubS=async function(){
+  if(!myP?.is_plus)return tst('Только Plus');
+  if(!sFile&&!sText)return tst('Добавь');
+  tst('Публикация...');
+  let mu=null,mt=null;
+  if(sFile){
+    const e=sFile.name.split('.').pop()||'jpg';
+    const p=me.id+'/story_'+Date.now()+'.'+e;
+    const r=await sb.storage.from('media').upload(p,sFile);
+    if(r.error)return tst('Ошибка: '+r.error.message);
+    const ru=sb.storage.from('media').getPublicUrl(p);
+    mu=ru.data.publicUrl;mt=sType;
+  }
+  const ins={user_id:me.id,media_url:mu||'',media_type:mt||'text'};
+  if(sText)ins.text_content=sText;
+  if(sBg)ins.bg_color=sBg;
+  const r2=await sb.from('stories').insert(ins);
+  if(r2.error)return tst('Ошибка: '+r2.error.message);
+  tst('OK');closeCS();await loadStories();
+};
+
+async function openSV(uid){const us=storiesByU[uid];if(!us||!us.length){tst('Нет историй');return}svState.uId=uid;svState.i=0;$('svV').classList.add('show');try{await showSV()}catch(e){console.error(e);closeSV()}}
+window.openSV=openSV;
+
+async function showSV(){
+  try{
+    const us=storiesByU[svState.uId];
+    if(!us||!us[svState.i]){closeSV();return}
+    const i=svState.i;const s=us[i];const p=profiles[s.user_id];
+    $('svP').innerHTML=us.map(function(x,idx){return '<div class="b '+(idx<i?'dn':'')+'"><div class="f" id="pf_'+idx+'"></div></div>'}).join('');
+    $('svH').innerHTML='<div class="av">'+(p&&p.avatar_url?'<img src="'+p.avatar_url+'">':esc((p?.display_name||'?')[0].toUpperCase()))+'</div><div class="in"><div class="nm">'+esc(p?.display_name||'?')+' '+bd(p||{})+'</div><div class="tm">'+rt(s.created_at)+'</div></div>';
+    let c='';
+    if(s.media_url&&s.media_type==='video')c='<video src="'+s.media_url+'" autoplay muted playsinline style="max-width:100%;max-height:100%;object-fit:contain"></video>';
+    else if(s.media_url)c='<img src="'+s.media_url+'" style="max-width:100%;max-height:100%;object-fit:contain" onerror="this.style.display=\'none\'">';
+    if(s.text_content)c+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:40px;text-align:center;color:#fff;font-size:24px;font-weight:700;text-shadow:0 2px 12px rgba(0,0,0,.5);pointer-events:none">'+esc(s.text_content)+'</div>';
+    if(!c)c='<div style="color:#fff;font-size:14px;opacity:.5">Пустая</div>';
+    $('svC').innerHTML=c;$('svC').style.background=s.bg_color||'#000';
+    if(s.user_id===me.id){
+      $('svF').innerHTML='<button class="ic" style="width:auto;padding:0 16px;border-radius:24px;display:flex;align-items:center;gap:6px" onclick="showSVViews(\''+s.id+'\')">👁 <span id="svc">...</span></button>';
+      try{const rc=await sb.from('story_views').select('*',{count:'exact',head:true}).eq('story_id',s.id);const e=$('svc');if(e)e.textContent=rc.count||0}catch(e){}
+    }else{
+      $('svF').innerHTML='<input id="svReply" placeholder="Ответить..." onkeydown="if(event.key===\'Enter\')replySV()"><button class="ic" onclick="reactSV(\'❤️\')">❤️</button><button class="ic" style="background:var(--ab)" onclick="replySV()">➤</button>';
+    }
+    if(s.user_id!==me.id&&!s._viewed){try{await sb.from('story_views').insert({story_id:s.id,viewer_id:me.id});s._viewed=true}catch(e){}}
+    startST(s.duration||5);
+  }catch(e){console.error(e);closeSV()}
+}
+function startST(sec){clearInterval(svState.timer);const f=$('pf_'+svState.i);if(!f)return;f.style.width='0%';let e=0;const t=sec*1000,s=50;svState.timer=setInterval(function(){e+=s;f.style.width=Math.min(100,e/t*100)+'%';if(e>=t){clearInterval(svState.timer);nextS()}},s)}
+window.nextS=function(){clearInterval(svState.timer);const us=storiesByU[svState.uId];if(svState.i<us.length-1){svState.i++;showSV()}else{const u=Object.keys(storiesByU);const ci=u.indexOf(svState.uId);if(ci<u.length-1){svState.uId=u[ci+1];svState.i=0;showSV()}else closeSV()}};
+window.prevS=function(){clearInterval(svState.timer);if(svState.i>0){svState.i--;showSV()}};
+window.closeSV=function(){clearInterval(svState.timer);$('svV').classList.remove('show');$('svC').style.background='';loadStories()};
+window.reactSV=async function(e){const s=storiesByU[svState.uId][svState.i];if(!s)return;const re=await sb.from('story_reactions').select('id').eq('story_id',s.id).eq('user_id',me.id).maybeSingle();if(re.data)await sb.from('story_reactions').update({emoji:e}).eq('id',re.data.id);else await sb.from('story_reactions').insert({story_id:s.id,user_id:me.id,emoji:e});tst(e)};
+window.replySV=async function(){const s=storiesByU[svState.uId][svState.i];const i=$('svReply');const t=i&&i.value.trim();if(!t||!s)return;const oid=s.user_id;const u1=me.id<oid?me.id:oid;const u2=me.id<oid?oid:me.id;const rc=await sb.from('chats').select('id').or('and(user1.eq.'+u1+',user2.eq.'+u2+'),and(user1.eq.'+u2+',user2.eq.'+u1+')').limit(1);let cid;if(rc.data&&rc.data.length)cid=rc.data[0].id;else{const rn=await sb.from('chats').insert({user1:u1,user2:u2,created_by:me.id}).select().single();cid=rn.data.id}await sb.from('messages').insert({chat_id:cid,sender:me.id,text:'↩ '+t,is_read:false});i.value='';tst('OK')};
+window.showSVViews=async function(sid){const rv=await sb.from('story_views').select('*').eq('story_id',sid).order('viewed_at',{ascending:false});const v=rv.data;const uids=[...new Set((v||[]).map(function(x){return x.viewer_id}))].filter(function(id){return !profiles[id]});if(uids.length){const rp=await sb.from('profiles').select('*').in('id',uids);(rp.data||[]).forEach(function(p){profiles[p.id]=p})}let h='<h2>👁 '+(v?v.length:0)+'</h2>';(v||[]).forEach(function(x){const p=profiles[x.viewer_id];if(!p)return;h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0"><div style="width:36px;height:36px;border-radius:50%;background:var(--ab);display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden">'+(p.avatar_url?'<img src="'+p.avatar_url+'" style="width:100%;height:100%;object-fit:cover">':esc(p.display_name[0].toUpperCase()))+'</div><div style="flex:1">'+esc(p.display_name)+'</div></div>'});h+='<button onclick="document.getElementById(\'bm\').classList.remove(\'show\')" style="margin-top:10px">Закрыть</button>';$('bmc').innerHTML=h;$('bm').classList.add('show')};
+
+console.log('[Spacegram v11] Stories-фикс применён ✅');
