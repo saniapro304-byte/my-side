@@ -186,13 +186,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   $('sendBtn').onclick = sendMessage;
   $('messageInput').onkeydown = (e) => { if (e.key === 'Enter') sendMessage(); };
+
   async function sendMessage() {
     const text = $('messageInput').value.trim();
     if (!text || !state.currentChat) return;
     $('messageInput').value = '';
-    const payload = { chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, text, is_read: false, deleted: false };
+    const payload = {
+      chat_id: state.currentChat.id,
+      sender: state.user.id,
+      text, is_read: false, deleted: false
+    };
     if (state.replyTo) { payload.reply_to = state.replyTo.id; state.replyTo = null; $('replyBar').classList.add('hidden'); }
-    const { error } = await sb.from('messages').insert(payload);
+    let { error } = await sb.from('messages').insert(payload);
+    if (error && /sender_name/.test(error.message)) {
+      // fallback: колонки нет — пробуем без неё (и не падаем)
+      const { error: e2 } = await sb.from('messages').insert(payload);
+      error = e2;
+    }
     if (error) { toast('Ошибка: ' + error.message); return; }
     await sb.from('chats').update({ last_message: text.slice(0,80) }).eq('id', state.currentChat.id);
     await loadMessages();
@@ -200,9 +210,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function startPolling() {
     if (state.pollTimer) clearInterval(state.pollTimer);
+    let lastKey = '';
     state.pollTimer = setInterval(async () => {
-      if (state.currentChat) await loadMessages(); else await loadChats();
-    }, 1500);
+      if (!state.user) return;
+      if (state.currentChat) {
+        await loadMessages();
+      } else {
+        const uid = state.user.id;
+        const { data } = await sb.from('chats').select('*')
+          .or(`user1.eq.${uid},user2.eq.${uid},created_by.eq.${uid}`)
+          .order('id', { ascending: false });
+        const key = JSON.stringify((data||[]).map(c => c.id + ':' + (c.last_message||'') + ':' + (c.group_name||'')));
+        if (key !== lastKey) { lastKey = key; await loadChats(); }
+      }
+    }, 3000);
   }
 
   // ============ МЕНЮ ============
@@ -218,7 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (a === 'balance') openBalance();
     else if (a === 'shop') openShop();
     else if (a === 'admin') openAdmin();
-    else toast('Скоро 🚀');
+    else if (a === 'stories') openStories();
+    else if (a === 'friends') toast('Друзья скоро 🚀');
+    else if (a === 'saved') toast('Избранное скоро 🚀');
+    else if (a === 'mods') toast('Моды скоро 🚀');
   });
 
   // ============ НАВИГАЦИЯ ============
@@ -236,11 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!p) return;
     const initial = (p.display_name||'?')[0].toUpperCase();
     const badges = [];
-    if (p.is_creator) badges.push('<span class="badge creator">👑 Создатель</span>');
-    if (p.is_verified) badges.push('<span class="badge verified">✅ Верифицирован</span>');
-    if (p.is_plus) badges.push('<span class="badge plus">⭐ Plus</span>');
-    if (p.is_youtuber) badges.push('<span class="badge yt">▶️ YouTuber</span>');
-    if (p.role === 'admin') badges.push('<span class="badge gold">⚡ Админ</span>');
+    if (p.is_creator) badges.push('<span class="badge creator" data-badge="creator">👑 Создатель</span>');
+    if (p.is_verified) badges.push('<span class="badge verified" data-badge="verified">✅ Верифицирован</span>');
+    if (p.is_plus) badges.push('<span class="badge plus" data-badge="plus">⭐ Plus</span>');
+    if (p.is_youtuber) badges.push('<span class="badge yt" data-badge="youtuber">▶️ YouTuber</span>');
+    if (p.role === 'admin') badges.push('<span class="badge gold" data-badge="admin">⚡ Админ</span>');
+    if (p.is_bot_verified) badges.push('<span class="badge" data-badge="bot">🤖 Bot</span>');
 
     $('profileContent').innerHTML = `
       <div class="profile-cover"></div>
@@ -266,6 +291,37 @@ document.addEventListener('DOMContentLoaded', () => {
         ${isAdmin() ? '<button style="grid-column:1/-1;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;border:none" onclick="window.openAdmin()">👑 Админ-панель</button>' : ''}
       </div>
     `;
+
+    // Клики по бейджам
+    setTimeout(() => {
+      document.querySelectorAll('[data-badge]').forEach(b => {
+        b.style.cursor = 'pointer';
+        b.onclick = () => showBadgeInfo(b.dataset.badge);
+      });
+    }, 30);
+  }
+
+  function showBadgeInfo(type) {
+    const info = {
+      creator: { icon: '👑', title: 'Создатель Spacegram', desc: 'Основатель проекта. Имеет полный доступ к админ-панели и всем функциям приложения.' },
+      verified: { icon: '✅', title: 'Верифицирован', desc: 'Подтверждённый аккаунт. Личность подтверждена администрацией Spacegram.' },
+      plus: { icon: '⭐', title: 'Spacegram Plus', desc: 'Премиум-подписка. Доступ к эксклюзивным стикерам, сторис, темам и бейджам.' },
+      youtuber: { icon: '▶️', title: 'YouTuber', desc: 'Проверенный контент-мейкер. Ведёт канал о Spacegram или смежном контенте.' },
+      admin: { icon: '⚡', title: 'Администратор', desc: 'Модератор проекта. Следит за порядком, банит нарушителей, решает жалобы.' },
+      bot: { icon: '🤖', title: 'Bot Verified', desc: 'Официальный бот Spacegram, проверенный администрацией.' }
+    };
+    const i = info[type];
+    if (!i) return;
+    openModal(`
+      <div style="text-align:center">
+        <div style="font-size:64px;margin-bottom:10px">${i.icon}</div>
+        <h3>${i.title}</h3>
+        <p style="color:var(--text2);margin-top:10px;line-height:1.5">${i.desc}</p>
+        <div class="modal-actions" style="margin-top:20px">
+          <button class="primary" onclick="window.closeModal()">Понятно</button>
+        </div>
+      </div>
+    `);
   }
 
   window.editProfile = async () => {
@@ -306,6 +362,104 @@ document.addEventListener('DOMContentLoaded', () => {
       await navigator.clipboard.writeText(url);
       toast('Ссылка скопирована ✅');
     }
+  };
+
+  // ============ СТОРИС ============
+  async function openStories() {
+    const { data: stories } = await sb.from('stories')
+      .select('*')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    const canPost = state.profile?.is_plus || state.profile?.is_creator || state.profile?.role === 'admin';
+
+    openModal(`
+      <h3>📸 Сторис</h3>
+      ${canPost 
+        ? `<button class="toolbar-btn primary" style="width:100%;margin-bottom:12px" onclick="window.addStory()">＋ Добавить сторис</button>` 
+        : `<div style="text-align:center;padding:12px;background:var(--panel2);border-radius:10px;margin-bottom:12px;color:var(--text2);font-size:13px">⭐ Сторис только для Plus</div>`
+      }
+      <div style="max-height:450px;overflow-y:auto">
+        ${(stories||[]).length ? (stories||[]).map(s => {
+          const seen = (s.views||[]).includes(state.user.id);
+          return `<div class="admin-row" style="cursor:pointer" onclick="window.viewStory('${s.id}')">
+            <div style="width:48px;height:48px;border-radius:50%;background:${s.bg_color||'var(--accent)'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:2px solid ${seen?'var(--border)':'var(--accent)'};color:#fff">
+              ${s.media_url ? '🖼' : '📝'}
+            </div>
+            <div class="admin-row-info">
+              <div class="admin-row-name">${esc((s.text_content||'').slice(0,40) || 'Медиа-сторис')}</div>
+              <div class="admin-row-sub">${fmtTime(s.created_at)} · ${s.media_type||'text'}</div>
+            </div>
+            ${!seen ? '<div class="online-dot"></div>' : ''}
+          </div>`;
+        }).join('') : '<div style="text-align:center;padding:30px;color:var(--text2)">Пока нет сторис 😢</div>'}
+      </div>
+      <div class="modal-actions"><button onclick="window.closeModal()">Закрыть</button></div>
+    `);
+  }
+
+  window.addStory = async () => {
+    const text = prompt('Текст сторис (или URL картинки):');
+    if (!text) return;
+    const isUrl = /^https?:\/\//.test(text);
+    const bg = prompt('Цвет фона (например #ff0000):', '#5288c1') || '#5288c1';
+    const expires = new Date(Date.now() + 24*3600*1000).toISOString();
+    const { error } = await sb.from('stories').insert({
+      user_id: state.user.id,
+      text_content: isUrl ? null : text,
+      media_url: isUrl ? text : null,
+      media_type: isUrl ? 'image' : 'text',
+      bg_color: bg,
+      duration: 5,
+      expires_at: expires,
+      views: []
+    });
+    if (error) { toast('Ошибка: ' + error.message); return; }
+    toast('Сторис опубликован! 📸');
+    openStories();
+  };
+
+  window.viewStory = async (sid) => {
+    const { data: story } = await sb.from('stories').select('*').eq('id', sid).single();
+    if (!story) return;
+    const { data: author } = await sb.from('profiles').select('*').eq('id', story.user_id).maybeSingle();
+    
+    const views = story.views || [];
+    if (!views.includes(state.user.id)) {
+      views.push(state.user.id);
+      await sb.from('stories').update({ views }).eq('id', sid);
+    }
+
+    openModal(`
+      <div style="background:${story.bg_color||'#000'};border-radius:14px;padding:40px 20px;text-align:center;min-height:300px;display:flex;flex-direction:column;justify-content:center;align-items:center">
+        ${story.media_url ? `<img src="${esc(story.media_url)}" style="max-width:100%;max-height:250px;border-radius:10px">` : ''}
+        ${story.text_content ? `<div style="font-size:22px;font-weight:600;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5);margin-top:${story.media_url?'14px':'0'}">${esc(story.text_content)}</div>` : ''}
+        <div style="margin-top:20px;color:rgba(255,255,255,.8);font-size:12px">
+          @${esc(author?.username||'юзер')} · ${fmtTime(story.created_at)}
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:14px">
+        <button onclick="window.closeModal()">Закрыть</button>
+        <button class="primary" onclick="window.storyReply('${sid}','${story.user_id}')">💬 Ответить</button>
+      </div>
+    `);
+  };
+
+  window.storyReply = async (sid, uid) => {
+    window.closeModal();
+    if (uid === state.user.id) { toast('Это твоя сторис 🙂'); return; }
+    // Открываем/создаём чат с автором
+    const { data: other } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
+    if (!other) return;
+    const { data: existing } = await sb.from('chats').select('*').or(`and(user1.eq.${state.user.id},user2.eq.${other.id}),and(user1.eq.${other.id},user2.eq.${state.user.id})`).maybeSingle();
+    let chat = existing;
+    if (!chat) {
+      const { data } = await sb.from('chats').insert({ user1: state.user.id, user2: other.id, created_by: state.user.id }).select().single();
+      chat = data;
+    }
+    await loadChats();
+    if (chat) openChat(chat.id);
   };
 
   // ============ НАСТРОЙКИ ============
@@ -455,7 +609,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const { error: upErr } = await sb.storage.from('files').upload(path, file);
     if (upErr) { toast('Ошибка: ' + upErr.message); return; }
     const { data: urlData } = sb.storage.from('files').getPublicUrl(path);
-    await sb.from('messages').insert({ chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, file_url: urlData.publicUrl, file_type: file.type, file_name: file.name, is_read: false, deleted: false });
+    const payload = {
+      chat_id: state.currentChat.id, sender: state.user.id,
+      file_url: urlData.publicUrl, file_type: file.type, file_name: file.name,
+      is_read: false, deleted: false
+    };
+    let { error } = await sb.from('messages').insert(payload);
+    if (error && /sender_name/.test(error.message)) { const r = await sb.from('messages').insert(payload); error = r.error; }
+    if (error) { toast('Ошибка: ' + error.message); return; }
     $('fileInput').value = '';
     await loadMessages();
   };
@@ -570,13 +731,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.admin-tab').forEach(t => t.onclick = () => { adminTab = t.dataset.atab; renderAdmin(); });
 
-    // поиск юзеров
     const searchU = $('adminUserSearch');
     if (searchU) searchU.oninput = () => {
       state.adminFilter = searchU.value.toLowerCase().trim();
       const list = $('adminUserList');
       if (list) list.innerHTML = renderAdminUsersList();
-      list?.querySelectorAll('[data-act]').forEach(b => b.onclick = () => adminUserAction(b.dataset.act, b.dataset.uid));
     };
   }
 
@@ -639,10 +798,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
-  // Привязка обработчиков (вызывается после обновления списка)
+  // Привязка кнопок через делегирование (не спамит обработчиками)
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
-    if (b) adminUserAction(b.dataset.act, b.dataset.uid);
+    if (b && document.querySelector('.admin-tabs')) adminUserAction(b.dataset.act, b.dataset.uid);
   });
 
   async function adminUserAction(action, uid) {
@@ -664,7 +823,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // -------- РЕДАКТИРОВАНИЕ ЮЗЕРА --------
   window.adminShowEditUser = (u) => {
     openModal(`
       <h3>✏️ ${esc(u.username)}</h3>
@@ -689,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </select>
       <div class="modal-actions">
         <button onclick="window.openAdmin()">← Назад</button>
-        <button class="primary" onclick="window.adminSaveUser('${uid}')">💾 Сохранить</button>
+        <button class="primary" onclick="window.adminSaveUser('${u.id}')">💾 Сохранить</button>
       </div>
     `);
   };
@@ -716,7 +874,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Сохранено ✅'); renderAdmin();
   };
 
-  // -------- БАЛАНС --------
   window.adminShowBalance = (u) => {
     openModal(`
       <h3>💰 Баланс @${esc(u.username)}</h3>
@@ -739,7 +896,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast(`Баланс: ${newBal} SG`); renderAdmin();
   };
 
-  // -------- ПАРОЛЬ --------
   window.adminShowPass = (u) => {
     openModal(`
       <h3>🔑 Смена пароля @${esc(u.username)}</h3>
@@ -757,7 +913,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Пароль изменён ✅'); renderAdmin();
   };
 
-  // -------- ВАРН --------
   window.adminAddWarn = async (u) => {
     const reason = prompt('Причина варна:');
     if (!reason) return;
@@ -771,7 +926,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAdmin();
   };
 
-  // -------- МУТ --------
   window.adminMute = (u) => {
     openModal(`
       <h3>🔇 Мут @${esc(u.username)}</h3>
@@ -795,7 +949,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast(mins === 0 ? 'Мут снят' : `Мут на ${mins} мин`); renderAdmin();
   };
 
-  // -------- ГАЛОЧКИ --------
   window.adminToggleVerified = async (u) => {
     await sb.from('profiles').update({ is_verified: !u.is_verified }).eq('id', u.id);
     toast(!u.is_verified ? '✅ Верифицирован' : '❌ Снята'); renderAdmin();
@@ -810,7 +963,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast(!u.is_creator ? '👑 Создатель' : '❌ Снят'); renderAdmin();
   };
 
-  // -------- БАН --------
   window.adminToggleBan = async (u) => {
     if (u.id === state.user.id) { toast('Нельзя забанить себя'); return; }
     if (u.is_banned) {
@@ -824,7 +976,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderAdmin();
   };
 
-  // -------- УДАЛЕНИЕ --------
   window.adminDeleteUser = async (u) => {
     if (u.id === state.user.id) { toast('Нельзя удалить себя'); return; }
     if (!confirm(`УДАЛИТЬ @${u.username}? Это необратимо!`)) return;
@@ -834,7 +985,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('🗑 Удалён'); renderAdmin();
   };
 
-  // -------- СОЗДАНИЕ ЮЗЕРА --------
   window.adminShowCreateUser = () => {
     openModal(`
       <h3>＋ Создать юзера</h3>
@@ -859,7 +1009,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toast('Создан ✅'); renderAdmin();
   };
 
-  // -------- ЭКСПОРТ --------
   window.adminExportUsers = () => {
     const blob = new Blob([JSON.stringify(state.adminUsers, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
