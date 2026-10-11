@@ -3,14 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0e1621">
 <title>Spacegram</title>
 <link rel="stylesheet" href="styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
 </head>
 <body>
 
-<!-- ЭКРАН АВТОРИЗАЦИИ -->
 <div id="authScreen" class="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">🚀 Spacegram</div>
@@ -37,18 +35,15 @@
   </div>
 </div>
 
-<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
 <div id="app" class="app hidden">
-
-  <!-- ШАПКА -->
   <header class="app-header">
     <div class="header-left">
       <span class="header-logo">🚀</span>
       <span class="header-title">Spacegram</span>
     </div>
     <div class="header-actions">
-      <button id="searchBtn" class="icon-btn" title="Поиск">🔍</button>
-      <button id="menuBtn" class="icon-btn" title="Меню">⋮</button>
+      <button id="searchBtn" class="icon-btn">🔍</button>
+      <button id="menuBtn" class="icon-btn">⋮</button>
     </div>
     <div id="headerMenu" class="header-menu hidden">
       <button data-action="settings">⚙️ Настройки</button>
@@ -63,10 +58,7 @@
     </div>
   </header>
 
-  <!-- КОНТЕНТ -->
   <main id="mainContent" class="main-content">
-
-    <!-- ВКЛАДКА ЧАТЫ -->
     <section id="tabChats" class="tab-panel">
       <div class="tab-toolbar">
         <button id="newChatBtn" class="toolbar-btn">＋ Новый чат</button>
@@ -76,7 +68,6 @@
       <div id="chatList" class="chat-list"></div>
     </section>
 
-    <!-- ВКЛАДКА ЛЕНТА -->
     <section id="tabFeed" class="tab-panel hidden">
       <div class="tab-toolbar">
         <button id="newPostBtn" class="toolbar-btn">＋ Пост</button>
@@ -84,23 +75,18 @@
       <div id="feedList" class="feed-list"></div>
     </section>
 
-    <!-- ВКЛАДКА ПРОФИЛЬ -->
     <section id="tabProfile" class="tab-panel hidden">
       <div id="profileContent" class="profile-content"></div>
     </section>
-
   </main>
 
-  <!-- НИЖНЯЯ НАВИГАЦИЯ -->
   <nav class="bottom-nav">
     <button data-tab="chats" class="nav-btn active">💬<span>Чаты</span></button>
     <button data-tab="feed" class="nav-btn">📰<span>Лента</span></button>
     <button data-tab="profile" class="nav-btn">👤<span>Профиль</span></button>
   </nav>
-
 </div>
 
-<!-- ЭКРАН ЧАТА -->
 <div id="chatScreen" class="chat-screen hidden">
   <header class="chat-header">
     <button id="chatBack" class="icon-btn">←</button>
@@ -131,12 +117,10 @@
   <input id="fileInput" type="file" hidden multiple>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО (общее) -->
 <div id="modalOverlay" class="modal-overlay hidden">
   <div id="modalBox" class="modal-box"></div>
 </div>
 
-<!-- ТОСТ -->
 <div id="toast" class="toast hidden"></div>
 
 <script type="module" src="app.js"></script>
