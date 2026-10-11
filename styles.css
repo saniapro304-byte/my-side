@@ -1,4 +1,4 @@
-/* ============ ПАНЕЛИ (стикеры, GIF, вложения, сжечь) ============ */
+/* ПАНЕЛИ */
 .pnl {
   padding: 12px 14px;
   background: var(--p);
@@ -10,7 +10,6 @@
 
 body.l .pnl { border-top: 1px solid rgba(0,0,0,.06); }
 
-/* Сетка вложений */
 .ag {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -37,7 +36,6 @@ body.l .pnl { border-top: 1px solid rgba(0,0,0,.06); }
 .agb .ic { font-size: 24px; }
 .agb span:not(.ic) { color: var(--t2); }
 
-/* Группы кнопок */
 .tg {
   display: flex;
   gap: 6px;
@@ -65,7 +63,6 @@ body.l .pnl { border-top: 1px solid rgba(0,0,0,.06); }
   box-shadow: 0 4px 14px rgba(74,158,255,.3);
 }
 
-/* Панель ввода */
 .inp {
   display: none;
   align-items: flex-end;
@@ -91,10 +88,7 @@ body.l .inp { border-top: 1px solid rgba(0,0,0,.06); }
   transition: border .15s;
 }
 
-.inp input#msgI:focus {
-  border-color: rgba(74,158,255,.4);
-}
-
+.inp input#msgI:focus { border-color: rgba(74,158,255,.4); }
 .inp input#msgI::placeholder { color: var(--t2); }
 
 .ib {
@@ -107,6 +101,8 @@ body.l .inp { border-top: 1px solid rgba(0,0,0,.06); }
   font-size: 19px;
   color: var(--t2);
   flex-shrink: 0;
+  background: transparent;
+  border: none;
   transition: background .15s, transform .1s, color .15s;
 }
 
@@ -121,7 +117,6 @@ body.l .inp { border-top: 1px solid rgba(0,0,0,.06); }
 
 .ib.sn:active { transform: scale(.92); }
 
-/* Пустой чат */
 .emp {
   flex: 1;
   display: flex;
@@ -136,7 +131,7 @@ body.l .inp { border-top: 1px solid rgba(0,0,0,.06); }
 
 .emp .ic { font-size: 56px; opacity: .5; }
 
-/* ============ ОТВЕТ (reply) ============ */
+/* REPLY */
 .rp {
   display: none;
   align-items: center;
@@ -157,10 +152,7 @@ body.l .rp { border-top: 1px solid rgba(0,0,0,.06); }
   flex-shrink: 0;
 }
 
-.rp .cc {
-  flex: 1;
-  min-width: 0;
-}
+.rp .cc { flex: 1; min-width: 0; }
 
 .rp .ca {
   font-size: 12px;
@@ -184,16 +176,14 @@ body.l .rp { border-top: 1px solid rgba(0,0,0,.06); }
   color: var(--t2);
   font-size: 16px;
   flex-shrink: 0;
-  transition: background .15s;
+  background: transparent;
+  border: none;
 }
 
 .rp button:active { background: rgba(255,255,255,.08); }
 
-/* ============ ЭМОДЗИ ============ */
-.ep {
-  position: relative;
-  display: contents;
-}
+/* ЭМОДЗИ */
+.ep { position: relative; display: contents; }
 
 #ep {
   position: absolute;
@@ -203,16 +193,11 @@ body.l .rp { border-top: 1px solid rgba(0,0,0,.06); }
   max-height: 50vh;
   z-index: 100;
   display: none;
-  --background: var(--p);
-  --border-color: var(--br);
-  --input-border-color: var(--br);
-  --input-font-color: var(--t);
-  --input-background: var(--p2);
 }
 
 #ep.show { display: block; }
 
-/* ============ НИЖНЯЯ НАВИГАЦИЯ (ПИЛЮЛЯ) ============ */
+/* НИЖНЯЯ НАВИГАЦИЯ */
 .bn {
   position: fixed;
   bottom: calc(12px + var(--sb));
@@ -246,9 +231,9 @@ body.l .bn {
   font-size: 10px;
   font-weight: 700;
   background: transparent;
+  border: none;
   transition: all .25s cubic-bezier(.4,0,.2,1);
   min-width: 60px;
-  position: relative;
 }
 
 .bn .bi { font-size: 20px; }
@@ -259,9 +244,7 @@ body.l .bn {
   box-shadow: 0 4px 16px rgba(74,158,255,.4);
 }
 
-.bn button.on .bi { transform: scale(1.05); }
-
-/* ============ МОДАЛКИ ============ */
+/* МОДАЛКИ */
 .md {
   position: fixed;
   inset: 0;
@@ -274,15 +257,9 @@ body.l .bn {
   padding: 16px;
   z-index: 5000;
   overflow-y: auto;
-  animation: fadeIn .15s;
 }
 
 .md.show { display: flex; }
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
 
 .mb {
   background: var(--p);
@@ -293,16 +270,10 @@ body.l .bn {
   max-height: 88vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06);
-  animation: modalIn .22s cubic-bezier(.4,0,.2,1);
 }
 
 body.l .mb {
   box-shadow: 0 20px 60px rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.05);
-}
-
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(.94) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .mb h2, .mb h3 {
@@ -342,20 +313,21 @@ body.l .mb {
   font-size: 14px;
   cursor: pointer;
   transition: transform .1s, background .15s;
+  border: none;
 }
 
 .mb button:active { transform: scale(.97); }
 
 .mb button.primary,
-.mb button[class*="bSave"],
-.mb button[id^="bPub"],
-.mb button[id^="bSave"],
-.mb button[id^="bCr"],
-.mb button[id^="bSet"],
-.mb button[id^="bAct"] {
+.mb button.gl {
   background: linear-gradient(135deg, var(--a), var(--a2));
   color: #fff;
   box-shadow: 0 4px 14px rgba(74,158,255,.35);
+}
+
+.mb button.gl {
+  background: linear-gradient(135deg, var(--go), #ff8c00);
+  color: #000;
 }
 
 .mb button.gh {
@@ -364,17 +336,10 @@ body.l .mb {
   border: 1px solid var(--br);
 }
 
-.mb button.dg,
-.mb button.danger {
+.mb button.dg, .mb button.danger {
   background: rgba(229,57,53,.15);
   color: var(--r);
   border: 1px solid rgba(229,57,53,.3);
-}
-
-.mb button.gl {
-  background: linear-gradient(135deg, var(--go), #ff8c00);
-  color: #000;
-  font-weight: 800;
 }
 
 .mb .modal-actions {
@@ -385,10 +350,7 @@ body.l .mb {
 
 .mb .modal-actions button { flex: 1; }
 
-/* Группы кнопок в модалках (для тем) */
-.mb .tg button { padding: 10px 12px; }
-
-/* ============ ТОСТ ============ */
+/* ТОСТ */
 #sgToast {
   position: fixed;
   bottom: calc(90px + var(--sb));
@@ -411,7 +373,7 @@ body.l .mb {
   text-align: center;
 }
 
-/* ============ БАН-БАННЕР ============ */
+/* БАН-БАННЕР */
 #banBanner {
   position: fixed;
   top: 0;
@@ -427,7 +389,7 @@ body.l .mb {
   box-shadow: 0 2px 12px rgba(0,0,0,.4);
 }
 
-/* ============ PIN-ЭКРАН ============ */
+/* PIN */
 #pinLock {
   position: fixed;
   inset: 0;
@@ -442,18 +404,8 @@ body.l .mb {
 }
 
 #pinLock.show { display: flex; }
-
-#pinDots {
-  font-size: 32px;
-  letter-spacing: 14px;
-  font-family: monospace;
-}
-
-#pinKb {
-  display: grid;
-  grid-template-columns: repeat(3, 70px);
-  gap: 10px;
-}
+#pinDots { font-size: 32px; letter-spacing: 14px; font-family: monospace; }
+#pinKb { display: grid; grid-template-columns: repeat(3, 70px); gap: 10px; }
 
 #pinKb button {
   width: 70px;
@@ -466,15 +418,13 @@ body.l .mb {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform .1s, background .15s;
+  border: none;
+  cursor: pointer;
 }
 
-#pinKb button:active {
-  transform: scale(.9);
-  background: var(--p3);
-}
+#pinKb button:active { transform: scale(.9); background: var(--p3); }
 
-/* ============ АДМИН-ПАНЕЛЬ ============ */
+/* АДМИН */
 .apn {
   position: fixed;
   inset: 0;
@@ -504,6 +454,8 @@ body.l .mb {
   border-radius: 50%;
   background: var(--p2);
   font-size: 16px;
+  border: none;
+  cursor: pointer;
 }
 
 .ast {
@@ -532,6 +484,9 @@ body.l .mb {
   font-weight: 600;
   white-space: nowrap;
   flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  color: var(--t);
 }
 
 .atb button.on {
@@ -539,13 +494,9 @@ body.l .mb {
   color: #fff;
 }
 
-.abd {
-  flex: 1;
-  padding: 14px;
-  overflow-y: auto;
-}
+.abd { flex: 1; padding: 14px; overflow-y: auto; }
 
-/* ============ СТОРИС VIEWER ============ */
+/* STORY VIEWER */
 .sv {
   position: fixed;
   inset: 0;
@@ -566,32 +517,17 @@ body.l .mb {
 
 .sc { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 
-.stl {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 40px;
-  height: 60px;
-  z-index: 10;
-}
-
-.stl.l { left: 0; }
-.stl.r { right: 0; }
-
-/* ============ WEBRTC / CALLS ============ */
-.call-screen {
+/* CS (story creator) */
+.cs {
   position: fixed;
   inset: 0;
   background: #000;
-  z-index: 100000;
-  display: none;
+  z-index: 10001;
+  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
 }
 
-/* ============ МОБИЛЬНАЯ АДАПТАЦИЯ ============ */
+/* МОБИЛЬНАЯ АДАПТАЦИЯ */
 @media (max-width: 720px) {
   .sd {
     max-width: 100%;
@@ -608,47 +544,25 @@ body.l .mb {
     transition: transform .25s cubic-bezier(.4,0,.2,1);
   }
 
-  .area.active {
-    transform: translateX(0);
+  .area.active { transform: translateX(0); }
+
+  .tp .a { max-width: 55%; }
+
+  .tp .a .tb:not(#bAdm):not(#bSet):not(#bGrp) {
+    display: none;
   }
+
+  .tp h2 { font-size: 17px; }
 }
 
 @media (min-width: 721px) {
-  .sd {
-    border-right: 1px solid rgba(255,255,255,.05);
-  }
-
-  body.l .sd {
-    border-right: 1px solid rgba(0,0,0,.06);
-  }
+  .sd { border-right: 1px solid rgba(255,255,255,.05); }
+  body.l .sd { border-right: 1px solid rgba(0,0,0,.06); }
 }
 
-/* ============ СКРЫТИЕ ЛИШНИХ ЭЛЕМЕНТОВ ============ */
-#BE { display: none !important; }
-
-/* ============ АНИМАЦИЯ В ПОДАРОК ============ */
-@keyframes giftPop {
-  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
-  50% { transform: scale(1.2) rotate(10deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-/* ============ АНИМАЦИЯ ПЕЧАТАЕТ ============ */
-@keyframes typingDot {
-  0%, 60%, 100% { opacity: .3; transform: translateY(0); }
-  30% { opacity: 1; transform: translateY(-3px); }
-}
-
+/* TYPING */
 .typing-indicator {
   color: var(--a) !important;
   font-style: italic;
   font-size: 12px;
 }
-
-.typing-indicator span {
-  display: inline-block;
-  animation: typingDot 1.4s infinite;
-}
-
-.typing-indicator span:nth-child(2) { animation-delay: .2s; }
-.typing-indicator span:nth-child(3) { animation-delay: .4s; }
