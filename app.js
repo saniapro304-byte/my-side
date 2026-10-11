@@ -8,7 +8,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 const state = {
   user: null, profile: null, chats: [], currentChat: null,
   messages: [], replyTo: null,
-  realtimeChannels: [], realtimeChats: null, realtimeMsgs: null,
+  realtimeChats: null, realtimeMsgs: null, realtimeStories: null,
   adminUsers: [], adminFilter: '',
   settings: {
     theme: localStorage.getItem('theme') || 'midnight',
@@ -108,27 +108,22 @@ document.addEventListener('DOMContentLoaded', () => {
   function logout() {
     if (state.realtimeChats) sb.removeChannel(state.realtimeChats);
     if (state.realtimeMsgs) sb.removeChannel(state.realtimeMsgs);
+    if (state.realtimeStories) sb.removeChannel(state.realtimeStories);
     localStorage.removeItem('sg_user_id');
     location.reload();
   }
 
-  // ============ REALTIME (без поллинга — нет мигания) ============
+  // ============ REALTIME (без мигания) ============
   function setupRealtime() {
-    // ЧАТЫ
     state.realtimeChats = sb.channel('rt-chats-' + state.user.id)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
-        loadChats();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { loadChats(); })
       .subscribe();
 
-    // СООБЩЕНИЯ
     state.realtimeMsgs = sb.channel('rt-msgs-' + state.user.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
         if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) {
           loadMessages();
-          if (payload.new.sender !== state.user.id) {
-            if (state.settings.vibrate && navigator.vibrate) navigator.vibrate(30);
-          }
+          if (payload.new.sender !== state.user.id && state.settings.vibrate && navigator.vibrate) navigator.vibrate(30);
         } else {
           loadChats();
         }
@@ -302,6 +297,8 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="profile-actions">
         <button class="primary" onclick="window.editProfile()">✏️ Редактировать</button>
         <button onclick="window.shareProfile()">📤 Поделиться</button>
+        <button onclick="window.openStories()">📸 Статусы</button>
+        <button onclick="window.openMyStory()">＋ Статус</button>
         ${isAdmin() ? '<button style="grid-column:1/-1;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;border:none" onclick="window.openAdmin()">👑 Админ-панель</button>' : ''}
       </div>
     `;
@@ -318,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const info = {
       creator: { icon: '👑', title: 'Создатель Spacegram', desc: 'Основатель проекта. Имеет полный доступ к админ-панели и всем функциям приложения.' },
       verified: { icon: '✅', title: 'Верифицирован', desc: 'Подтверждённый аккаунт. Личность подтверждена администрацией Spacegram.' },
-      plus: { icon: '⭐', title: 'Spacegram Plus', desc: 'Премиум-подписка. Доступ к эксклюзивным стикерам, сторис, темам и бейджам.' },
+      plus: { icon: '⭐', title: 'Spacegram Plus', desc: 'Премиум-подписка. Доступ к эксклюзивным стикерам, статусам, темам и бейджам.' },
       youtuber: { icon: '▶️', title: 'YouTuber', desc: 'Проверенный контент-мейкер. Ведёт канал о Spacegram или смежном контенте.' },
       admin: { icon: '⚡', title: 'Администратор', desc: 'Модератор проекта. Следит за порядком, банит нарушителей, решает жалобы.' },
       bot: { icon: '🤖', title: 'Bot Verified', desc: 'Официальный бот Spacegram, проверенный администрацией.' }
@@ -341,8 +338,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const p = state.profile;
     openModal(`
       <h3>✏️ Редактировать профиль</h3>
+      <label style="font-size:13px;color:var(--text2);margin-bottom:6px;display:block">Аватар (фото с устройства)</label>
+      <input type="file" id="epAvatarFile" accept="image/*">
+      <input id="epAvatar" placeholder="URL аватара" value="${esc(p.avatar_url||'')}" style="margin-top:8px">
       <input id="epName" placeholder="Имя" value="${esc(p.display_name||'')}">
-      <input id="epAvatar" placeholder="URL аватара" value="${esc(p.avatar_url||'')}">
       <input id="epStatus" placeholder="Emoji-статус" value="${esc(p.emoji_status||'')}" maxlength="4">
       <textarea id="epBio" placeholder="О себе" rows="3">${esc(p.bio||'')}</textarea>
       <div class="modal-actions">
@@ -353,9 +352,20 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   window.saveProfile = async () => {
+    let avatar_url = $('epAvatar').value.trim() || null;
+    const file = $('epAvatarFile').files[0];
+    if (file) {
+      toast('Загрузка аватара...');
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `avatars/${state.user.id}_${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from('files').upload(path, file, { upsert: true });
+      if (upErr) { toast('Ошибка: ' + upErr.message); return; }
+      const { data: u } = sb.storage.from('files').getPublicUrl(path);
+      avatar_url = u.publicUrl;
+    }
     const updates = {
       display_name: $('epName').value.trim() || state.profile.display_name,
-      avatar_url: $('epAvatar').value.trim() || null,
+      avatar_url,
       emoji_status: $('epStatus').value.trim() || null,
       bio: $('epBio').value.trim()
     };
@@ -377,59 +387,148 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ============ СТОРИС ============
+  // ============================================
+  // ============ 📸 СТАТУСЫ ============
+  // ============================================
   async function openStories() {
     const { data: stories } = await sb.from('stories')
       .select('*')
       .gt('expires_at', new Date().toISOString())
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(100);
+
+    // Группируем по юзеру
+    const byUser = {};
+    (stories||[]).forEach(s => {
+      if (!byUser[s.user_id]) byUser[s.user_id] = [];
+      byUser[s.user_id].push(s);
+    });
+
+    const userIds = Object.keys(byUser);
+    const authors = {};
+    if (userIds.length) {
+      const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
+      (profs||[]).forEach(p => authors[p.id] = p);
+    }
 
     const canPost = state.profile?.is_plus || state.profile?.is_creator || state.profile?.role === 'admin';
+    const myStories = byUser[state.user.id] || [];
+    const otherUsers = Object.keys(byUser).filter(uid => uid !== state.user.id);
 
     openModal(`
-      <h3>📸 Сторис</h3>
+      <h3>📸 Статусы</h3>
       ${canPost 
-        ? `<button class="toolbar-btn primary" style="width:100%;margin-bottom:12px" onclick="window.addStory()">＋ Добавить сторис</button>` 
-        : `<div style="text-align:center;padding:12px;background:var(--panel2);border-radius:10px;margin-bottom:12px;color:var(--text2);font-size:13px">⭐ Сторис только для Plus</div>`
+        ? `<button class="toolbar-btn primary" style="width:100%;margin-bottom:12px" onclick="window.addStory()">＋ Добавить статус</button>` 
+        : `<div style="text-align:center;padding:12px;background:var(--panel2);border-radius:10px;margin-bottom:12px;color:var(--text2);font-size:13px">⭐ Статусы только для Plus</div>`
       }
-      <div style="max-height:450px;overflow-y:auto">
-        ${(stories||[]).length ? (stories||[]).map(s => {
-          const seen = (s.views||[]).includes(state.user.id);
-          return `<div class="admin-row" style="cursor:pointer" onclick="window.viewStory('${s.id}')">
-            <div style="width:48px;height:48px;border-radius:50%;background:${s.bg_color||'var(--accent)'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:2px solid ${seen?'var(--border)':'var(--accent)'};color:#fff">
-              ${s.media_url ? '🖼' : '📝'}
-            </div>
-            <div class="admin-row-info">
-              <div class="admin-row-name">${esc((s.text_content||'').slice(0,40) || 'Медиа-сторис')}</div>
-              <div class="admin-row-sub">${fmtTime(s.created_at)} · ${s.media_type||'text'}</div>
-            </div>
-            ${!seen ? '<div class="online-dot"></div>' : ''}
-          </div>`;
-        }).join('') : '<div style="text-align:center;padding:30px;color:var(--text2)">Пока нет сторис 😢</div>'}
-      </div>
+      ${myStories.length ? `
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">МОИ СТАТУСЫ</div>
+          <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:6px">
+            ${myStories.map(s => `
+              <div style="text-align:center;flex-shrink:0;cursor:pointer" onclick="window.viewStory('${s.id}')">
+                <div style="width:70px;height:70px;border-radius:50%;background:${s.bg_color||'var(--accent)'};border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;margin-bottom:4px">
+                  ${s.media_url ? `<img src="${esc(s.media_url)}" style="width:100%;height:100%;object-fit:cover">` : '📝'}
+                </div>
+                <div style="font-size:11px;color:var(--text2)">${fmtTime(s.created_at)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${otherUsers.length ? `
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px;font-weight:600">НЕДАВНИЕ ОБНОВЛЕНИЯ</div>
+        <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px">
+          ${otherUsers.map(uid => {
+            const a = authors[uid];
+            const userStories = byUser[uid];
+            const latest = userStories[0];
+            const seen = userStories.every(s => (s.views||[]).includes(state.user.id));
+            const avatar = a?.avatar_url;
+            const initial = (a?.display_name||'?')[0].toUpperCase();
+            return `
+              <div style="text-align:center;flex-shrink:0;cursor:pointer" onclick="window.viewStory('${latest.id}')">
+                <div style="width:70px;height:70px;border-radius:50%;background:${latest.bg_color||'var(--accent)'};border:3px solid ${seen?'var(--border)':'var(--accent)'};display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;margin-bottom:4px">
+                  ${latest.media_url ? `<img src="${esc(latest.media_url)}" style="width:100%;height:100%;object-fit:cover">` : (avatar ? `<img src="${esc(avatar)}" style="width:100%;height:100%;object-fit:cover">` : initial)}
+                </div>
+                <div style="font-size:11px;color:var(--text2);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a?.display_name||'Юзер')}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      ` : ''}
+      ${!myStories.length && !otherUsers.length ? '<div style="text-align:center;padding:30px;color:var(--text2)">Пока нет статусов 😢<br><br>Стань первым!</div>' : ''}
       <div class="modal-actions"><button onclick="window.closeModal()">Закрыть</button></div>
     `);
   }
 
-  window.addStory = async () => {
-    const text = prompt('Текст сторис (или URL картинки):');
-    if (!text) return;
-    const isUrl = /^https?:\/\//.test(text);
-    const bg = prompt('Цвет фона (например #ff0000):', '#5288c1') || '#5288c1';
+  window.openMyStory = () => window.addStory();
+
+  window.addStory = () => {
+    const canPost = state.profile?.is_plus || state.profile?.is_creator || state.profile?.role === 'admin';
+    if (!canPost) { toast('⭐ Статусы только для Plus'); return; }
+    openModal(`
+      <h3>📸 Новый статус</h3>
+      <label style="display:block;font-size:13px;color:var(--text2);margin-bottom:6px">📷 Фото/видео с устройства</label>
+      <input type="file" id="storyFile" accept="image/*,video/*" capture="environment" style="margin-bottom:10px">
+      <label style="display:block;font-size:13px;color:var(--text2);margin-bottom:6px">✏️ Текст (опционально)</label>
+      <textarea id="storyText" placeholder="Что нового?" rows="2"></textarea>
+      <label style="display:block;font-size:13px;color:var(--text2);margin-bottom:6px">🎨 Цвет фона</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        ${['#5288c1','#a855f7','#00b4d8','#ff6b35','#f43f5e','#4ade80','#00ff9d','#000000','#333333'].map(c => `
+          <button class="story-color" data-color="${c}" style="width:36px;height:36px;border-radius:50%;background:${c};border:2px solid var(--border);cursor:pointer"></button>
+        `).join('')}
+      </div>
+      <input id="storyBg" type="hidden" value="#5288c1">
+      <div class="modal-actions">
+        <button onclick="window.openStories()">← Назад</button>
+        <button class="primary" onclick="window.publishStory()">📸 Опубликовать</button>
+      </div>
+    `);
+    document.querySelectorAll('.story-color').forEach(b => b.onclick = () => {
+      document.querySelectorAll('.story-color').forEach(x => x.style.border = '2px solid var(--border)');
+      b.style.border = '3px solid var(--text)';
+      $('storyBg').value = b.dataset.color;
+    });
+    document.querySelector('.story-color')?.click();
+  };
+
+  window.publishStory = async () => {
+    const fileInput = $('storyFile');
+    const text = $('storyText').value.trim();
+    const bg = $('storyBg').value;
+    const file = fileInput.files[0];
+
+    if (!file && !text) { toast('Добавь фото или текст'); return; }
+
+    toast('Публикация...');
+    let mediaUrl = null;
+    let mediaType = 'text';
+
+    if (file) {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `${state.user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await sb.storage.from('stories').upload(path, file, { upsert: true });
+      if (upErr) { toast('Ошибка загрузки: ' + upErr.message); return; }
+      const { data: urlData } = sb.storage.from('stories').getPublicUrl(path);
+      mediaUrl = urlData.publicUrl;
+      mediaType = file.type.startsWith('video') ? 'video' : 'image';
+    }
+
     const expires = new Date(Date.now() + 24*3600*1000).toISOString();
     const { error } = await sb.from('stories').insert({
       user_id: state.user.id,
-      text_content: isUrl ? null : text,
-      media_url: isUrl ? text : null,
-      media_type: isUrl ? 'image' : 'text',
+      text_content: text || null,
+      media_url: mediaUrl,
+      media_type: mediaType,
       bg_color: bg,
       duration: 5,
       expires_at: expires,
       views: []
     });
+
     if (error) { toast('Ошибка: ' + error.message); return; }
-    toast('Сторис опубликован! 📸');
+    toast('Статус опубликован! 📸');
     openStories();
   };
 
@@ -445,23 +544,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     openModal(`
-      <div style="background:${story.bg_color||'#000'};border-radius:14px;padding:40px 20px;text-align:center;min-height:300px;display:flex;flex-direction:column;justify-content:center;align-items:center">
-        ${story.media_url ? `<img src="${esc(story.media_url)}" style="max-width:100%;max-height:250px;border-radius:10px">` : ''}
-        ${story.text_content ? `<div style="font-size:22px;font-weight:600;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.5);margin-top:${story.media_url?'14px':'0'}">${esc(story.text_content)}</div>` : ''}
-        <div style="margin-top:20px;color:rgba(255,255,255,.8);font-size:12px">
-          @${esc(author?.username||'юзер')} · ${fmtTime(story.created_at)}
+      <div style="background:${story.bg_color||'#000'};border-radius:14px;padding:20px;text-align:center;min-height:400px;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative">
+        ${story.media_url 
+          ? (story.media_type === 'video' 
+            ? `<video src="${esc(story.media_url)}" style="max-width:100%;max-height:400px;border-radius:10px" autoplay controls></video>`
+            : `<img src="${esc(story.media_url)}" style="max-width:100%;max-height:400px;border-radius:10px;object-fit:contain">`)
+          : ''
+        }
+        ${story.text_content ? `<div style="font-size:20px;font-weight:600;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7);margin-top:${story.media_url?'14px':'0'};padding:10px;background:rgba(0,0,0,.4);border-radius:10px">${esc(story.text_content)}</div>` : ''}
+        <div style="position:absolute;top:10px;left:10px;right:10px;display:flex;align-items:center;gap:8px">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0">
+            ${author?.avatar_url ? `<img src="${esc(author.avatar_url)}" style="width:100%;height:100%;object-fit:cover">` : (author?.display_name||'?')[0].toUpperCase()}
+          </div>
+          <div style="flex:1;text-align:left;color:#fff;font-size:13px;text-shadow:0 1px 4px rgba(0,0,0,.8)">
+            <b>${esc(author?.display_name||'Юзер')}</b><br>
+            <span style="font-size:11px;opacity:.8">${fmtTime(story.created_at)} · 👁 ${views.length}</span>
+          </div>
         </div>
       </div>
       <div class="modal-actions" style="margin-top:14px">
-        <button onclick="window.closeModal()">Закрыть</button>
-        <button class="primary" onclick="window.storyReply('${sid}','${story.user_id}')">💬 Ответить</button>
+        <button onclick="window.openStories()">← Назад</button>
+        ${story.user_id !== state.user.id 
+          ? `<button class="primary" onclick="window.storyReply('${sid}','${story.user_id}')">💬 Ответить</button>` 
+          : `<button class="danger" onclick="window.deleteStory('${sid}')">🗑 Удалить</button>`}
       </div>
     `);
   };
 
+  window.deleteStory = async (sid) => {
+    if (!confirm('Удалить статус?')) return;
+    await sb.from('stories').delete().eq('id', sid);
+    toast('Удалено'); openStories();
+  };
+
   window.storyReply = async (sid, uid) => {
     window.closeModal();
-    if (uid === state.user.id) { toast('Это твоя сторис 🙂'); return; }
+    if (uid === state.user.id) { toast('Это твой статус 🙂'); return; }
     const { data: other } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle();
     if (!other) return;
     const { data: existing } = await sb.from('chats').select('*').or(`and(user1.eq.${state.user.id},user2.eq.${other.id}),and(user1.eq.${other.id},user2.eq.${state.user.id})`).maybeSingle();
