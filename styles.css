@@ -72,7 +72,7 @@ img { -webkit-user-drag: none; user-select: none; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(127,145,164,.3); border-radius: 3px; }
 
-/* ЗАГРУЗКА */
+/* ============ ЗАГРУЗКА ============ */
 #L {
   position: fixed;
   inset: 0;
@@ -96,7 +96,13 @@ img { -webkit-user-drag: none; user-select: none; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* АВТОРИЗАЦИЯ */
+#L.hide {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+
+/* ============ АВТОРИЗАЦИЯ ============ */
 #A {
   position: fixed;
   inset: 0;
@@ -189,6 +195,7 @@ img { -webkit-user-drag: none; user-select: none; }
   margin-bottom: 6px;
 }
 
+/* ============ APP LAYOUT ============ */
 .app {
   display: flex;
   flex-direction: row;
@@ -286,7 +293,8 @@ body.l .tp { border-bottom: 1px solid rgba(0,0,0,.06); }
 
 .avt:active { transform: scale(.95); }
 .avt img { width: 100% !important; height: 100% !important; object-fit: cover; border-radius: 50%; display: block; }
-/* STORIES BAR */
+
+/* ============ STORIES BAR ============ */
 .st {
   display: flex;
   gap: 10px;
@@ -330,15 +338,8 @@ body.l .st { border-bottom: 1px solid rgba(0,0,0,.06); }
   overflow: hidden;
 }
 
-.story-circle.seen {
-  background: var(--br);
-}
-
-.story-circle-inner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.story-circle.seen { background: var(--br); }
+.story-circle-inner img { width: 100%; height: 100%; object-fit: cover; }
 
 .story-label {
   font-size: 11px;
@@ -351,7 +352,7 @@ body.l .st { border-bottom: 1px solid rgba(0,0,0,.06); }
   white-space: nowrap;
 }
 
-/* ПОИСК */
+/* ============ ПОИСК ============ */
 .sr { padding: 8px 12px 12px; flex-shrink: 0; }
 
 .sr input {
@@ -368,7 +369,7 @@ body.l .st { border-bottom: 1px solid rgba(0,0,0,.06); }
 .sr input:focus { border-color: var(--a); background: var(--p3); }
 .sr input::placeholder { color: var(--t2); }
 
-/* СПИСОК ЧАТОВ */
+/* ============ СПИСОК ЧАТОВ ============ */
 .ls {
   flex: 1;
   overflow-y: auto;
@@ -415,14 +416,7 @@ body.l .ch:hover { background: rgba(0,0,0,.03); }
 
 .cv img { width: 100%; height: 100%; object-fit: cover; }
 
-.verified-badge {
-  display: inline-block;
-  vertical-align: middle;
-  margin-left: 3px;
-  font-size: 13px;
-}
-
-/* ЛЕНТА */
+/* ============ ЛЕНТА ============ */
 .fd {
   display: none;
   flex-direction: column;
@@ -462,7 +456,7 @@ body.l .ch:hover { background: rgba(0,0,0,.03); }
 
 .fc:active { transform: scale(.92); }
 
-/* ОБЛАСТЬ ЧАТА */
+/* ============ ОБЛАСТЬ ЧАТА ============ */
 .area {
   flex: 1;
   display: flex;
@@ -558,7 +552,7 @@ body.l .chd { border-bottom: 1px solid rgba(0,0,0,.06); }
 
 .ha button:active { background: rgba(255,255,255,.08); }
 
-/* СООБЩЕНИЯ */
+/* ============ СООБЩЕНИЯ ============ */
 .ms {
   display: none;
   flex-direction: column;
@@ -628,7 +622,28 @@ body.l .m.you { background: #ffffff; }
 
 .m.me .msg-time { color: rgba(255,255,255,.85); }
 
-/* ТИПИНГ */
+/* ============ ГАЛОЧКИ (как в Telegram) ============ */
+.sg-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.sg-badge svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sg-badge.lg { width: 20px; height: 20px; }
+.sg-badge.sm { width: 14px; height: 14px; }
+
+/* ============ ТИПИНГ ============ */
 .typing-dots {
   display: inline-flex;
   gap: 3px;
@@ -650,7 +665,16 @@ body.l .m.you { background: #ffffff; }
   0%, 60%, 100% { opacity: .3; transform: translateY(0); }
   30% { opacity: 1; transform: translateY(-3px); }
 }
-/* ПАНЕЛИ (вложения, стикеры, gif, сжечь) */
+
+.typing-indicator {
+  color: var(--a) !important;
+  font-style: italic;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* ============ ПАНЕЛИ (вложения, стикеры, gif, сжечь) ============ */
 .pnl {
   padding: 12px 14px;
   background: var(--p);
@@ -715,7 +739,7 @@ body.l .pnl { border-top: 1px solid rgba(0,0,0,.06); }
   box-shadow: 0 4px 14px rgba(74,158,255,.3);
 }
 
-/* ПАНЕЛЬ ВВОДА */
+/* ============ ПАНЕЛЬ ВВОДА ============ */
 .inp {
   display: none;
   align-items: flex-end;
@@ -786,7 +810,7 @@ body.l .inp { border-top: 1px solid rgba(0,0,0,.06); }
 
 .emp .ic { font-size: 56px; opacity: .5; }
 
-/* REPLY */
+/* ============ REPLY ============ */
 .rp {
   display: none;
   align-items: center;
@@ -839,7 +863,7 @@ body.l .rp { border-top: 1px solid rgba(0,0,0,.06); }
 
 .rp button:active { background: rgba(255,255,255,.08); }
 
-/* ЭМОДЗИ */
+/* ============ ЭМОДЗИ ============ */
 .ep { position: relative; display: contents; }
 
 #ep {
@@ -854,7 +878,7 @@ body.l .rp { border-top: 1px solid rgba(0,0,0,.06); }
 
 #ep.show { display: block; }
 
-/* НИЖНЯЯ НАВИГАЦИЯ */
+/* ============ НИЖНЯЯ НАВИГАЦИЯ (ПИЛЮЛЯ) ============ */
 .bn {
   position: fixed;
   bottom: calc(12px + var(--sb));
@@ -901,7 +925,7 @@ body.l .bn {
   box-shadow: 0 4px 16px rgba(74,158,255,.4);
 }
 
-/* МОДАЛКИ */
+/* ============ МОДАЛКИ ============ */
 .md {
   position: fixed;
   inset: 0;
@@ -1005,7 +1029,8 @@ body.l .mb {
 }
 
 .mb .modal-actions button { flex: 1; }
-/* TOAST */
+
+/* ============ TOAST ============ */
 #sgToast {
   position: fixed;
   bottom: calc(90px + var(--sb));
@@ -1028,7 +1053,7 @@ body.l .mb {
   text-align: center;
 }
 
-/* БАН-БАННЕР */
+/* ============ БАН-БАННЕР ============ */
 #banBanner {
   position: fixed;
   top: 0;
@@ -1044,7 +1069,7 @@ body.l .mb {
   box-shadow: 0 2px 12px rgba(0,0,0,.4);
 }
 
-/* PIN-ЭКРАН */
+/* ============ PIN ============ */
 #pinLock {
   position: fixed;
   inset: 0;
@@ -1079,7 +1104,7 @@ body.l .mb {
 
 #pinKb button:active { transform: scale(.9); background: var(--p3); }
 
-/* АДМИН-ПАНЕЛЬ */
+/* ============ АДМИН-ПАНЕЛЬ ============ */
 .apn {
   position: fixed;
   inset: 0;
@@ -1151,7 +1176,7 @@ body.l .mb {
 
 .abd { flex: 1; padding: 14px; overflow-y: auto; }
 
-/* STORY VIEWER */
+/* ============ STORY VIEWER ============ */
 .sv {
   position: fixed;
   inset: 0;
@@ -1181,7 +1206,7 @@ body.l .mb {
   flex-direction: column;
 }
 
-/* STORY CARD */
+/* ============ STORY CARD ============ */
 .story-card {
   background: #000;
   border-radius: 14px;
@@ -1278,7 +1303,7 @@ body.l .mb {
   transform: scale(.9);
   background: rgba(255,255,255,.2);
 }
-/* ВЕРИФИКАЦИЯ — карточки заявок */
+/* ============ ВЕРИФИКАЦИЯ (карточки заявок) ============ */
 .ver-card {
   padding: 12px;
   background: var(--p2);
@@ -1301,6 +1326,7 @@ body.l .mb {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .ver-card-user {
@@ -1364,7 +1390,7 @@ body.l .mb {
   border: 1px solid rgba(229,57,53,.3);
 }
 
-/* ПРОФИЛЬ — бейджи */
+/* ============ БЕЙДЖИ ПРОФИЛЯ (pill-стиль) ============ */
 .profile-badges {
   display: flex;
   flex-wrap: wrap;
@@ -1384,7 +1410,7 @@ body.l .mb {
 }
 
 .badge-pill.creator {
-  background: linear-gradient(135deg, #ff00ff, #00ffff);
+  background: linear-gradient(135deg, #000, #333);
   color: #fff;
 }
 
@@ -1394,8 +1420,8 @@ body.l .mb {
 }
 
 .badge-pill.plus {
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #000;
+  background: linear-gradient(135deg, #2AABEE, #1a8cc7);
+  color: #fff;
 }
 
 .badge-pill.youtuber {
@@ -1404,8 +1430,8 @@ body.l .mb {
 }
 
 .badge-pill.admin {
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #000;
+  background: linear-gradient(135deg, #000, #333);
+  color: #fff;
 }
 
 .badge-pill.bot {
@@ -1413,7 +1439,7 @@ body.l .mb {
   color: #fff;
 }
 
-/* ЧАТ ГАЛЕРЕЯ */
+/* ============ ЧАТ ГАЛЕРЕЯ ============ */
 .chat-gallery {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1430,11 +1456,9 @@ body.l .mb {
   transition: transform .15s;
 }
 
-.chat-gallery img:active {
-  transform: scale(.95);
-}
+.chat-gallery img:active { transform: scale(.95); }
 
-/* СТИКЕРЫ */
+/* ============ СТИКЕРЫ ============ */
 .sticker-item {
   aspect-ratio: 1;
   border-radius: 10px;
@@ -1452,14 +1476,9 @@ body.l .mb {
 .sticker-item:hover { background: var(--p3); }
 .sticker-item:active { transform: scale(.9); }
 .sticker-item.selected { border-color: var(--a); }
+.sticker-item img { width: 100%; height: 100%; object-fit: contain; }
 
-.sticker-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-/* ПОСТ В ЛЕНТЕ */
+/* ============ ПОСТ В ЛЕНТЕ ============ */
 .post-card {
   background: var(--p);
   border-radius: 14px;
@@ -1491,16 +1510,9 @@ body.l .mb {
   font-size: 15px;
 }
 
-.post-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.post-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-.post-meta {
-  flex: 1;
-  min-width: 0;
-}
+.post-meta { flex: 1; min-width: 0; }
 
 .post-author {
   font-weight: 700;
@@ -1508,6 +1520,7 @@ body.l .mb {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-wrap: wrap;
 }
 
 .post-time {
@@ -1551,7 +1564,6 @@ body.l .mb {
   gap: 4px;
 }
 
-/* ПУСТАЯ ЛЕНТА */
 .empty-feed {
   text-align: center;
   padding: 60px 20px;
@@ -1564,7 +1576,7 @@ body.l .mb {
   margin-bottom: 12px;
 }
 
-/* ТИПИНГ-БАББЛ */
+/* ============ ТИПИНГ-БАББЛ ============ */
 .typing-bubble {
   align-self: flex-start;
   padding: 12px 18px;
@@ -1587,7 +1599,8 @@ body.l .mb {
 
 .typing-bubble span:nth-child(2) { animation-delay: .2s; }
 .typing-bubble span:nth-child(3) { animation-delay: .4s; }
-/* АНИМАЦИИ */
+
+/* ============ АНИМАЦИИ ============ */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1610,11 +1623,15 @@ body.l .mb {
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-.gift-anim {
-  animation: giftBounce .6s cubic-bezier(.5,1.5,.5,1);
+@keyframes heartPop {
+  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+  50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg) translateY(-60px); opacity: 0; }
 }
 
-/* Плавающая кнопка "новый статус" */
+.gift-anim { animation: giftBounce .6s cubic-bezier(.5,1.5,.5,1); }
+
+/* ============ FAB "Новый статус" ============ */
 .fab-story {
   position: fixed;
   left: 16px;
@@ -1655,6 +1672,14 @@ body.l .mb {
   animation: spin .6s linear infinite;
 }
 
+/* Утилиты */
+.gradient-text {
+  background: linear-gradient(135deg, var(--a), var(--a2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* ============ КРИТИЧЕСКИЙ ФИКС: на ПК скрываем пилюлю ============ */
 @media (min-width: 721px) {
   .bn {
@@ -1674,9 +1699,17 @@ body.l .mb {
   .emp {
     padding-bottom: 20px !important;
   }
+
+  .sd {
+    border-right: 1px solid rgba(255,255,255,.05);
+  }
+
+  body.l .sd {
+    border-right: 1px solid rgba(0,0,0,.06);
+  }
 }
 
-/* На мобильных — пилюля под панелью ввода */
+/* Мобильные */
 @media (max-width: 720px) {
   .sd {
     max-width: 100%;
@@ -1722,18 +1755,7 @@ body.l .mb {
   }
 }
 
-/* На ПК — сайдбар с border-right */
-@media (min-width: 721px) {
-  .sd {
-    border-right: 1px solid rgba(255,255,255,.05);
-  }
-
-  body.l .sd {
-    border-right: 1px solid rgba(0,0,0,.06);
-  }
-}
-
-/* Мобильные — узкие галереи */
+/* Узкие экраны */
 @media (max-width: 500px) {
   .chat-gallery {
     grid-template-columns: repeat(2, 1fr);
@@ -1745,54 +1767,4 @@ body.l .mb {
   }
 }
 
-/* Typing indicator в шапке */
-.typing-indicator {
-  color: var(--a) !important;
-  font-style: italic;
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Скрыть загрузку */
-#L.hide {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .3s;
-}
-
-/* Утилиты */
-.gradient-text {
-  background: linear-gradient(135deg, var(--a), var(--a2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Специальные пилюли для галочек */
-.badge-verified,
-.badge-youtuber,
-.badge-creator,
-.badge-plus,
-.badge-bot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  font-size: 10px;
-  margin-left: 4px;
-  flex-shrink: 0;
-  vertical-align: middle;
-}
-
-.badge-verified { background: linear-gradient(135deg, #2196f3, #00bcd4); color: #fff; }
-.badge-youtuber { background: #ff0000; color: #fff; }
-.badge-creator { background: linear-gradient(135deg, #ff00ff, #00ffff); color: #fff; }
-.badge-plus { background: linear-gradient(135deg, #ffd700, #ff8c00); color: #000; }
-.badge-bot { background: linear-gradient(135deg, #4caf50, #8bc34a); color: #fff; }
-
-/* Проверка: последняя строка файла */
 /* END OF SPACEGRAM CSS v14 */
