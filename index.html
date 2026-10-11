@@ -9,25 +9,25 @@
 </head>
 <body>
 
+<!-- АВТОРИЗАЦИЯ -->
 <div id="authScreen" class="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">🚀 Spacegram</div>
+    <div class="auth-sub">Мессенджер нового поколения</div>
     <div class="auth-tabs">
       <button id="tabLogin" class="auth-tab active">Вход</button>
       <button id="tabRegister" class="auth-tab">Регистрация</button>
     </div>
-
     <div id="loginForm" class="auth-form">
       <input id="loginUsername" type="text" placeholder="Юзернейм" autocomplete="username">
       <input id="loginPassword" type="password" placeholder="Пароль" autocomplete="current-password">
       <button id="loginBtn" class="auth-submit">Войти</button>
       <div id="loginError" class="auth-error"></div>
     </div>
-
     <div id="registerForm" class="auth-form hidden">
       <input id="regUsername" type="text" placeholder="Юзернейм (латиница)" autocomplete="username">
       <input id="regDisplayName" type="text" placeholder="Отображаемое имя">
-      <input id="regPhone" type="tel" placeholder="Телефон">
+      <input id="regPhone" type="tel" placeholder="Телефон (необязательно)">
       <input id="regPassword" type="password" placeholder="Пароль" autocomplete="new-password">
       <button id="registerBtn" class="auth-submit">Создать аккаунт</button>
       <div id="registerError" class="auth-error"></div>
@@ -35,6 +35,7 @@
   </div>
 </div>
 
+<!-- ОСНОВНОЕ -->
 <div id="app" class="app hidden">
   <header class="app-header">
     <div class="header-left">
@@ -42,32 +43,34 @@
       <span class="header-title">Spacegram</span>
     </div>
     <div class="header-actions">
-      <button id="searchBtn" class="icon-btn">🔍</button>
-      <button id="menuBtn" class="icon-btn">⋮</button>
+      <button id="searchBtn" class="icon-btn" title="Поиск">🔍</button>
+      <button id="menuBtn" class="icon-btn" title="Меню">⋮</button>
     </div>
     <div id="headerMenu" class="header-menu hidden">
-      <button data-action="settings">⚙️ Настройки</button>
       <button data-action="saved">💾 Избранное</button>
       <button data-action="friends">👥 Друзья</button>
       <button data-action="stories">📸 Сторис</button>
       <button data-action="shop">🛒 Магазин</button>
       <button data-action="mods">🧩 Моды</button>
       <button data-action="balance">💰 Баланс</button>
-      <button data-action="verification">✅ Верификация</button>
+      <button data-action="settings">⚙️ Настройки</button>
+      <button data-action="admin" id="adminMenuItem" class="hidden" style="color:#ffd700">👑 Админ-панель</button>
       <button data-action="logout" class="danger">🚪 Выйти</button>
     </div>
   </header>
 
-  <main id="mainContent" class="main-content">
+  <main class="main-content">
+    <!-- ЧАТЫ -->
     <section id="tabChats" class="tab-panel">
       <div class="tab-toolbar">
-        <button id="newChatBtn" class="toolbar-btn">＋ Новый чат</button>
+        <button id="newChatBtn" class="toolbar-btn">＋ Чат</button>
         <button id="newGroupBtn" class="toolbar-btn">👥 Группа</button>
         <button id="newChannelBtn" class="toolbar-btn">📢 Канал</button>
       </div>
       <div id="chatList" class="chat-list"></div>
     </section>
 
+    <!-- ЛЕНТА -->
     <section id="tabFeed" class="tab-panel hidden">
       <div class="tab-toolbar">
         <button id="newPostBtn" class="toolbar-btn">＋ Пост</button>
@@ -75,6 +78,7 @@
       <div id="feedList" class="feed-list"></div>
     </section>
 
+    <!-- ПРОФИЛЬ -->
     <section id="tabProfile" class="tab-panel hidden">
       <div id="profileContent" class="profile-content"></div>
     </section>
@@ -87,10 +91,11 @@
   </nav>
 </div>
 
+<!-- ЧАТ -->
 <div id="chatScreen" class="chat-screen hidden">
   <header class="chat-header">
     <button id="chatBack" class="icon-btn">←</button>
-    <div id="chatHeaderInfo" class="chat-header-info">
+    <div class="chat-header-info">
       <div id="chatAvatar" class="chat-avatar"></div>
       <div>
         <div id="chatTitle" class="chat-title"></div>
@@ -99,28 +104,26 @@
     </div>
     <button id="chatMenuBtn" class="icon-btn">⋮</button>
   </header>
-
   <div id="messagesList" class="messages-list"></div>
-
   <div id="replyBar" class="reply-bar hidden">
     <div id="replyBarText" class="reply-bar-text"></div>
     <button id="replyBarClose" class="icon-btn">✕</button>
   </div>
-
   <footer class="chat-input-bar">
     <button id="emojiBtn" class="icon-btn">😊</button>
     <button id="attachBtn" class="icon-btn">📎</button>
     <input id="messageInput" type="text" placeholder="Сообщение..." autocomplete="off">
     <button id="sendBtn" class="send-btn">➤</button>
   </footer>
-
   <input id="fileInput" type="file" hidden multiple>
 </div>
 
+<!-- МОДАЛКА -->
 <div id="modalOverlay" class="modal-overlay hidden">
   <div id="modalBox" class="modal-box"></div>
 </div>
 
+<!-- ТОСТ -->
 <div id="toast" class="toast hidden"></div>
 
 <script type="module" src="app.js"></script>
