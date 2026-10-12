@@ -2850,7 +2850,7 @@ window.uploadSticker = async () => {
   } catch(e) { toast('Ошибка: ' + e.message); }
 };
 
-// ============ WATCH BAN ============
+// ============ WATCH BAN ===========
 function startBanWatch() {
   setInterval(async () => {
     if (!state.user) return;
