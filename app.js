@@ -1,6 +1,6 @@
 /* ============================================================
-   FENIX v18 — app.js
-   Часть 1: Ядро + галочки + авторизация + чаты + сообщения
+   FENIX v20 — app.js
+   Часть 1: Ядро + галочки + auth + чаты + сообщения
    ============================================================ */
 
 const CDNS = [
@@ -98,15 +98,14 @@ const sortMessages = (arr) => [...arr].sort((a, b) => {
   return (Number(a.id) || 0) - (Number(b.id) || 0);
 });
 
-// ============ ГАЛОЧКИ ============
+// ============ ГАЛОЧКИ SVG ============
 function renderBadge(type) {
   const cfg = {
     verified:  { color: '#2AABEE', shape: 'circle' },
     creator:   { color: '#000000', shape: 'circle' },
     premium:   { color: '#2AABEE', shape: 'star' },
     owner:     { color: '#000000', shape: 'star' },
-    youtuber:  { color: '#FF0000', shape: 'circle' },
-    official:  { color: '#FF9800', shape: 'star' }
+    youtuber:  { color: '#FF0000', shape: 'circle' }
   }[type];
   if (!cfg) return '';
   const checkPath = 'M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l7.6-7.6 1.4 1.4z';
@@ -193,11 +192,18 @@ function closeModal() {
 window.closeModal = closeModal;
 
 async function uploadFile(bucket, file, folder = '') {
+  if (!sb) throw new Error('Supabase не готов');
+  if (!bucket) throw new Error('Bucket не указан');
   const ext = file.name.split('.').pop() || 'bin';
   const path = (folder ? folder + '/' : '') + Date.now() + '_' + Math.random().toString(36).slice(2,8) + '.' + ext;
-  const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: true });
-  if (error) throw error;
+  console.log('📤 Upload в bucket:', bucket, '->', path);
+  const { error } = await sb.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type });
+  if (error) {
+    console.error('❌ Upload error:', error);
+    throw new Error(error.message);
+  }
   const { data } = sb.storage.from(bucket).getPublicUrl(path);
+  console.log('✅ Uploaded:', data.publicUrl);
   return data.publicUrl;
 }
 
@@ -261,14 +267,14 @@ function initAuth() {
   const bUnban = $('bTUnban');
   if (bUnban) bUnban.onclick = () => openModal(
     '<h2>🚫 Разбан</h2><input id="unbanEmail" placeholder="Email"><textarea id="unbanMsg" rows="4" placeholder="Объясни..."></textarea>' +
-    '<button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+    '<button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
 
   const bContact = $('bTContact');
   if (bContact) bContact.onclick = () => openModal(
     '<h2>💬 Связаться</h2><input id="ticketEmail" placeholder="Email"><input id="ticketSubject" placeholder="Тема"><textarea id="ticketText" rows="4" placeholder="Опиши..."></textarea>' +
-    '<button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+    '<button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
 
@@ -312,7 +318,7 @@ async function enterApp() {
   setupRealtime();
   setupPolling();
 
-  await new Promise(r => setTimeout(r, 150));
+  await new Promise(r => setTimeout(r, 200));
 
   renderProfileMini();
   bindButtons();
@@ -662,8 +668,7 @@ async function sendFile(file) {
       chat_id: state.currentChat.id, sender: state.user.id,
       sender_name: state.profile.display_name, file_url: url,
       file_type: file.type || 'application/octet-stream',
-      file_name: file.name, is_read: false, deleted: false
-    };
+      file_name: file.name, is_read: false, deleted: false    };
     let { error } = await sb.from('messages').insert(payload);
     if (error && error.message.indexOf('sender_name') !== -1) {
       delete payload.sender_name;
@@ -940,7 +945,7 @@ function attachTypingToInput() {
       }, 500);
     }
   });
-   }
+     }
 /* ============================================================
    Часть 2: Профиль, Настройки, Сторис, Лента, Магазин, Бот, MUSOR DROP
    ============================================================ */
@@ -962,7 +967,11 @@ function showProf() {
 
   openModal(
     '<div style="text-align:center">' +
-      '<div class="profile-avatar-big">' + (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '">' : initial) + '</div>' +
+      '<div class="profile-avatar-big" style="position:relative;cursor:pointer" onclick="document.getElementById(\'avatarInput\').click()">' +
+        (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '">' : initial) +
+        '<div style="position:absolute;bottom:0;right:0;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff6b35,#ffd700);display:flex;align-items:center;justify-content:center;font-size:16px;border:3px solid var(--p)">📷</div>' +
+      '</div>' +
+      '<input type="file" id="avatarInput" accept="image/*" style="display:none">' +
       '<div style="font-size:22px;font-weight:800;margin-top:12px">' + esc(p.display_name || '') + '</div>' +
       '<div style="color:var(--t2);font-size:13px;margin-top:4px">@' + esc(p.username || '') + ' ' + (p.emoji_status || '') + '</div>' +
       (badgesHtml ? '<div class="profile-badges">' + badgesHtml + '</div>' : '') +
@@ -1003,6 +1012,28 @@ function showProf() {
     };
   });
 
+  // Загрузка аватарки
+  const avatarInp = $('avatarInput');
+  if (avatarInp) {
+    avatarInp.onchange = async () => {
+      const f = avatarInp.files[0];
+      if (!f) return;
+      toast('📤 Загрузка аватарки...');
+      try {
+        const url = await uploadFile('avatars', f, state.user.id);
+        await sb.from('profiles').update({ avatar_url: url }).eq('id', state.user.id);
+        await refreshProfile();
+        renderProfileMini();
+        toast('✅ Аватарка обновлена!');
+        closeModal();
+        showProf();
+      } catch(e) {
+        console.error(e);
+        toast('❌ Ошибка: ' + e.message);
+      }
+    };
+  }
+
   $('bSaveP').onclick = async () => {
     const updates = {
       display_name: $('pN').value.trim() || p.display_name,
@@ -1042,7 +1073,7 @@ window.viewUserProfile = async function(userId) {
 
   openModal(
     '<div style="text-align:center">' +
-      '<div class="profile-avatar-big" style="cursor:pointer" onclick="window.openImage(\'' + esc(u.avatar_url || '') + '\')">' +
+      '<div class="profile-avatar-big">' +
         (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : initial) +
       '</div>' +
       '<div style="font-size:22px;font-weight:800;margin-top:12px">' + esc(u.display_name || '') + '</div>' +
@@ -1577,16 +1608,30 @@ window.storyReply = async (sid, uid) => {
 // ============ ЛЕНТА ============
 async function loadFeed() {
   const el = $('fdL');
-  if (!el) return;
+  if (!el) { console.warn('fdL не найден'); return; }
+  console.log('📰 Загрузка ленты...');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">Загрузка...</div>';
+
   let posts = [];
   try {
     const r = await sb.from('posts').select('*').order('id', { ascending: false }).limit(30);
+    if (r.error) {
+      console.warn('Posts error:', r.error);
+      el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Ошибка загрузки ленты<br><span style="font-size:11px;opacity:.6">' + esc(r.error.message) + '</span></div>';
+      return;
+    }
     posts = r.data || [];
-  } catch(e) {}
-  if (!posts.length) {
-    el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Пока нет постов</div>';
+  } catch(e) {
+    console.error(e);
+    el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Ошибка: ' + esc(e.message) + '</div>';
     return;
   }
+
+  if (!posts.length) {
+    el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Пока нет постов<br><br>Нажми ✏️ чтобы написать первый!</div>';
+    return;
+  }
+
   const uids = [...new Set(posts.map(p => p.user_id).filter(Boolean))];
   const profs = {};
   if (uids.length) {
@@ -1687,24 +1732,65 @@ window.openVerification = function() {
 window.openMyStickers = function() {
   openModal(
     '<h2>🎨 Мои стикеры</h2>' +
+    '<div style="background:var(--p2);border-radius:12px;padding:12px;font-size:12px;color:var(--t2);margin-bottom:10px">Загружай свои стикеры — они появятся в панели стикеров в чате.</div>' +
     '<input type="file" id="stkFile" accept="image/*" style="width:100%;margin-bottom:14px">' +
     '<button onclick="window.uploadSticker()" class="primary" style="width:100%;padding:11px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">➕ Загрузить</button>' +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>'
+    '<div id="myStkList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;max-height:300px;overflow-y:auto"></div>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
   );
+  loadMyStickers();
 };
+
+async function loadMyStickers() {
+  const el = $('myStkList');
+  if (!el) return;
+  const { data } = await sb.from('stickers').select('*').eq('user_id', state.user.id).limit(50);
+  if (!data || !data.length) {
+    el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--t2);font-size:12px">Нет своих стикеров</div>';
+    return;
+  }
+  el.innerHTML = data.map(s =>
+    '<div class="sticker-item" onclick="window.sendStickerImg(\'' + esc(s.url) + '\')">' +
+      '<img src="' + esc(s.url) + '">' +
+    '</div>'
+  ).join('');
+}
 
 window.uploadSticker = async () => {
   const f = $('stkFile')?.files[0];
   if (!f) { toast('Выбери файл'); return; }
+  toast('📤 Загрузка стикера...');
   try {
     const url = await uploadFile('files', f, 'stickers');
     await sb.from('stickers').insert({ user_id: state.user.id, url, emoji: '🖼' });
-    toast('Стикер загружен ✅');
-    closeModal();
-  } catch(e) { toast('Ошибка'); }
+    toast('✅ Стикер загружен!');
+    loadMyStickers();
+    if (state.currentChat) loadStickers();
+  } catch(e) { toast('❌ Ошибка: ' + e.message); }
+};
+
+window.sendStickerImg = async (url) => {
+  if (!state.currentChat) { toast('Открой чат'); return; }
+  const payload = {
+    chat_id: state.currentChat.id, sender: state.user.id,
+    sender_name: state.profile.display_name,
+    file_url: url, file_type: 'image/png',
+    is_sticker: true, is_read: false, deleted: false
+  };
+  let { error } = await sb.from('messages').insert(payload);
+  if (error && error.message.indexOf('sender_name') !== -1) {
+    delete payload.sender_name;
+    const r = await sb.from('messages').insert(payload);
+    error = r.error;
+  }
+  if (error) { toast('Ошибка: ' + error.message); return; }
+  await sb.from('chats').update({ last_message: '🎨 Стикер' }).eq('id', state.currentChat.id);
+  closeModal();
+  await loadMessages();
+  toast('✅ Стикер отправлен!');
 };
 /* ============================================================
-   Часть 3: Админка, голосовые, bindButtons, sidebar, main
+   Часть 3: Админка, голосовые, bindButtons, main
    ============================================================ */
 
 // ============ ГОЛОСОВЫЕ ============
@@ -1844,6 +1930,7 @@ function renderAdminUsersList(filter) {
     if (u.role === 'admin') badges += renderBadge('owner');
     if (u.is_verified) badges += renderBadge('verified');
     if (u.is_plus) badges += renderBadge('premium');
+    if (u.is_youtuber) badges += renderBadge('youtuber');
     const banned = u.is_banned ? '<span style="color:#e53935;font-size:10px;font-weight:700">🚫 БАН</span>' : '';
 
     return '<div class="admin-user-row">' +
@@ -2193,6 +2280,7 @@ function bindButtons() {
   if (bEmo) bEmo.onclick = () => {
     const ep = $('ep');
     if (ep) ep.classList.toggle('show');
+    document.querySelectorAll('.pnl').forEach(p => p.classList.add('h'));
   };
 
   const bMic = $('bMic');
@@ -2224,11 +2312,15 @@ function bindButtons() {
   });
 
   document.querySelectorAll('.bn button').forEach(b => {
-    b.onclick = () => {
+    b.onclick = null;
+    b.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('📱 Тап по вкладке:', b.dataset.tab);
       document.querySelectorAll('.bn button').forEach(x => x.classList.remove('on'));
       b.classList.add('on');
       switchTab(b.dataset.tab);
-    };
+    });
   });
 
   const fcBtn = $('fcBtn');
@@ -2241,19 +2333,32 @@ function bindButtons() {
 }
 
 function switchTab(tab) {
-  const sd = $('SD'), fd = $('fdScr');
+  console.log('📱 switchTab:', tab);
+  const sd = $('SD'), fd = $('fdScr'), area = $('AR');
+
   if (sd) sd.style.display = 'none';
-  if (fd) { fd.style.display = 'none'; fd.classList.remove('active'); }
+  if (fd) fd.style.display = 'none';
+  if (area) area.style.display = 'none';
 
   if (tab === 'chats') {
     if (sd) sd.style.display = 'flex';
+    if (area) area.style.display = 'flex';
     if ($('fcBtn')) $('fcBtn').style.display = 'none';
+    if (!state.currentChat) {
+      const ch = $('CH'), msgs = $('msgs'), inp = $('inp'), emp = $('emp');
+      if (ch) { ch.style.display = 'none'; ch.classList.remove('active'); }
+      if (msgs) { msgs.style.display = 'none'; msgs.classList.remove('active'); }
+      if (inp) { inp.style.display = 'none'; inp.classList.remove('active'); }
+      if (emp) emp.style.display = 'flex';
+    }
   } else if (tab === 'feed') {
-    if (fd) { fd.style.display = 'flex'; fd.classList.add('active'); }
-    loadFeed();
+    if (fd) fd.style.display = 'flex';
     if ($('fcBtn')) $('fcBtn').style.display = 'flex';
+    loadFeed();
   } else if (tab === 'profile') {
     if (sd) sd.style.display = 'flex';
+    if (area) area.style.display = 'flex';
+    if ($('fcBtn')) $('fcBtn').style.display = 'none';
     showProf();
   }
 }
@@ -2284,7 +2389,7 @@ function openStickerPicker() {
 }
 
 window.sendSticker = async (emoji) => {
-  if (!state.currentChat) return;
+  if (!state.currentChat) { toast('Открой чат'); return; }
   const payload = {
     chat_id: state.currentChat.id, sender: state.user.id,
     sender_name: state.profile.display_name, text: emoji,
@@ -2296,10 +2401,12 @@ window.sendSticker = async (emoji) => {
     const r = await sb.from('messages').insert(payload);
     error = r.error;
   }
-  if (error) { toast('Ошибка'); return; }
+  if (error) { toast('Ошибка: ' + error.message); return; }
+  await sb.from('chats').update({ last_message: '😊 Стикер' }).eq('id', state.currentChat.id);
   const p = $('stkP');
   if (p) p.classList.add('h');
   await loadMessages();
+  toast('✅ Стикер отправлен!');
 };
 
 function openGifPicker() {
@@ -2555,7 +2662,7 @@ function startBanWatch() {
 
 // ============ MAIN ============
 (async function main() {
-  console.log('🚀 Fenix v18 init...');
+  console.log('🚀 Fenix v20 init...');
 
   try {
     const createClient = await loadSupabase();
