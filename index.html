@@ -4,9 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#17212b">
-<title>Spacegram</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
-<link rel="stylesheet" href="styles.css?v=17">
+<title>Fenix</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23ff6b35'/><stop offset='100%25' stop-color='%23ffd700'/></linearGradient></defs><circle cx='50' cy='50' r='48' fill='%2317212b'/><text y='.75em' x='50' font-size='70' text-anchor='middle' fill='url(%23g)'>🔥</text></svg>">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fenix">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Fenix">
+<link rel="stylesheet" href="styles.css?v=18">
 <script>
 window.onerror=function(msg,src,line,col,err){
   console.error('ОШИБКА:',msg,src,line+':'+col);
@@ -35,7 +41,7 @@ window.addEventListener('unhandledrejection',function(e){
 <div id="BE" style="display:none"></div>
 
 <div id="A" style="display:none">
-  <h1>✈️ Spacegram</h1>
+  <h1>🔥 Fenix</h1>
   <input type="email" id="em" placeholder="Email" autocomplete="email">
   <input type="password" id="pw" placeholder="Пароль (мин. 6)" autocomplete="current-password">
   <input type="text" id="un" placeholder="@username" autocomplete="username">
@@ -53,7 +59,7 @@ window.addEventListener('unhandledrejection',function(e){
   <div class="sd" id="SD">
     <div class="tp">
       <button class="tb" id="bSidebar" title="Меню">☰</button>
-      <h2 id="lg">✈️ Spacegram</h2>
+      <h2 id="lg">🔥 Fenix</h2>
       <div class="a" id="topActs">
         <button class="tb" id="bAdm" style="display:none" title="Админ">🔐</button>
         <button class="tb" id="bNewChat" title="Новый чат">💬</button>
@@ -222,7 +228,7 @@ window.addEventListener('unhandledrejection',function(e){
   import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.20.0/index.js';
 </script>
 
-<script type="module" src="app.js?v=17"></script>
+<script type="module" src="app.js?v=18"></script>
 
 </body>
-    </html>
+          </html>
