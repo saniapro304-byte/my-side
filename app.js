@@ -1,9 +1,8 @@
 /* ============================================================
-   SPACEGRAM v17 — app.js
+   FENIX v18 — app.js
    Часть 1: Ядро + галочки + авторизация + чаты + сообщения
    ============================================================ */
 
-// ============ CDN ЗАГРУЗЧИК ============
 const CDNS = [
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/+esm',
   'https://esm.sh/@supabase/supabase-js@2.39.7',
@@ -19,12 +18,9 @@ async function loadSupabase() {
         console.log('✅ Supabase CDN:', url);
         return mod.createClient;
       }
-    } catch (e) {
-      lastErr = e;
-      console.warn('❌ CDN failed:', url, e.message);
-    }
+    } catch (e) { lastErr = e; console.warn('❌ CDN:', url); }
   }
-  throw lastErr || new Error('Все CDN упали');
+  throw lastErr || new Error('CDN упали');
 }
 
 const SUPABASE_URL = 'https://qtuvtxbxtypvttfjiydv.supabase.co';
@@ -32,7 +28,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 let sb = null;
 
-// ============ STATE ============
 const state = {
   user: null,
   profile: null,
@@ -54,43 +49,30 @@ const state = {
   settings: {
     theme: localStorage.getItem('sg_theme') || 'midnight',
     mode: localStorage.getItem('sg_mode') || 'dark',
-    lang: localStorage.getItem('sg_lang') || 'ru',
     sound: localStorage.getItem('sg_sound') !== '0',
     vibrate: localStorage.getItem('sg_vibrate') !== '0',
-    preview: localStorage.getItem('sg_preview') !== '0',
-    animations: localStorage.getItem('sg_anim') !== '0',
     readReceipts: localStorage.getItem('sg_read') !== '0',
     enterSend: localStorage.getItem('sg_enter') !== '0',
-    fontSize: localStorage.getItem('sg_font') || 'normal',
-    timeFormat: localStorage.getItem('sg_timefmt') || '24h',
     ghost: localStorage.getItem('sg_ghost') === '1',
     showTyping: localStorage.getItem('sg_typing') !== '0'
   }
 };
 
-// ============ HELPERS ============
 const $ = (id) => document.getElementById(id);
-
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({
-  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-}[c]));
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 const fmtTime = (d) => {
   if (!d) return '';
   const x = new Date(d);
   if (isNaN(x)) return '';
-  const h = x.getHours().toString().padStart(2,'0');
-  const m = x.getMinutes().toString().padStart(2,'0');
-  return h + ':' + m;
+  return x.getHours().toString().padStart(2,'0') + ':' + x.getMinutes().toString().padStart(2,'0');
 };
 
 const fmtDate = (d) => {
   if (!d) return '—';
   const x = new Date(d);
   if (isNaN(x)) return '—';
-  return x.getDate().toString().padStart(2,'0') + '.' +
-         (x.getMonth()+1).toString().padStart(2,'0') + '.' +
-         x.getFullYear();
+  return x.getDate().toString().padStart(2,'0') + '.' + (x.getMonth()+1).toString().padStart(2,'0') + '.' + x.getFullYear();
 };
 
 const fmtDateFull = (d) => {
@@ -111,8 +93,7 @@ const toTime = (d) => {
 };
 
 const sortMessages = (arr) => [...arr].sort((a, b) => {
-  const ta = toTime(a.created_at);
-  const tb = toTime(b.created_at);
+  const ta = toTime(a.created_at), tb = toTime(b.created_at);
   if (ta !== tb) return ta - tb;
   return (Number(a.id) || 0) - (Number(b.id) || 0);
 });
@@ -127,24 +108,13 @@ function renderBadge(type) {
     youtuber:  { color: '#FF0000', shape: 'circle' },
     official:  { color: '#FF9800', shape: 'star' }
   }[type];
-
   if (!cfg) return '';
   const checkPath = 'M9 16.2l-3.5-3.5 1.4-1.4L9 13.4l7.6-7.6 1.4 1.4z';
 
   if (cfg.shape === 'circle') {
-    return '<span class="sg-badge ' + type + '">' +
-      '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
-        '<circle cx="12" cy="12" r="11" fill="' + cfg.color + '"/>' +
-        '<path d="' + checkPath + '" fill="#fff" transform="translate(-1, 1) scale(0.9)"/>' +
-      '</svg>' +
-    '</span>';
+    return '<span class="sg-badge ' + type + '"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="11" fill="' + cfg.color + '"/><path d="' + checkPath + '" fill="#fff" transform="translate(-1, 1) scale(0.9)"/></svg></span>';
   }
-  return '<span class="sg-badge ' + type + '">' +
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
-      '<path d="M12 0.5l2.1 2.6 3.3-.6.5 3.3 2.9 1.7-1.5 3 1.5 3-2.9 1.7-.5 3.3-3.3-.6L12 23.5l-2.1-2.6-3.3.6-.5-3.3-2.9-1.7 1.5-3-1.5-3 2.9-1.7.5-3.3 3.3.6L12 0.5z" fill="' + cfg.color + '"/>' +
-      '<path d="' + checkPath + '" fill="#fff" transform="translate(-1, 1) scale(0.9)"/>' +
-    '</svg>' +
-  '</span>';
+  return '<span class="sg-badge ' + type + '"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0.5l2.1 2.6 3.3-.6.5 3.3 2.9 1.7-1.5 3 1.5 3-2.9 1.7-.5 3.3-3.3-.6L12 23.5l-2.1-2.6-3.3.6-.5-3.3-2.9-1.7 1.5-3-1.5-3 2.9-1.7.5-3.3 3.3.6L12 0.5z" fill="' + cfg.color + '"/><path d="' + checkPath + '" fill="#fff" transform="translate(-1, 1) scale(0.9)"/></svg></span>';
 }
 
 function userBadgeHtml(user) {
@@ -154,7 +124,6 @@ function userBadgeHtml(user) {
   if (user.is_verified) return renderBadge('verified');
   if (user.is_plus) return renderBadge('premium');
   if (user.is_youtuber) return renderBadge('youtuber');
-  if (user.is_bot_verified) return renderBadge('premium');
   return '';
 }
 
@@ -178,11 +147,7 @@ function toast(msg, ms = 2200) {
 
 function showBanBanner(reason) {
   let b = $('banBanner');
-  if (!b) {
-    b = document.createElement('div');
-    b.id = 'banBanner';
-    document.body.appendChild(b);
-  }
+  if (!b) { b = document.createElement('div'); b.id = 'banBanner'; document.body.appendChild(b); }
   b.innerHTML = '🚫 Вы забанены: ' + esc(reason || 'нарушение');
 }
 
@@ -257,7 +222,7 @@ function initAuth() {
       profile = data;
     }
 
-    if (!profile) { if (err) err.textContent = 'Пользователь не найден'; return; }
+    if (!profile) { if (err) err.textContent = 'Не найден'; return; }
     if (profile.pin_code !== password) { if (err) err.textContent = 'Неверный пароль'; return; }
     if (profile.is_banned) { showBanBanner(profile.ban_reason); if (err) err.textContent = 'Забанен'; return; }
 
@@ -273,17 +238,17 @@ function initAuth() {
     const password = pw?.value || '';
     if (err) err.textContent = '';
 
-    if (!username || !email || !password) { if (err) err.textContent = 'Заполни все поля'; return; }
+    if (!username || !email || !password) { if (err) err.textContent = 'Заполни все'; return; }
     if (!/^[a-z0-9_]{3,20}$/.test(username)) { if (err) err.textContent = 'Username: 3-20'; return; }
     if (!/^\S+@\S+\.\S+$/.test(email)) { if (err) err.textContent = 'Неверный email'; return; }
     if (password.length < 6) { if (err) err.textContent = 'Пароль ≥ 6'; return; }
 
     const { data: existing } = await sb.from('profiles').select('id').or(`username.eq.${username},email.eq.${email}`).maybeSingle();
-    if (existing) { if (err) err.textContent = 'Username занят'; return; }
+    if (existing) { if (err) err.textContent = 'Занято'; return; }
 
     const { data, error } = await sb.from('profiles').insert({
       username, email, pin_code: password, display_name: username,
-      bio: 'Привет, я в Spacegram! 🚀', balance: 100
+      bio: 'Привет, я в Fenix! 🔥', balance: 100
     }).select().single();
 
     if (error) { if (err) err.textContent = 'Ошибка: ' + error.message; return; }
@@ -294,27 +259,18 @@ function initAuth() {
   };
 
   const bUnban = $('bTUnban');
-  if (bUnban) bUnban.onclick = () => {
-    openModal(
-      '<h2>🚫 Запрос на разбан</h2>' +
-      '<input id="unbanEmail" placeholder="Email">' +
-      '<textarea id="unbanMsg" rows="4" placeholder="Объясни..."></textarea>' +
-      '<button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
-      '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
-    );
-  };
+  if (bUnban) bUnban.onclick = () => openModal(
+    '<h2>🚫 Разбан</h2><input id="unbanEmail" placeholder="Email"><textarea id="unbanMsg" rows="4" placeholder="Объясни..."></textarea>' +
+    '<button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+  );
 
   const bContact = $('bTContact');
-  if (bContact) bContact.onclick = () => {
-    openModal(
-      '<h2>💬 Связаться</h2>' +
-      '<input id="ticketEmail" placeholder="Email">' +
-      '<input id="ticketSubject" placeholder="Тема">' +
-      '<textarea id="ticketText" rows="4" placeholder="Опиши..."></textarea>' +
-      '<button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
-      '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
-    );
-  };
+  if (bContact) bContact.onclick = () => openModal(
+    '<h2>💬 Связаться</h2><input id="ticketEmail" placeholder="Email"><input id="ticketSubject" placeholder="Тема"><textarea id="ticketText" rows="4" placeholder="Опиши..."></textarea>' +
+    '<button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+  );
 
   const bAge = $('bTAge');
   if (bAge) bAge.onclick = () => {
@@ -328,24 +284,18 @@ function initAuth() {
 window.sendUnban = async () => {
   const email = $('unbanEmail')?.value.trim();
   const msg = $('unbanMsg')?.value.trim();
-  if (!email || !msg) { toast('Заполни поля'); return; }
-  try {
-    await sb.from('tickets').insert({ email, subject: 'Разбан', message: msg, type: 'unban', status: 'pending' });
-    toast('📤 Отправлено');
-    closeModal();
-  } catch (e) { toast('Ошибка'); }
+  if (!email || !msg) { toast('Заполни'); return; }
+  try { await sb.from('tickets').insert({ email, subject: 'Разбан', message: msg, type: 'unban', status: 'pending' }); toast('📤 Отправлено'); closeModal(); }
+  catch(e) { toast('Ошибка'); }
 };
 
 window.sendTicket = async () => {
   const email = $('ticketEmail')?.value.trim();
   const subject = $('ticketSubject')?.value.trim();
   const text = $('ticketText')?.value.trim();
-  if (!email || !text) { toast('Заполни поля'); return; }
-  try {
-    await sb.from('tickets').insert({ email, subject: subject || 'Обращение', message: text, type: 'contact', status: 'pending' });
-    toast('📤 Отправлено');
-    closeModal();
-  } catch (e) { toast('Ошибка'); }
+  if (!email || !text) { toast('Заполни'); return; }
+  try { await sb.from('tickets').insert({ email, subject: subject || 'Обращение', message: text, type: 'contact', status: 'pending' }); toast('📤 Отправлено'); closeModal(); }
+  catch(e) { toast('Ошибка'); }
 };
 
 // ============ ВХОД В APP ============
@@ -362,7 +312,6 @@ async function enterApp() {
   setupRealtime();
   setupPolling();
 
-  // ⚡ ВАЖНО: даём HTML отрендериться перед привязкой
   await new Promise(r => setTimeout(r, 150));
 
   renderProfileMini();
@@ -374,8 +323,7 @@ async function enterApp() {
   attachTypingToInput();
 
   if (typeof loadStoriesBar === 'function') await loadStoriesBar();
-
-  console.log('✅ Вошли в Spacegram');
+  console.log('✅ Вошли в Fenix');
 }
 
 async function refreshProfile() {
@@ -383,11 +331,7 @@ async function refreshProfile() {
   const { data } = await sb.from('profiles').select('*').eq('id', state.user.id).single();
   if (data) {
     state.profile = data;
-    if (data.is_banned) {
-      showBanBanner(data.ban_reason);
-      setTimeout(logout, 100);
-      return;
-    }
+    if (data.is_banned) { showBanBanner(data.ban_reason); setTimeout(logout, 100); return; }
     if (isAdmin() && $('bAdm')) $('bAdm').style.display = 'flex';
   }
 }
@@ -405,17 +349,13 @@ window.logout = logout;
 function setupRealtime() {
   state.realtimeChats = sb.channel('rt-chats-' + state.user.id)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { loadChats(); })
-    .subscribe((s) => console.log('📡 chats:', s));
-
+    .subscribe();
   state.realtimeMsgs = sb.channel('rt-msgs-' + state.user.id)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
-      if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) {
-        loadMessages();
-      } else {
-        loadChats();
-      }
+      if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) loadMessages();
+      else loadChats();
     })
-    .subscribe((s) => console.log('📡 messages:', s));
+    .subscribe();
 }
 
 function setupPolling() {
@@ -423,15 +363,12 @@ function setupPolling() {
   let lastKey = null;
   state.pollTimer = setInterval(async () => {
     if (!state.user || !state.currentChat) return;
-    const { data } = await sb.from('messages')
-      .select('id,created_at').eq('chat_id', state.currentChat.id)
-      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    const { data } = await sb.from('messages').select('id,created_at').eq('chat_id', state.currentChat.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
     const key = data ? data.id + ':' + data.created_at : null;
     if (key !== lastKey) { lastKey = key; loadMessages(); }
   }, 2000);
 }
 
-// ============ ПАПКИ ============
 function setupFolders() {
   document.querySelectorAll('.folder-btn').forEach(b => {
     b.onclick = () => {
@@ -459,20 +396,12 @@ function renderProfileMini() {
 async function loadChats() {
   if (!state.user) return;
   const uid = state.user.id;
-  const { data: chats, error } = await sb.from('chats')
-    .select('*')
-    .or(`user1.eq.${uid},user2.eq.${uid},created_by.eq.${uid}`)
-    .order('id', { ascending: false })
-    .limit(150);
-
+  const { data: chats, error } = await sb.from('chats').select('*').or(`user1.eq.${uid},user2.eq.${uid},created_by.eq.${uid}`).order('id', { ascending: false }).limit(150);
   if (error) { console.error(error); return; }
 
   const list = [];
   for (const c of (chats || [])) {
-    if (c.is_group || c.is_channel || c.is_secret) {
-      list.push(c);
-      continue;
-    }
+    if (c.is_group || c.is_channel || c.is_secret) { list.push(c); continue; }
     const otherId = c.user1 === uid ? c.user2 : c.user1;
     if (!otherId || otherId === uid) continue;
     const { data: prof } = await sb.from('profiles').select('*').eq('id', otherId).maybeSingle();
@@ -509,9 +438,10 @@ function renderChats() {
     const emoji = c.is_channel ? '📢' : c.is_group ? '👥' : c.is_secret ? '🔒' : '';
     const last = c.last_message || 'Нет сообщений';
     const badge = c.other ? userBadgeHtml(c.other) : '';
+    const otherUid = c.other?.id || '';
 
     return '<div class="ch" data-id="' + c.id + '">' +
-      '<div class="cv">' +
+      '<div class="cv" data-uid="' + otherUid + '" onclick="event.stopPropagation();if(this.dataset.uid)window.viewUserProfile(this.dataset.uid)">' +
         (avatar ? '<img src="' + esc(avatar) + '">' : initial) +
       '</div>' +
       '<div style="flex:1;min-width:0">' +
@@ -559,6 +489,8 @@ async function openChat(chatId) {
   const avatar = chat.group_avatar || chat.other?.avatar_url;
   if ($('hA')) {
     $('hA').innerHTML = avatar ? '<img src="' + esc(avatar) + '">' : initial;
+    $('hA').style.cursor = 'pointer';
+    if (chat.other?.id) $('hA').onclick = () => window.viewUserProfile(chat.other.id);
   }
 
   await loadMessages();
@@ -583,13 +515,7 @@ window.back = back;
 // ============ СООБЩЕНИЯ ============
 async function loadMessages() {
   if (!state.currentChat) return;
-  const { data, error } = await sb.from('messages')
-    .select('*')
-    .eq('chat_id', state.currentChat.id)
-    .order('created_at', { ascending: true })
-    .order('id', { ascending: true })
-    .limit(200);
-
+  const { data, error } = await sb.from('messages').select('*').eq('chat_id', state.currentChat.id).order('created_at', { ascending: true }).order('id', { ascending: true }).limit(200);
   if (error) { console.error(error); return; }
   state.messages = sortMessages(data || []);
   renderMessages();
@@ -622,15 +548,10 @@ function renderMessages() {
     } else {
       if (m.file_url) {
         const ft = m.file_type || '';
-        if (ft.indexOf('image') === 0) {
-          content += '<img src="' + esc(m.file_url) + '" class="msg-media" onclick="window.openImage(\'' + esc(m.file_url) + '\')">';
-        } else if (ft.indexOf('video') === 0) {
-          content += '<video src="' + esc(m.file_url) + '" controls class="msg-media"></video>';
-        } else if (m.is_voice) {
-          content += '<audio src="' + esc(m.file_url) + '" controls></audio>';
-        } else {
-          content += '<a href="' + esc(m.file_url) + '" target="_blank">📎 ' + esc(m.file_name || 'Файл') + '</a>';
-        }
+        if (ft.indexOf('image') === 0) content += '<img src="' + esc(m.file_url) + '" class="msg-media" onclick="window.openImage(\'' + esc(m.file_url) + '\')">';
+        else if (ft.indexOf('video') === 0) content += '<video src="' + esc(m.file_url) + '" controls class="msg-media"></video>';
+        else if (m.is_voice) content += '<audio src="' + esc(m.file_url) + '" controls></audio>';
+        else content += '<a href="' + esc(m.file_url) + '" target="_blank">📎 ' + esc(m.file_name || 'Файл') + '</a>';
       }
       if (m.text) content += '<div style="white-space:pre-wrap">' + esc(m.text) + '</div>';
     }
@@ -647,15 +568,13 @@ function renderMessages() {
     let replyHtml = '';
     if (m.reply_to) {
       const rep = sorted.find(x => String(x.id) === String(m.reply_to));
-      if (rep) {
-        replyHtml = '<div style="border-left:2px solid ' + (own ? '#fff' : 'var(--a)') + ';padding:2px 8px;margin-bottom:4px;font-size:12px;opacity:.85">' + esc((rep.text || '[медиа]').slice(0,50)) + '</div>';
-      }
+      if (rep) replyHtml = '<div style="border-left:2px solid ' + (own ? '#fff' : '#ff6b35') + ';padding:2px 8px;margin-bottom:4px;font-size:12px;opacity:.85">' + esc((rep.text || '[медиа]').slice(0,50)) + '</div>';
     }
 
     const showSender = !own && (state.currentChat.is_group || state.currentChat.is_channel);
 
     return dateSep + '<div class="m ' + (own ? 'me' : 'you') + '" data-id="' + m.id + '">' +
-      (showSender ? '<div style="font-size:12px;font-weight:700;color:var(--a);margin-bottom:2px">' + esc(m.sender_name || 'Юзер') + '</div>' : '') +
+      (showSender ? '<div style="font-size:12px;font-weight:700;color:#ff6b35;margin-bottom:2px">' + esc(m.sender_name || 'Юзер') + '</div>' : '') +
       replyHtml + content + reactionsHtml +
       '<span class="msg-time">' + time + '</span>' +
     '</div>';
@@ -681,14 +600,10 @@ async function sendMessage() {
   localStorage.removeItem('sg_draft_' + state.currentChat.id);
 
   const payload = {
-    chat_id: state.currentChat.id,
-    sender: state.user.id,
-    sender_name: state.profile.display_name,
-    text,
-    is_read: false,
-    deleted: false
+    chat_id: state.currentChat.id, sender: state.user.id,
+    sender_name: state.profile.display_name, text,
+    is_read: false, deleted: false
   };
-
   if (state.replyTo) { payload.reply_to = state.replyTo.id; cancelRep(); }
   if (state.burnAfter > 0) payload.burn_after = state.burnAfter;
 
@@ -703,7 +618,6 @@ async function sendMessage() {
   await sb.from('chats').update({ last_message: text.slice(0, 80) }).eq('id', state.currentChat.id);
   await loadMessages();
 
-  // LVL: 500 сообщений = +1
   if (state.profile) {
     const newXp = (state.profile.xp || 0) + 1;
     const newLevel = Math.min(999, Math.floor(newXp / 500) + 1);
@@ -713,11 +627,7 @@ async function sendMessage() {
     }
     state.profile.xp = newXp;
     state.profile.messages_count = (state.profile.messages_count || 0) + 1;
-    try {
-      await sb.from('profiles').update({
-        xp: newXp, level: newLevel, messages_count: state.profile.messages_count
-      }).eq('id', state.user.id);
-    } catch(e) {}
+    try { await sb.from('profiles').update({ xp: newXp, level: newLevel, messages_count: state.profile.messages_count }).eq('id', state.user.id); } catch(e) {}
   }
 }
 window.sendMessage = sendMessage;
@@ -738,9 +648,7 @@ window.toggleReaction = async (msgId, emoji) => {
   if (reactions[emoji].indexOf(uid) !== -1) {
     reactions[emoji] = reactions[emoji].filter(x => x !== uid);
     if (!reactions[emoji].length) delete reactions[emoji];
-  } else {
-    reactions[emoji].push(uid);
-  }
+  } else reactions[emoji].push(uid);
   await sb.from('messages').update({ reactions }).eq('id', msgId);
   await loadMessages();
 };
@@ -774,162 +682,107 @@ async function loadStickers() {
   state.stickers = data || [];
 }
 
-// ============ ⚡ ПОИСК ЮЗЕРОВ (РАБОТАЕТ!) ============
+// ============ ПОИСК ЮЗЕРОВ ============
 window.openNewChat = function() {
   openModal(
     '<h2>💬 Новый чат</h2>' +
-    '<div style="background:var(--p2);border-radius:12px;padding:12px;font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:12px">' +
-      'Введи @username чтобы найти юзера.' +
-    '</div>' +
     '<input id="newChatUser" placeholder="@username" autocomplete="off">' +
     '<div id="newChatResults" style="max-height:300px;overflow-y:auto;margin-top:6px"></div>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>'
   );
-
   const inp = $('newChatUser');
   const res = $('newChatResults');
-  let searchTimer;
+  let timer;
 
   const doSearch = async () => {
     const q = inp.value.trim().toLowerCase().replace('@', '');
     if (q.length < 1) { res.innerHTML = ''; return; }
-
     res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Поиск...</div>';
 
-    // Попытка 1: ilike
     let { data, error } = await sb.from('profiles')
       .select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,is_bot_verified,role')
-      .ilike('username', '%' + q + '%')
-      .limit(30);
+      .ilike('username', '%' + q + '%').limit(30);
 
-    // Попытка 2: точное
     if (!error && (!data || !data.length)) {
-      const exact = await sb.from('profiles')
-        .select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,is_bot_verified,role')
-        .eq('username', q)
-        .limit(10);
-      if (exact.data && exact.data.length) data = exact.data;
+      const ex = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,is_bot_verified,role').eq('username', q).limit(10);
+      if (ex.data && ex.data.length) data = ex.data;
     }
-
-    // Попытка 3: по имени
     if (!error && (!data || !data.length)) {
-      const dn = await sb.from('profiles')
-        .select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,is_bot_verified,role')
-        .ilike('display_name', '%' + q + '%')
-        .limit(20);
+      const dn = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,is_bot_verified,role').ilike('display_name', '%' + q + '%').limit(20);
       if (dn.data && dn.data.length) data = dn.data;
     }
 
-    if (error) {
-      res.innerHTML = '<div style="text-align:center;padding:14px;color:#e53935">Ошибка: ' + esc(error.message) + '</div>';
-      return;
-    }
-
+    if (error) { res.innerHTML = '<div style="text-align:center;padding:14px;color:#e53935">' + esc(error.message) + '</div>'; return; }
     const found = (data || []).filter(u => u.id !== state.user.id);
-
-    if (!found.length) {
-      res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Никого не найдено 😕</div>';
-      return;
-    }
+    if (!found.length) { res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Никого</div>'; return; }
 
     res.innerHTML = found.map(u => {
       const init = (u.display_name || '?')[0].toUpperCase();
       const badge = userBadgeHtml(u);
-      return '<div class="ch" data-uid="' + u.id + '" style="cursor:pointer">' +
-        '<div class="cv" style="width:44px;height:44px;font-size:16px">' +
-          (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) +
-        '</div>' +
+      return '<div class="ch" data-uid="' + u.id + '">' +
+        '<div class="cv" style="width:44px;height:44px;font-size:16px">' + (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) + '</div>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:4px">' +
-            esc(u.display_name || '—') + badge +
-          '</div>' +
+          '<div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:4px">' + esc(u.display_name || '—') + badge + '</div>' +
           '<div style="color:var(--t2);font-size:12px">@' + esc(u.username) + '</div>' +
-        '</div>' +
-        '<div style="font-size:20px;color:var(--a)">›</div>' +
+        '</div><div style="font-size:20px;color:#ff6b35">›</div>' +
       '</div>';
     }).join('');
-
     res.querySelectorAll('.ch[data-uid]').forEach(el => {
       el.onclick = () => window.startChatWith(el.dataset.uid);
     });
   };
 
-  inp.oninput = () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(doSearch, 250);
-  };
-
+  inp.oninput = () => { clearTimeout(timer); timer = setTimeout(doSearch, 250); };
   setTimeout(() => inp.focus(), 100);
 };
 
 window.startChatWith = async (otherId) => {
   if (!otherId) return;
   if (otherId === state.user.id) { toast('Это ты 🙂'); return; }
-
   const { data: existing } = await sb.from('chats').select('*')
-    .or(`and(user1.eq.${state.user.id},user2.eq.${otherId}),and(user1.eq.${otherId},user2.eq.${state.user.id})`)
-    .maybeSingle();
-
+    .or(`and(user1.eq.${state.user.id},user2.eq.${otherId}),and(user1.eq.${otherId},user2.eq.${state.user.id})`).maybeSingle();
   let chat = existing;
   if (!chat) {
-    const { data, error } = await sb.from('chats').insert({
-      user1: state.user.id, user2: otherId, created_by: state.user.id,
-      is_group: false, is_channel: false
-    }).select().single();
+    const { data, error } = await sb.from('chats').insert({ user1: state.user.id, user2: otherId, created_by: state.user.id, is_group: false, is_channel: false }).select().single();
     if (error) { toast('Ошибка: ' + error.message); return; }
     chat = data;
   }
-
   closeModal();
   await loadChats();
   if (chat) openChat(chat.id);
 };
 
-// ============ ГЛОБАЛЬНЫЙ ПОИСК ============
 window.openGlobalSearch = function() {
   openModal(
-    '<h2>🔍 Поиск</h2>' +
-    '<input id="globalSearchQ" placeholder="Юзеры и сообщения..." autofocus>' +
+    '<h2>🔍 Поиск</h2><input id="globalSearchQ" placeholder="Юзеры..." autofocus>' +
     '<div id="globalSearchRes" style="max-height:400px;overflow-y:auto;margin-top:6px"></div>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>'
   );
   const inp = $('globalSearchQ');
   const res = $('globalSearchRes');
   let timer;
-
   inp.oninput = () => {
     clearTimeout(timer);
     timer = setTimeout(async () => {
       const q = inp.value.trim().toLowerCase().replace('@','');
       if (q.length < 2) { res.innerHTML = ''; return; }
-
-      res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Поиск...</div>';
-
       const { data: users } = await sb.from('profiles')
         .select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,role')
-        .or('username.ilike.%' + q + '%,display_name.ilike.%' + q + '%')
-        .limit(10);
-
+        .or('username.ilike.%' + q + '%,display_name.ilike.%' + q + '%').limit(10);
       let html = '';
       if (users?.length) {
         html += '<div style="font-size:11px;color:var(--t2);font-weight:700;padding:8px 4px 4px">👤 ЮЗЕРЫ</div>';
         html += users.map(u => {
           const init = (u.display_name || '?')[0].toUpperCase();
           const badge = userBadgeHtml(u);
-          return '<div class="ch" data-uid="' + u.id + '" style="cursor:pointer">' +
-            '<div class="cv" style="width:40px;height:40px;font-size:14px">' +
-              (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) +
-            '</div>' +
-            '<div style="flex:1">' +
-              '<div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:4px">' + esc(u.display_name || '—') + badge + '</div>' +
-              '<div style="color:var(--t2);font-size:12px">@' + esc(u.username) + '</div>' +
-            '</div>' +
-          '</div>';
+          return '<div class="ch" data-uid="' + u.id + '">' +
+            '<div class="cv" style="width:40px;height:40px;font-size:14px">' + (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) + '</div>' +
+            '<div style="flex:1"><div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:4px">' + esc(u.display_name || '—') + badge + '</div>' +
+            '<div style="color:var(--t2);font-size:12px">@' + esc(u.username) + '</div></div></div>';
         }).join('');
       }
-      if (!html) html = '<div style="text-align:center;padding:20px;color:var(--t2)">Ничего не найдено</div>';
+      if (!html) html = '<div style="text-align:center;padding:20px;color:var(--t2)">Ничего</div>';
       res.innerHTML = html;
-
       res.querySelectorAll('.ch[data-uid]').forEach(el => {
         el.onclick = () => window.startChatWith(el.dataset.uid);
       });
@@ -938,7 +791,6 @@ window.openGlobalSearch = function() {
   setTimeout(() => inp.focus(), 100);
 };
 
-// ============ ПРОСМОТР ФОТО ============
 window.openImage = (url) => {
   openModal(
     '<img src="' + esc(url) + '" style="width:100%;border-radius:14px;display:block;margin-bottom:10px">' +
@@ -946,14 +798,13 @@ window.openImage = (url) => {
   );
 };
 
-// ============ ТИПИНГ + ДВОЙНОЙ ТАП + СВАЙП ============
+// ============ ТИПИНГ / ДВОЙНОЙ ТАП / СВАЙП ============
 function startTypingWatch() {
   if (state.typingWatchTimer) clearInterval(state.typingWatchTimer);
   state.typingWatchTimer = setInterval(async () => {
     if (!state.currentChat || !state.user) return;
     if (state.currentChat.is_group || state.currentChat.is_channel) return;
-    const otherId = state.currentChat.user1 === state.user.id
-      ? state.currentChat.user2 : state.currentChat.user1;
+    const otherId = state.currentChat.user1 === state.user.id ? state.currentChat.user2 : state.currentChat.user1;
     if (!otherId) return;
     try {
       const { data } = await sb.from('profiles').select('typing_until').eq('id', otherId).maybeSingle();
@@ -961,7 +812,7 @@ function startTypingWatch() {
       if (!sub) return;
       if (data?.typing_until && new Date(data.typing_until) > new Date()) {
         sub.innerHTML = 'печатает <span class="typing-dots"><span></span><span></span><span></span></span>';
-        sub.style.color = 'var(--a)';
+        sub.style.color = '#ff6b35';
       } else {
         sub.textContent = 'был(а) недавно';
         sub.style.color = '';
@@ -973,9 +824,7 @@ function startTypingWatch() {
 function sendTypingStatus() {
   if (!state.user || !state.settings.showTyping) return;
   clearTimeout(state.typingTimer);
-  try {
-    sb.from('profiles').update({ typing_until: new Date(Date.now() + 3000).toISOString() }).eq('id', state.user.id);
-  } catch(e) {}
+  try { sb.from('profiles').update({ typing_until: new Date(Date.now() + 3000).toISOString() }).eq('id', state.user.id); } catch(e) {}
   state.typingTimer = setTimeout(() => {
     try { sb.from('profiles').update({ typing_until: null }).eq('id', state.user.id); } catch(e) {}
   }, 3000);
@@ -1014,7 +863,6 @@ function setupDoubleTap() {
     if (!msgEl) return;
     doHeart(msgEl, e.clientX, e.clientY);
   });
-
   let lastTap = 0;
   el.addEventListener('touchend', (e) => {
     const now = Date.now();
@@ -1032,7 +880,6 @@ function setupSwipeReply() {
   const el = $('msgs');
   if (!el || el._swBound) return;
   el._swBound = true;
-
   let startX = 0, startY = 0, currentMsg = null, currentEl = null;
 
   el.addEventListener('touchstart', (e) => {
@@ -1093,14 +940,14 @@ function attachTypingToInput() {
       }, 500);
     }
   });
-       }
+   }
 /* ============================================================
-   Часть 2: Профиль, Настройки, Сторис, Лента, Магазин, Бот
+   Часть 2: Профиль, Настройки, Сторис, Лента, Магазин, Бот, MUSOR DROP
    ============================================================ */
 
 const EMOJI_STATUSES = ['😀','😎','🤔','😴','🥳','😭','❤️','🔥','🚀','⭐','💯','🙏','👀','💀','🤡','🎮','📚','🎧','☕','🍕'];
 
-// ============ ПРОФИЛЬ ============
+// ============ ПРОФИЛЬ СВОЙ ============
 function showProf() {
   const p = state.profile;
   if (!p) return;
@@ -1115,9 +962,7 @@ function showProf() {
 
   openModal(
     '<div style="text-align:center">' +
-      '<div class="profile-avatar-big">' +
-        (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '">' : initial) +
-      '</div>' +
+      '<div class="profile-avatar-big">' + (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '">' : initial) + '</div>' +
       '<div style="font-size:22px;font-weight:800;margin-top:12px">' + esc(p.display_name || '') + '</div>' +
       '<div style="color:var(--t2);font-size:13px;margin-top:4px">@' + esc(p.username || '') + ' ' + (p.emoji_status || '') + '</div>' +
       (badgesHtml ? '<div class="profile-badges">' + badgesHtml + '</div>' : '') +
@@ -1135,39 +980,15 @@ function showProf() {
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="emSt">' +
       EMOJI_STATUSES.map(e => '<button data-e="' + e + '" style="font-size:22px;padding:4px 8px;border-radius:10px;background:' + (p.emoji_status === e ? 'var(--a)' : 'var(--p2)') + ';border:none;cursor:pointer">' + e + '</button>').join('') +
     '</div>' +
-    '<button id="bSaveP" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;font-size:15px;border:none;cursor:pointer;margin-bottom:12px">💾 Сохранить</button>' +
+    '<button id="bSaveP" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;font-size:15px;border:none;cursor:pointer;margin-bottom:12px">💾 Сохранить</button>' +
 
     '<div class="settings-section-title">ПРОФИЛЬ</div>' +
-    '<button class="settings-item" onclick="window.openBalance()">' +
-      '<span class="si-icon" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff">💰</span>' +
-      '<div class="si-body"><div class="si-title">Баланс</div><div class="si-sub">' + (p.balance || 0) + ' SG</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
-    '<button class="settings-item" onclick="window.openShop()">' +
-      '<span class="si-icon" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff">🛒</span>' +
-      '<div class="si-body"><div class="si-title">Магазин</div><div class="si-sub">Косметика, подарки</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
-    '<button class="settings-item" onclick="window.openPromo()">' +
-      '<span class="si-icon" style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000">🎁</span>' +
-      '<div class="si-body"><div class="si-title">Промокод</div><div class="si-sub">Активировать код</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
-    '<button class="settings-item" onclick="window.openVerification()">' +
-      '<span class="si-icon" style="background:linear-gradient(135deg,#2196f3,#00bcd4);color:#fff">✅</span>' +
-      '<div class="si-body"><div class="si-title">Верификация</div><div class="si-sub">Заявка на галочку</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
-    '<button class="settings-item" onclick="window.openQR()">' +
-      '<span class="si-icon" style="background:var(--p2)">📱</span>' +
-      '<div class="si-body"><div class="si-title">QR-код</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
-    '<button class="settings-item" onclick="window.shareProfile()">' +
-      '<span class="si-icon" style="background:var(--p2)">🔗</span>' +
-      '<div class="si-body"><div class="si-title">Поделиться</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
+    '<button class="settings-item" onclick="window.openBalance()"><span class="si-icon" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff">💰</span><div class="si-body"><div class="si-title">Баланс</div><div class="si-sub">' + (p.balance || 0) + ' SG</div></div><span class="si-arrow">›</span></button>' +
+    '<button class="settings-item" onclick="window.openShop()"><span class="si-icon" style="background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff">🛒</span><div class="si-body"><div class="si-title">Магазин</div><div class="si-sub">Косметика</div></div><span class="si-arrow">›</span></button>' +
+    '<button class="settings-item" onclick="window.openPromo()"><span class="si-icon" style="background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000">🎁</span><div class="si-body"><div class="si-title">Промокод</div></div><span class="si-arrow">›</span></button>' +
+    '<button class="settings-item" onclick="window.openVerification()"><span class="si-icon" style="background:linear-gradient(135deg,#2196f3,#00bcd4);color:#fff">✅</span><div class="si-body"><div class="si-title">Верификация</div></div><span class="si-arrow">›</span></button>' +
+    '<button class="settings-item" onclick="window.openQR()"><span class="si-icon" style="background:var(--p2)">📱</span><div class="si-body"><div class="si-title">QR-код</div></div><span class="si-arrow">›</span></button>' +
+    '<button class="settings-item" onclick="window.shareProfile()"><span class="si-icon" style="background:var(--p2)">🔗</span><div class="si-body"><div class="si-title">Поделиться</div></div><span class="si-arrow">›</span></button>' +
 
     '<button class="dg" onclick="window.logout()" style="width:100%;padding:13px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:700;font-size:14px;border:1px solid rgba(229,57,53,.3);cursor:pointer;margin-top:16px">🚪 Выйти</button>' +
     '<button class="gh" onclick="window.closeModal()" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:6px">Закрыть</button>'
@@ -1189,7 +1010,7 @@ function showProf() {
       emoji_status: selectedEmoji || null
     };
     const { error } = await sb.from('profiles').update(updates).eq('id', state.user.id);
-    if (error) { toast('Ошибка: ' + error.message); return; }
+    if (error) { toast('Ошибка'); return; }
     await refreshProfile();
     renderProfileMini();
     toast('Сохранено ✅');
@@ -1198,37 +1019,91 @@ function showProf() {
 }
 window.showProf = showProf;
 
+// ============ ПРОСМОТР ЧУЖОГО ПРОФИЛЯ ============
+window.viewUserProfile = async function(userId) {
+  if (!userId) return;
+  if (userId === state.user.id) { showProf(); return; }
+
+  const { data: u } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (!u) { toast('Профиль не найден'); return; }
+
+  const initial = (u.display_name || '?')[0].toUpperCase();
+
+  let badgesHtml = '';
+  if (u.is_creator) badgesHtml += '<span class="badge-pill creator">👑 Создатель</span>';
+  if (u.role === 'admin') badgesHtml += '<span class="badge-pill admin">⚡ Админ</span>';
+  if (u.is_verified) badgesHtml += '<span class="badge-pill verified">✅ Верифицирован</span>';
+  if (u.is_plus) badgesHtml += '<span class="badge-pill plus">⭐ Plus</span>';
+  if (u.is_youtuber) badgesHtml += '<span class="badge-pill youtuber">▶️ YouTuber</span>';
+
+  const { data: existing } = await sb.from('chats').select('*')
+    .or(`and(user1.eq.${state.user.id},user2.eq.${userId}),and(user1.eq.${userId},user2.eq.${state.user.id})`)
+    .maybeSingle();
+
+  openModal(
+    '<div style="text-align:center">' +
+      '<div class="profile-avatar-big" style="cursor:pointer" onclick="window.openImage(\'' + esc(u.avatar_url || '') + '\')">' +
+        (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : initial) +
+      '</div>' +
+      '<div style="font-size:22px;font-weight:800;margin-top:12px">' + esc(u.display_name || '') + '</div>' +
+      '<div style="color:var(--t2);font-size:13px;margin-top:4px">@' + esc(u.username || '') + ' ' + (u.emoji_status || '') + '</div>' +
+      (badgesHtml ? '<div class="profile-badges">' + badgesHtml + '</div>' : '') +
+      (u.bio ? '<div style="font-size:13px;color:var(--t2);margin-top:10px;padding:0 20px;line-height:1.5">' + esc(u.bio) + '</div>' : '') +
+    '</div>' +
+    '<div class="profile-stats-grid">' +
+      '<div class="stat-box"><div class="sb-value">' + (u.level || 1) + '</div><div class="sb-label">🎯 Lvl</div></div>' +
+      '<div class="stat-box"><div class="sb-value">' + (u.messages_count || 0) + '</div><div class="sb-label">💬 Msgs</div></div>' +
+      '<div class="stat-box"><div class="sb-value">' + fmtDate(u.created_at).slice(0, 5) + '</div><div class="sb-label">📅 Рег</div></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:14px">' +
+      '<button onclick="window.startChatFromProfile(\'' + userId + '\')" class="primary" style="flex:1;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer">' +
+        (existing ? '💬 Открыть чат' : '💬 Написать') +
+      '</button>' +
+      '<button onclick="window.closeModal()" class="gh" style="flex:1;padding:13px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:700;border:none;cursor:pointer">Закрыть</button>' +
+    '</div>' +
+    '<button onclick="window.openQRof(\'' + u.username + '\')" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">📱 QR профиля</button>'
+  );
+};
+
+window.startChatFromProfile = async function(userId) {
+  closeModal();
+  await window.startChatWith(userId);
+};
+
+window.openQRof = function(username) {
+  const url = location.origin + '?u=' + username;
+  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(url);
+  openModal(
+    '<h2 style="text-align:center">📱 QR @' + esc(username) + '</h2>' +
+    '<div style="background:#fff;padding:16px;border-radius:16px;display:flex;justify-content:center;margin-bottom:14px">' +
+      '<img src="' + qrUrl + '" style="width:100%;max-width:250px;display:block">' +
+    '</div>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>'
+  );
+};
+
 // ============ НАСТРОЙКИ ============
 window.openSettings = function() {
   const s = state.settings;
   openModal(
     '<h2>⚙️ Настройки</h2>' +
-
     '<div class="settings-section-title">ВНЕШНИЙ ВИД</div>' +
-    '<button class="settings-item" onclick="window.openThemePicker()">' +
-      '<span class="si-icon" style="background:linear-gradient(135deg,#5288c1,#2b5278);color:#fff">🎨</span>' +
-      '<div class="si-body"><div class="si-title">Тема оформления</div><div class="si-sub">' + s.theme + ' · ' + (s.mode === 'light' ? 'Светлая' : 'Тёмная') + '</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
+    '<button class="settings-item" onclick="window.openThemePicker()"><span class="si-icon" style="background:linear-gradient(135deg,#ff6b35,#ffd700)">🎨</span><div class="si-body"><div class="si-title">Тема</div><div class="si-sub">' + s.theme + ' · ' + (s.mode === 'light' ? 'Светлая' : 'Тёмная') + '</div></div><span class="si-arrow">›</span></button>' +
 
     '<div class="settings-section-title">УВЕДОМЛЕНИЯ</div>' +
-    toggleRowTg('cbSound', '🔊', 'Звук', 'Звук сообщений', s.sound) +
-    toggleRowTg('cbVib', '📳', 'Вибрация', 'Вибрация при сообщениях', s.vibrate) +
+    toggleRowTg('cbSound', '🔊', 'Звук', 'Сообщений', s.sound) +
+    toggleRowTg('cbVib', '📳', 'Вибрация', 'При сообщениях', s.vibrate) +
 
     '<div class="settings-section-title">ЧАТЫ</div>' +
     toggleRowTg('cbRead', '✓✓', 'Прочтение', 'Отправлять статус', s.readReceipts) +
     toggleRowTg('cbEnter', '⌨️', 'Enter = отправить', 'Или Shift+Enter', s.enterSend) +
-    toggleRowTg('cbTyping', '⌨️', 'Показывать «печатает»', 'Индикатор набора', s.showTyping) +
+    toggleRowTg('cbTyping', '⌨️', 'Показывать «печатает»', '', s.showTyping) +
 
     '<div class="settings-section-title">ПРИВАТНОСТЬ</div>' +
     toggleRowTg('cbGhost', '👻', 'Ghost-режим', 'Невидимая активность', s.ghost) +
 
     '<div class="settings-section-title">ПРОЧЕЕ</div>' +
-    '<button class="settings-item" onclick="window.openPinSetup()">' +
-      '<span class="si-icon" style="background:linear-gradient(135deg,#f44336,#e53935);color:#fff">🔑</span>' +
-      '<div class="si-body"><div class="si-title">PIN-код</div><div class="si-sub">' + (localStorage.getItem('sg_pin') ? 'Установлен' : 'Не установлен') + '</div></div>' +
-      '<span class="si-arrow">›</span>' +
-    '</button>' +
+    '<button class="settings-item" onclick="window.openPinSetup()"><span class="si-icon" style="background:linear-gradient(135deg,#f44336,#e53935);color:#fff">🔑</span><div class="si-body"><div class="si-title">PIN-код</div><div class="si-sub">' + (localStorage.getItem('sg_pin') ? 'Установлен' : 'Не установлен') + '</div></div><span class="si-arrow">›</span></button>' +
 
     '<button class="gh" onclick="window.closeModal()" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:16px">Закрыть</button>'
   );
@@ -1251,10 +1126,7 @@ function toggleRowTg(id, icon, label, sub, checked) {
       '<span style="font-size:18px">' + icon + '</span>' +
       '<div><div class="st-label">' + label + '</div><div class="st-sub">' + sub + '</div></div>' +
     '</div>' +
-    '<label class="sw">' +
-      '<input type="checkbox" id="' + id + '" ' + (checked ? 'checked' : '') + '>' +
-      '<span class="slider"></span>' +
-    '</label>' +
+    '<label class="sw"><input type="checkbox" id="' + id + '" ' + (checked ? 'checked' : '') + '><span class="slider"></span></label>' +
   '</div>';
 }
 
@@ -1269,29 +1141,27 @@ window.openThemePicker = function() {
   const themes = ['midnight','purple','ocean','sunset','rose','forest','cyber','mono'];
   openModal(
     '<h2>🎨 Тема</h2>' +
-    '<div style="font-size:12px;color:var(--t2);margin-bottom:6px">Цвет</div>' +
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px" id="themeGrid">' +
-      themes.map(t => '<button data-th="' + t + '" style="padding:10px;border-radius:10px;background:var(--p2);border:2px solid ' + (s.theme === t ? 'var(--a)' : 'transparent') + ';color:var(--t);font-size:11px;font-weight:600;cursor:pointer">' + t + '</button>').join('') +
+      themes.map(t => '<button data-th="' + t + '" style="padding:10px;border-radius:10px;background:var(--p2);border:2px solid ' + (s.theme === t ? '#ff6b35' : 'transparent') + ';color:var(--t);font-size:11px;font-weight:600;cursor:pointer">' + t + '</button>').join('') +
     '</div>' +
-    '<div style="font-size:12px;color:var(--t2);margin-bottom:6px">Режим</div>' +
     '<div style="display:flex;gap:6px;margin-bottom:14px">' +
-      '<button data-m="dark" style="flex:1;padding:10px;border-radius:10px;background:' + (s.mode === 'dark' ? 'var(--a)' : 'var(--p2)') + ';color:' + (s.mode === 'dark' ? '#fff' : 'var(--t)') + ';font-weight:600;border:none;cursor:pointer">🌙 Тёмный</button>' +
-      '<button data-m="light" style="flex:1;padding:10px;border-radius:10px;background:' + (s.mode === 'light' ? 'var(--a)' : 'var(--p2)') + ';color:' + (s.mode === 'light' ? '#fff' : 'var(--t)') + ';font-weight:600;border:none;cursor:pointer">☀️ Светлый</button>' +
+      '<button data-m="dark" style="flex:1;padding:10px;border-radius:10px;background:' + (s.mode === 'dark' ? 'linear-gradient(135deg,#ff6b35,#ffd700)' : 'var(--p2)') + ';color:' + (s.mode === 'dark' ? '#000' : 'var(--t)') + ';font-weight:600;border:none;cursor:pointer">🌙 Тёмный</button>' +
+      '<button data-m="light" style="flex:1;padding:10px;border-radius:10px;background:' + (s.mode === 'light' ? 'linear-gradient(135deg,#ff6b35,#ffd700)' : 'var(--p2)') + ';color:' + (s.mode === 'light' ? '#000' : 'var(--t)') + ';font-weight:600;border:none;cursor:pointer">☀️ Светлый</button>' +
     '</div>' +
     '<button onclick="window.openSettings()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">← Назад</button>'
   );
-
   document.querySelectorAll('#themeGrid button').forEach(b => b.onclick = () => {
     state.settings.theme = b.dataset.th;
     applyTheme(b.dataset.th);
     document.querySelectorAll('#themeGrid button').forEach(x => x.style.border = '2px solid transparent');
-    b.style.border = '2px solid var(--a)';
+    b.style.border = '2px solid #ff6b35';
   });
   document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
     state.settings.mode = b.dataset.m;
     applyMode(b.dataset.m);
     document.querySelectorAll('[data-m]').forEach(x => { x.style.background = 'var(--p2)'; x.style.color = 'var(--t)'; });
-    b.style.background = 'var(--a)'; b.style.color = '#fff';
+    b.style.background = 'linear-gradient(135deg,#ff6b35,#ffd700)';
+    b.style.color = '#000';
   });
 };
 
@@ -1299,8 +1169,8 @@ window.openPinSetup = function() {
   openModal(
     '<h2>🔑 PIN-код</h2>' +
     '<input id="pinNew" type="tel" maxlength="4" placeholder="Новый PIN (4 цифры)" style="text-align:center;letter-spacing:8px;font-size:20px">' +
-    '<button id="bSetPin" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Установить</button>' +
-    '<button id="bRmPin" class="dg" style="width:100%;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:600;border:1px solid rgba(229,57,53,.3);cursor:pointer;margin-bottom:8px">🗑 Удалить PIN</button>' +
+    '<button id="bSetPin" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Установить</button>' +
+    '<button id="bRmPin" class="dg" style="width:100%;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:600;border:1px solid rgba(229,57,53,.3);cursor:pointer;margin-bottom:8px">🗑 Удалить</button>' +
     '<button onclick="window.openSettings()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">← Назад</button>'
   );
   $('bSetPin').onclick = () => {
@@ -1383,17 +1253,22 @@ window.openShop = async () => {
   try {
     const r = await sb.from('shop_items').select('*').limit(50);
     items = r.data || [];
-  } catch(e) {}
+  } catch(e) { console.warn('Shop error:', e); }
+
   openModal(
     '<h2>🛒 Магазин</h2>' +
     '<div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;margin-bottom:14px">💰 ' + (state.profile.balance || 0) + ' SG</div>' +
     '<div style="max-height:400px;overflow-y:auto">' +
       (items.length ? items.map(i =>
         '<div style="padding:12px;background:var(--p2);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
-          '<div><div style="font-weight:700;font-size:14px">' + esc(i.name) + '</div><div style="font-size:11px;color:var(--t2)">' + esc(i.category || '') + '</div></div>' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            '<span style="font-size:24px">' + (i.icon || '🎁') + '</span>' +
+            '<div><div style="font-weight:700;font-size:14px">' + esc(i.name) + '</div>' +
+            '<div style="font-size:11px;color:var(--t2)">' + esc(i.category || '') + '</div></div>' +
+          '</div>' +
           '<button onclick="window.buyItem(\'' + i.id + '\')" style="padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer">' + i.price + ' SG</button>' +
         '</div>'
-      ).join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Магазин пуст</div>') +
+      ).join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Магазин пуст 😢<br><br>Запусти SQL в Supabase</div>') +
     '</div>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
   );
@@ -1402,16 +1277,131 @@ window.openShop = async () => {
 window.buyItem = async (itemId) => {
   const { data: item } = await sb.from('shop_items').select('*').eq('id', itemId).single();
   if (!item) return;
-  if ((state.profile.balance || 0) < item.price) { toast('Мало SG'); return; }
+  if ((state.profile.balance || 0) < item.price) { toast('❌ Мало SG'); return; }
   try {
     await sb.from('profiles').update({ balance: state.profile.balance - item.price }).eq('id', state.user.id);
     try { await sb.from('user_purchases').insert({ user_id: state.user.id, item_id: itemId }); } catch(e) {}
     try { await sb.from('balance_log').insert({ user_id: state.user.id, amount: -item.price, reason: 'Покупка: ' + item.name }); } catch(e) {}
     await refreshProfile();
-    toast('Куплено ✅');
+    toast('✅ Куплено!');
     window.openShop();
-  } catch(e) { toast('Ошибка'); }
+  } catch(e) { toast('Ошибка: ' + e.message); }
 };
+
+// ============ 🎰 MUSOR DROP ============
+window.openMusorDrop = function() {
+  openModal(
+    '<h2 style="text-align:center">🎰 Musor Drop</h2>' +
+    '<div style="text-align:center;color:var(--t2);font-size:13px;margin-bottom:14px">Крути рулетку! Рискни 🔥</div>' +
+    '<div id="mdGame" style="text-align:center">' +
+      '<div style="background:linear-gradient(135deg,#ff6b35,#ffd700);border-radius:20px;padding:30px 20px;margin-bottom:14px">' +
+        '<div style="font-size:64px;margin-bottom:10px" id="mdEmoji">🎰</div>' +
+        '<div style="font-size:20px;font-weight:800;color:#000" id="mdResult">Готов крутить?</div>' +
+        '<div style="font-size:14px;color:rgba(0,0,0,.6);margin-top:6px" id="mdBalance">💰 ' + (state.profile.balance || 0) + ' SG</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">' +
+        '<button onclick="window.mdSpin(50)" style="padding:14px;border-radius:12px;background:linear-gradient(135deg,#4a9eff,#2b5278);color:#fff;font-weight:700;border:none;cursor:pointer">50 SG<br><span style="font-size:10px;opacity:.8">×2..×10</span></button>' +
+        '<button onclick="window.mdSpin(200)" style="padding:14px;border-radius:12px;background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-weight:700;border:none;cursor:pointer">200 SG<br><span style="font-size:10px;opacity:.8">×2..×10</span></button>' +
+        '<button onclick="window.mdSpin(500)" style="padding:14px;border-radius:12px;background:linear-gradient(135deg,#e74c3c,#c0392b);color:#fff;font-weight:700;border:none;cursor:pointer">500 SG<br><span style="font-size:10px;opacity:.8">×2..×10</span></button>' +
+        '<button onclick="window.mdSpin(1000)" style="padding:14px;border-radius:12px;background:linear-gradient(135deg,#9c27b0,#7b1fa2);color:#fff;font-weight:700;border:none;cursor:pointer">1000 SG<br><span style="font-size:10px;opacity:.8">×2..×10</span></button>' +
+      '</div>' +
+      '<div style="background:var(--p2);border-radius:12px;padding:12px;font-size:11px;color:var(--t2);line-height:1.5">' +
+        '⚠️ <b>Шансы:</b><br>' +
+        '5% — 💎 ДЖЕКПОТ ×20<br>' +
+        '40% — ⭐ Победа (×2..×10)<br>' +
+        '40% — 💀 Потеря ставки<br>' +
+        '15% — 💥 ВСЁ ОТВАЛИТСЯ (баланс = 0)' +
+      '</div>' +
+    '</div>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
+  );
+};
+
+window.mdSpin = async function(bet) {
+  const balance = state.profile.balance || 0;
+  if (balance < bet) { toast('❌ Мало SG (у тебя ' + balance + ')'); return; }
+
+  const resultEl = $('mdResult');
+  const emojiEl = $('mdEmoji');
+  if (!resultEl || !emojiEl) return;
+
+  emojiEl.textContent = '🎰';
+  resultEl.textContent = 'Крутим...';
+
+  const emojis = ['🎰','🔥','💎','⭐','🎲','🎯'];
+  let spins = 0;
+  const spinInterval = setInterval(() => {
+    emojiEl.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    spins++;
+    if (spins > 15) {
+      clearInterval(spinInterval);
+      finishSpin(bet, resultEl, emojiEl);
+    }
+  }, 80);
+};
+
+async function finishSpin(bet, resultEl, emojiEl) {
+  const roll = Math.random();
+  let newBalance = state.profile.balance || 0;
+  let resultText = '', resultEmoji = '', logReason = '', change = 0;
+
+  if (roll < 0.05) {
+    change = bet * 20;
+    newBalance = newBalance - bet + change;
+    resultText = '🎉 ДЖЕКПОТ! +' + change + ' SG';
+    resultEmoji = '💎';
+    logReason = 'Musor Drop 🎉 JACKPOT ×20 (ставка ' + bet + ')';
+  } else if (roll < 0.45) {
+    const mult = [2, 3, 5, 10][Math.floor(Math.random() * 4)];
+    change = bet * mult - bet;
+    newBalance = newBalance - bet + (bet * mult);
+    resultText = '✅ Победа! ×' + mult + ' (+' + change + ' SG)';
+    resultEmoji = '⭐';
+    logReason = 'Musor Drop ✅ Win ×' + mult + ' (ставка ' + bet + ')';
+  } else if (roll < 0.85) {
+    newBalance = newBalance - bet;
+    change = -bet;
+    resultText = '❌ Мимо... −' + bet + ' SG';
+    resultEmoji = '💀';
+    logReason = 'Musor Drop ❌ Lose (ставка ' + bet + ')';
+  } else {
+    const lost = state.profile.balance || 0;
+    newBalance = 0;
+    change = -lost;
+    resultText = '💥 ВСЁ ОТВАЛИЛОСЬ! Баланс = 0';
+    resultEmoji = '☠️';
+    logReason = 'Musor Drop 💥 CRASH — потерял всё (' + lost + ' SG)';
+    const game = $('mdGame');
+    if (game) {
+      game.style.transition = 'transform .3s';
+      game.style.transform = 'scale(1.05) rotate(2deg)';
+      setTimeout(() => { game.style.transform = 'scale(1) rotate(0deg)'; }, 300);
+    }
+  }
+
+  newBalance = Math.max(0, Math.floor(newBalance));
+  change = Math.round(change);
+
+  try {
+    await sb.from('profiles').update({ balance: newBalance }).eq('id', state.user.id);
+    await sb.from('balance_log').insert({ user_id: state.user.id, amount: change, reason: logReason });
+    state.profile.balance = newBalance;
+
+    resultEl.textContent = resultText;
+    emojiEl.textContent = resultEmoji;
+    const balEl = $('mdBalance');
+    if (balEl) balEl.textContent = '💰 ' + newBalance + ' SG';
+
+    if (navigator.vibrate) navigator.vibrate(change > 0 ? [30, 50, 30] : 100);
+
+    if (change > 0) toast('🎉 +' + change + ' SG');
+    else if (change < 0 && newBalance > 0) toast('😢 ' + change + ' SG');
+    else if (newBalance === 0) toast('💥 Всё потеряно!');
+  } catch(e) {
+    console.error(e);
+    toast('Ошибка: ' + e.message);
+  }
+}
 
 // ============ QR + SHARE ============
 window.openQR = () => {
@@ -1429,9 +1419,9 @@ window.openQR = () => {
 
 window.shareProfile = async () => {
   const url = location.origin + '?u=' + state.profile.username;
-  const text = 'Мой профиль Spacegram @' + state.profile.username;
+  const text = 'Мой профиль Fenix @' + state.profile.username;
   if (navigator.share) {
-    try { await navigator.share({ title: 'Spacegram', text, url }); } catch(e){}
+    try { await navigator.share({ title: 'Fenix', text, url }); } catch(e){}
   } else {
     try { await navigator.clipboard.writeText(url); toast('Ссылка скопирована ✅'); }
     catch(e){ toast('Ошибка'); }
@@ -1446,8 +1436,7 @@ async function loadStoriesBar() {
   try {
     const r = await sb.from('stories').select('*').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(100);
     stories = r.data || [];
-  } catch(e) { console.warn('Stories error:', e); }
-
+  } catch(e) {}
   const byUser = {};
   stories.forEach(s => {
     if (!byUser[s.user_id]) byUser[s.user_id] = [];
@@ -1463,11 +1452,10 @@ async function loadStoriesBar() {
   } catch(e) {}
 
   let html = '';
-  // Моя кнопка "+"
   if (canPostStories()) {
     html += '<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer" onclick="window.addStory()">' +
-      '<div class="story-circle" style="background:linear-gradient(135deg,#4a9eff,#7c3aed)">' +
-        '<div class="story-circle-inner" style="font-size:28px;color:#fff">＋</div>' +
+      '<div class="story-circle">' +
+        '<div class="story-circle-inner" style="font-size:28px;color:#ff6b35">＋</div>' +
       '</div>' +
       '<div class="story-label">Статус</div>' +
     '</div>';
@@ -1486,7 +1474,6 @@ async function loadStoriesBar() {
       '<div class="story-label">' + esc(a?.display_name || '?') + '</div>' +
     '</div>';
   });
-
   bar.innerHTML = html;
 }
 
@@ -1496,7 +1483,7 @@ window.addStory = () => {
     '<h2>📸 Новый статус</h2>' +
     '<input type="file" id="storyFile" accept="image/*,video/*" style="width:100%;margin-bottom:10px">' +
     '<textarea id="storyText" placeholder="Текст" rows="2"></textarea>' +
-    '<button id="bPubStory" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">📸 Опубликовать</button>' +
+    '<button id="bPubStory" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">📸 Опубликовать</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Отмена</button>'
   );
   $('bPubStory').onclick = async () => {
@@ -1544,24 +1531,17 @@ window.viewStory = async (sid) => {
         : '') +
       (story.text_content ? '<div class="text-overlay">' + esc(story.text_content) + '</div>' : '') +
       '<div class="story-author">' +
-        '<div class="story-avatar">' +
-          (author?.avatar_url ? '<img src="' + esc(author.avatar_url) + '">' : (author?.display_name || '?')[0].toUpperCase()) +
-        '</div>' +
-        '<div class="story-info">' +
-          '<b>' + esc(author?.display_name || 'Юзер') + '</b><br>' +
-          '<span style="opacity:.8">' + fmtTime(story.created_at) + ' · 👁 ' + views.length + '</span>' +
-        '</div>' +
+        '<div class="story-avatar">' + (author?.avatar_url ? '<img src="' + esc(author.avatar_url) + '">' : (author?.display_name || '?')[0].toUpperCase()) + '</div>' +
+        '<div class="story-info"><b>' + esc(author?.display_name || 'Юзер') + '</b><br><span style="opacity:.8">' + fmtTime(story.created_at) + ' · 👁 ' + views.length + '</span></div>' +
       '</div>' +
     '</div>' +
     '<div class="story-reactions">' +
-      ['❤️','🔥','😂','😮','👏'].map(e =>
-        '<button onclick="window.reactStory(\'' + sid + '\',\'' + e + '\')">' + e + '</button>'
-      ).join('') +
+      ['❤️','🔥','😂','😮','👏'].map(e => '<button onclick="window.reactStory(\'' + sid + '\',\'' + e + '\')">' + e + '</button>').join('') +
     '</div>' +
     '<div style="display:flex;gap:8px;margin-top:8px">' +
       (isMine
         ? '<button onclick="window.deleteStory(\'' + sid + '\')" class="dg" style="flex:1;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:700;font-size:13px;border:1px solid rgba(229,57,53,.3);cursor:pointer">🗑 Удалить</button>'
-        : '<button onclick="window.storyReply(\'' + sid + '\',\'' + story.user_id + '\')" class="primary" style="flex:1;padding:11px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;font-size:13px;border:none;cursor:pointer">💬 Ответить</button>') +
+        : '<button onclick="window.storyReply(\'' + sid + '\',\'' + story.user_id + '\')" class="primary" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;font-size:13px;border:none;cursor:pointer">💬 Ответить</button>') +
       '<button onclick="window.closeModal()" class="gh" style="flex:1;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Закрыть</button>' +
     '</div>'
   );
@@ -1622,17 +1602,13 @@ async function loadFeed() {
     return '<div class="post-card">' +
       '<div class="post-header">' +
         '<div class="post-avatar">' + (a.avatar_url ? '<img src="' + esc(a.avatar_url) + '">' : init) + '</div>' +
-        '<div class="post-meta">' +
-          '<div class="post-author">' + esc(a.display_name || 'Юзер') + badge + '</div>' +
+        '<div class="post-meta"><div class="post-author">' + esc(a.display_name || 'Юзер') + badge + '</div>' +
           '<div class="post-time">@' + esc(a.username || '?') + ' · ' + fmtTime(p.created_at) + '</div>' +
         '</div>' +
       '</div>' +
       (p.text ? '<div class="post-text">' + esc(p.text) + '</div>' : '') +
       (p.image_url ? '<img class="post-image" src="' + esc(p.image_url) + '" onclick="window.openImage(\'' + esc(p.image_url) + '\')">' : '') +
-      '<div class="post-actions">' +
-        '<button>❤️ ' + (p.likes_count || 0) + '</button>' +
-        '<button>💬 ' + (p.comments_count || 0) + '</button>' +
-      '</div>' +
+      '<div class="post-actions"><button>❤️ ' + (p.likes_count || 0) + '</button><button>💬 ' + (p.comments_count || 0) + '</button></div>' +
     '</div>';
   }).join('');
 }
@@ -1642,7 +1618,7 @@ window.openPost = () => {
     '<h2>✏️ Новый пост</h2>' +
     '<textarea id="postT" rows="5" placeholder="Что нового?"></textarea>' +
     '<input type="file" id="postImg" accept="image/*" style="width:100%;margin-bottom:14px">' +
-    '<button id="bPubP" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">🚀 Опубликовать</button>' +
+    '<button id="bPubP" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-bottom:8px">🚀 Опубликовать</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Отмена</button>'
   );
   $('bPubP').onclick = async () => {
@@ -1665,83 +1641,9 @@ window.openPost = () => {
 };
 
 // ============ БОТ ============
-async function apiWeather(city) {
-  try {
-    const geo = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(city) + '&count=1&language=ru').then(r => r.json());
-    if (!geo.results?.length) return '❌ Город не найден';
-    const { latitude, longitude, name } = geo.results[0];
-    const w = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + latitude + '&longitude=' + longitude + '&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto').then(r => r.json());
-    const c = w.current;
-    return '🌍 ' + name + '\n🌡 ' + c.temperature_2m + '°C\n💨 ' + c.wind_speed_10m + ' км/ч';
-  } catch(e) { return '❌ Ошибка погоды'; }
-}
-
-async function apiJoke() {
-  try {
-    const j = await fetch('https://v2.jokeapi.dev/joke/Any?lang=ru&blacklistFlags=nsfw,racist,sexist').then(r => r.json());
-    if (j.type === 'single') return '😄 ' + j.joke;
-    return '😄 ' + j.setup + '\n\n' + j.delivery;
-  } catch(e) { return '❌ Ошибка'; }
-}
-
-async function apiCrypto(symbol) {
-  try {
-    const d = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + symbol + '&vs_currencies=usd,rub&include_24hr_change=true').then(r => r.json());
-    const c = d[symbol];
-    if (!c) return '❌ Не найдено';
-    const ch = c.usd_24h_change || 0;
-    return (ch >= 0 ? '📈' : '📉') + ' ' + symbol.toUpperCase() + '\n💵 $' + c.usd + '\n🇷🇺 ' + c.rub + ' ₽';
-  } catch(e) { return '❌ Ошибка'; }
-}
-
-async function apiTrivia() {
-  try {
-    const d = await fetch('https://opentdb.com/api.php?amount=1&type=multiple').then(r => r.json());
-    const q = d.results[0];
-    const dec = (s) => s.replace(/&quot;/g,'"').replace(/&#039;/g,"'").replace(/&amp;/g,'&');
-    const ans = [...q.incorrect_answers, q.correct_answer].sort(() => Math.random() - 0.5);
-    return '❓ ' + dec(q.question) + '\n\n' + ans.map((a,i) => ['A','B','C','D'][i] + ') ' + dec(a)).join('\n') + '\n\n✅ ' + dec(q.correct_answer);
-  } catch(e) { return '❌ Ошибка'; }
-}
-
-async function apiTranslate(text, to) {
-  try {
-    const d = await fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=auto|' + to).then(r => r.json());
-    return '🌐 ' + (d.responseData?.translatedText || '❌ Не смог');
-  } catch(e) { return '❌ Ошибка'; }
-}
-
-function apiAIImage(prompt) {
-  return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(prompt) + '?width=512&height=512&nologo=true&seed=' + Date.now();
-}
-
-async function botReply(text) {
-  const t = text.toLowerCase().trim();
-  if (/^\/?(start|help|помощь|хелп)$/.test(t)) return '👋 Я Spacegram Bot.\n\n🌤 погода Москва\n😂 шутка\n🐱 котик\n💰 биткоин\n❓ викторина\n🌐 переведи hello на русский\n🎨 нарисуй космонавта';
-  const wm = t.match(/(?:погод[ауы]?|weather)\s+(.+)/i);
-  if (wm) return await apiWeather(wm[1].trim());
-  if (/шутк|анекдот|joke/.test(t)) return await apiJoke();
-  if (/котик|кошк|cat/i.test(t)) return 'https://cataas.com/cat?t=' + Date.now();
-  const cm = t.match(/(биткоин|btc|bitcoin|эфир|eth|ethereum)/i);
-  if (cm) {
-    const map = { 'биткоин':'bitcoin','btc':'bitcoin','bitcoin':'bitcoin','эфир':'ethereum','eth':'ethereum','ethereum':'ethereum' };
-    return await apiCrypto(map[cm[1].toLowerCase()]);
-  }
-  if (/викторин|trivia/.test(t)) return await apiTrivia();
-  const tm = t.match(/(?:переведи|translate)\s+(.+?)(?:\s+на\s+(\w+))?$/i);
-  if (tm) {
-    const langMap = { 'русский':'ru','английский':'en','немецкий':'de','французский':'fr','испанский':'es' };
-    const to = langMap[(tm[2] || '').toLowerCase()] || 'ru';
-    return await apiTranslate(tm[1], to);
-  }
-  const im = t.match(/(?:нарисуй|сгенерируй|draw)\s+(.+)/i);
-  if (im) return '🎨 ' + im[1].trim() + '\n\n' + apiAIImage(im[1].trim());
-  return '🤔 Не понял. Напиши помощь';
-}
-
 window.openBotChat = async () => {
   openModal(
-    '<h2>🤖 @Spacegramhelperbot</h2>' +
+    '<h2>🤖 @Fenixhelperbot</h2>' +
     '<div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;line-height:1.6;color:var(--t2);margin-bottom:14px">' +
       'погода Москва<br>шутка<br>котик<br>биткоин<br>викторина<br>переведи hello на русский<br>нарисуй космонавта' +
     '</div>' +
@@ -1749,7 +1651,7 @@ window.openBotChat = async () => {
   );
 };
 
-// ============ ВЕРИФИКАЦИЯ (юзер) ============
+// ============ ВЕРИФИКАЦИЯ ============
 window.openVerification = function() {
   openModal(
     '<h2>✅ Заявка на галочку</h2>' +
@@ -1761,7 +1663,7 @@ window.openVerification = function() {
       '<button data-t="bot">🤖 Бот</button>' +
     '</div>' +
     '<textarea id="verMsg" rows="4" placeholder="Ссылки..."></textarea>' +
-    '<button id="bSendVer" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
+    '<button id="bSendVer" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
   let badgeType = 'verified';
@@ -1772,14 +1674,12 @@ window.openVerification = function() {
   });
   $('bSendVer').onclick = async () => {
     const msg = $('verMsg').value.trim();
-    if (!msg) { toast('Напиши что-нибудь'); return; }
+    if (!msg) { toast('Напиши'); return; }
     try {
-      await sb.from('verification_requests').insert({
-        user_id: state.user.id, badge_type: badgeType, message: msg, status: 'pending'
-      });
+      await sb.from('verification_requests').insert({ user_id: state.user.id, badge_type: badgeType, message: msg, status: 'pending' });
       toast('Заявка отправлена ✅');
       closeModal();
-    } catch(e) { toast('Ошибка: ' + e.message); }
+    } catch(e) { toast('Ошибка'); }
   };
 };
 
@@ -1788,7 +1688,7 @@ window.openMyStickers = function() {
   openModal(
     '<h2>🎨 Мои стикеры</h2>' +
     '<input type="file" id="stkFile" accept="image/*" style="width:100%;margin-bottom:14px">' +
-    '<button onclick="window.uploadSticker()" class="primary" style="width:100%;padding:11px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">➕ Загрузить</button>' +
+    '<button onclick="window.uploadSticker()" class="primary" style="width:100%;padding:11px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">➕ Загрузить</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>'
   );
 };
@@ -1804,10 +1704,10 @@ window.uploadSticker = async () => {
   } catch(e) { toast('Ошибка'); }
 };
 /* ============================================================
-   Часть 3: Админка + bindButtons + sidebar + main
+   Часть 3: Админка, голосовые, bindButtons, sidebar, main
    ============================================================ */
 
-// ============ ЗАПИСЬ ГОЛОСОВЫХ ============
+// ============ ГОЛОСОВЫЕ ============
 let mediaRecorder = null;
 let audioChunks = [];
 let recordingStart = 0;
@@ -1873,7 +1773,6 @@ async function renderAdminStats() {
   try { const x = await sb.from('chats').select('id', { count: 'exact', head: true }); c = x.count || 0; } catch(e) {}
   try { const x = await sb.from('messages').select('id', { count: 'exact', head: true }); m = x.count || 0; } catch(e) {}
   try { const x = await sb.from('verification_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'); r = x.count || 0; } catch(e) {}
-
   el.innerHTML =
     '<div class="admin-stat"><div class="admin-stat-value">' + u + '</div><div class="admin-stat-label">Юзеров</div></div>' +
     '<div class="admin-stat"><div class="admin-stat-value">' + c + '</div><div class="admin-stat-label">Чатов</div></div>' +
@@ -1894,9 +1793,7 @@ function renderAdminTabs() {
   el.innerHTML = tabs.map(t =>
     '<button data-tab="' + t.id + '" class="' + (state.adminTab === t.id ? 'on' : '') + '">' + t.icon + ' ' + t.name + '</button>'
   ).join('');
-  el.querySelectorAll('button').forEach(b => {
-    b.onclick = () => switchAdminTab(b.dataset.tab);
-  });
+  el.querySelectorAll('button').forEach(b => b.onclick = () => switchAdminTab(b.dataset.tab));
 }
 
 function switchAdminTab(tab) {
@@ -1905,7 +1802,6 @@ function switchAdminTab(tab) {
   const bod = $('abod');
   if (!bod) return;
   bod.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t2)">Загрузка...</div>';
-
   if (tab === 'users') renderAdminUsers();
   else if (tab === 'verifications') renderAdminVerifications();
   else if (tab === 'tickets') renderAdminTickets();
@@ -1923,11 +1819,9 @@ async function renderAdminUsers() {
     users = r.data || [];
   } catch(e) {}
   state.adminUsersCache = users;
-
   bod.innerHTML =
     '<input id="adminUserSearch" placeholder="🔍 Поиск..." style="margin-bottom:10px;width:100%;padding:10px 14px;border-radius:10px;background:var(--p2);color:var(--t);border:1px solid var(--br)">' +
     '<div id="adminUserList">' + renderAdminUsersList('') + '</div>';
-
   const search = $('adminUserSearch');
   if (search) {
     search.oninput = () => {
@@ -1938,13 +1832,11 @@ async function renderAdminUsers() {
 }
 
 function renderAdminUsersList(filter) {
-  const list = state.adminUsersCache.filter(u =>
-    !filter ||
+  const list = state.adminUsersCache.filter(u => !filter ||
     (u.username || '').toLowerCase().indexOf(filter) !== -1 ||
-    (u.display_name || '').toLowerCase().indexOf(filter) !== -1
-  );
+    (u.display_name || '').toLowerCase().indexOf(filter) !== -1);
 
-  if (!list.length) return '<div style="text-align:center;padding:30px;color:var(--t2)">Никого не найдено</div>';
+  if (!list.length) return '<div style="text-align:center;padding:30px;color:var(--t2)">Никого</div>';
 
   return list.map(u => {
     let badges = '';
@@ -1952,19 +1844,11 @@ function renderAdminUsersList(filter) {
     if (u.role === 'admin') badges += renderBadge('owner');
     if (u.is_verified) badges += renderBadge('verified');
     if (u.is_plus) badges += renderBadge('premium');
-    if (u.is_youtuber) badges += renderBadge('youtuber');
-
     const banned = u.is_banned ? '<span style="color:#e53935;font-size:10px;font-weight:700">🚫 БАН</span>' : '';
 
     return '<div class="admin-user-row">' +
-      '<div class="admin-user-head">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div class="admin-user-name">' + esc(u.display_name || '—') + badges + ' ' + banned + '</div>' +
-          '<div class="admin-user-info">@' + esc(u.username || '—') + ' · ID: ' + (u.id || '').slice(0,8) + '<br>' +
-          '💰 ' + (u.balance||0) + ' SG · 🎯 lvl ' + (u.level||1) + ' · 💬 ' + (u.messages_count||0) + '<br>' +
-          'рег: ' + fmtDate(u.created_at) + '</div>' +
-        '</div>' +
-      '</div>' +
+      '<div class="admin-user-name">' + esc(u.display_name || '—') + badges + ' ' + banned + '</div>' +
+      '<div class="admin-user-info">@' + esc(u.username || '—') + ' · 💰 ' + (u.balance||0) + ' · 🎯 lvl ' + (u.level||1) + ' · 💬 ' + (u.messages_count||0) + '<br>рег: ' + fmtDate(u.created_at) + '</div>' +
       '<div class="admin-user-actions">' +
         '<button onclick="window.adminEditUser(\'' + u.id + '\')" style="background:var(--a);color:#fff">✏️ Изменить</button>' +
         '<button onclick="window.adminGiveBalance(\'' + u.id + '\')" style="background:#10b981;color:#fff">💰 Баланс</button>' +
@@ -1985,14 +1869,10 @@ window.adminEditUser = (uid) => {
     '<input id="auName" placeholder="Имя" value="' + esc(u.display_name || '') + '">' +
     '<input id="auAvatar" placeholder="URL аватара" value="' + esc(u.avatar_url || '') + '">' +
     '<textarea id="auBio" rows="2" placeholder="Био">' + esc(u.bio || '') + '</textarea>' +
-    '<input id="auBalance" type="number" placeholder="Баланс SG" value="' + (u.balance || 0) + '">' +
+    '<input id="auBalance" type="number" placeholder="Баланс" value="' + (u.balance || 0) + '">' +
     '<input id="auLevel" type="number" placeholder="Уровень" value="' + (u.level || 1) + '">' +
-    '<select id="auRole">' +
-      '<option value="user" ' + (u.role === 'user' ? 'selected' : '') + '>user</option>' +
-      '<option value="moderator" ' + (u.role === 'moderator' ? 'selected' : '') + '>moderator</option>' +
-      '<option value="admin" ' + (u.role === 'admin' ? 'selected' : '') + '>admin</option>' +
-    '</select>' +
-    '<button id="bSaveUser" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Сохранить</button>' +
+    '<select id="auRole"><option value="user"' + (u.role === 'user' ? ' selected' : '') + '>user</option><option value="moderator"' + (u.role === 'moderator' ? ' selected' : '') + '>moderator</option><option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>admin</option></select>' +
+    '<button id="bSaveUser" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Сохранить</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
   $('bSaveUser').onclick = async () => {
@@ -2072,7 +1952,7 @@ window.adminToggleBan = async (uid) => {
       await sb.from('profiles').update({ is_banned: false, ban_reason: null }).eq('id', uid);
       toast('✅ Разбанен');
     } else {
-      const reason = prompt('Причина бана:', 'Нарушение') || 'Нарушение';
+      const reason = prompt('Причина:', 'Нарушение') || 'Нарушение';
       await sb.from('profiles').update({ is_banned: true, ban_reason: reason }).eq('id', uid);
       toast('🚫 Забанен');
     }
@@ -2090,10 +1970,7 @@ async function renderAdminVerifications() {
     reqs = r.data || [];
   } catch(e) {}
 
-  if (!reqs.length) {
-    bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Заявок нет</div>';
-    return;
-  }
+  if (!reqs.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Заявок нет</div>'; return; }
 
   const uids = [...new Set(reqs.map(r => r.user_id).filter(Boolean))];
   const profs = {};
@@ -2103,20 +1980,13 @@ async function renderAdminVerifications() {
       (r.data || []).forEach(p => profs[p.id] = p);
     } catch(e) {}
   }
-
-  const badgeNames = { verified: 'Синяя галочка', youtuber: 'YouTube', bot: 'Bot', official: 'Официальный' };
+  const badgeNames = { verified: 'Синяя галочка', youtuber: 'YouTube', bot: 'Bot' };
 
   bod.innerHTML = reqs.map(req => {
     const u = profs[req.user_id] || {};
     return '<div class="ver-card">' +
-      '<div class="ver-card-head">' +
-        '<div>' +
-          '<div class="ver-card-name">' + esc(u.display_name || '—') +
-            '<span class="ver-card-badge ' + req.badge_type + '">' + (badgeNames[req.badge_type] || req.badge_type) + '</span>' +
-          '</div>' +
-          '<div class="ver-card-user">@' + esc(u.username || '?') + '</div>' +
-        '</div>' +
-      '</div>' +
+      '<div class="ver-card-name">' + esc(u.display_name || '—') + '<span class="ver-card-badge ' + req.badge_type + '">' + (badgeNames[req.badge_type] || req.badge_type) + '</span></div>' +
+      '<div class="ver-card-user">@' + esc(u.username || '?') + '</div>' +
       '<div class="ver-card-msg">' + esc(req.message || '') + '</div>' +
       '<div class="ver-card-actions">' +
         '<button class="approve" onclick="window.adminApproveVer(\'' + req.id + '\',\'' + req.user_id + '\',\'' + req.badge_type + '\')">✅ Одобрить</button>' +
@@ -2133,9 +2003,7 @@ window.adminApproveVer = async (reqId, uid, badgeType) => {
     else if (badgeType === 'youtuber') updates.is_youtuber = true;
     else if (badgeType === 'bot') updates.is_bot_verified = true;
     await sb.from('profiles').update(updates).eq('id', uid);
-    await sb.from('verification_requests').update({
-      status: 'approved', reviewed_by: state.user.id, reviewed_at: new Date().toISOString()
-    }).eq('id', reqId);
+    await sb.from('verification_requests').update({ status: 'approved', reviewed_by: state.user.id, reviewed_at: new Date().toISOString() }).eq('id', reqId);
     toast('✅ Галочка выдана!');
     renderAdminVerifications();
     renderAdminStats();
@@ -2145,9 +2013,7 @@ window.adminApproveVer = async (reqId, uid, badgeType) => {
 window.adminRejectVer = async (reqId) => {
   const reason = prompt('Причина отказа:') || 'Не соответствует';
   try {
-    await sb.from('verification_requests').update({
-      status: 'rejected', reject_reason: reason, reviewed_by: state.user.id, reviewed_at: new Date().toISOString()
-    }).eq('id', reqId);
+    await sb.from('verification_requests').update({ status: 'rejected', reject_reason: reason, reviewed_by: state.user.id, reviewed_at: new Date().toISOString() }).eq('id', reqId);
     toast('Отклонено');
     renderAdminVerifications();
   } catch(e) { toast('Ошибка'); }
@@ -2163,17 +2029,12 @@ async function renderAdminTickets() {
     tickets = r.data || [];
   } catch(e) {}
 
-  if (!tickets.length) {
-    bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎫 Тикетов нет</div>';
-    return;
-  }
+  if (!tickets.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎫 Тикетов нет</div>'; return; }
 
   bod.innerHTML = tickets.map(t =>
     '<div class="ver-card">' +
-      '<div class="ver-card-head"><div style="flex:1">' +
-        '<div class="ver-card-name">' + esc(t.subject || 'Без темы') + '</div>' +
-        '<div class="ver-card-user">' + esc(t.email || '') + '</div>' +
-      '</div></div>' +
+      '<div class="ver-card-name">' + esc(t.subject || 'Без темы') + '</div>' +
+      '<div class="ver-card-user">' + esc(t.email || '') + '</div>' +
       '<div class="ver-card-msg">' + esc(t.message || '') + '</div>' +
       '<div class="ver-card-actions">' +
         '<button class="approve" onclick="window.adminResolveTicket(\'' + t.id + '\')">✅ Решено</button>' +
@@ -2203,17 +2064,10 @@ async function renderAdminReports() {
     const r = await sb.from('reports').select('*').eq('status', 'pending').limit(50);
     reports = r.data || [];
   } catch(e) {}
-
-  if (!reports.length) {
-    bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Жалоб нет</div>';
-    return;
-  }
-
+  if (!reports.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Жалоб нет</div>'; return; }
   bod.innerHTML = reports.map(r =>
     '<div class="ver-card">' +
-      '<div class="ver-card-head"><div style="flex:1">' +
-        '<div class="ver-card-name">🚩 ' + esc(r.reason || 'Без причины') + '</div>' +
-      '</div></div>' +
+      '<div class="ver-card-name">🚩 ' + esc(r.reason || 'Без причины') + '</div>' +
       '<div class="ver-card-actions">' +
         '<button class="approve" onclick="window.adminResolveReport(\'' + r.id + '\')">✅ Решено</button>' +
       '</div>' +
@@ -2235,18 +2089,13 @@ async function renderAdminPromo() {
     const r = await sb.from('promocodes').select('*').order('id', { ascending: false }).limit(50);
     promos = r.data || [];
   } catch(e) {}
-
   bod.innerHTML =
-    '<button onclick="window.adminCreatePromo()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:14px">＋ Создать промокод</button>' +
+    '<button onclick="window.adminCreatePromo()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:14px">＋ Создать</button>' +
     (promos.length ? promos.map(p =>
       '<div class="ver-card">' +
-        '<div class="ver-card-head"><div style="flex:1">' +
-          '<div class="ver-card-name">🎁 ' + esc(p.code) + '</div>' +
-          '<div class="ver-card-user">' + (p.days || 0) + ' дней · ' + (p.bonus_coins || 0) + ' SG · ' + (p.uses || 0) + '/' + (p.max_uses || 0) + '</div>' +
-        '</div></div>' +
-        '<div class="ver-card-actions">' +
-          '<button class="reject" onclick="window.adminDeletePromo(\'' + p.id + '\')">🗑 Удалить</button>' +
-        '</div>' +
+        '<div class="ver-card-name">🎁 ' + esc(p.code) + '</div>' +
+        '<div class="ver-card-user">' + (p.days || 0) + ' дней · ' + (p.bonus_coins || 0) + ' SG · ' + (p.uses || 0) + '/' + (p.max_uses || 0) + '</div>' +
+        '<div class="ver-card-actions"><button class="reject" onclick="window.adminDeletePromo(\'' + p.id + '\')">🗑 Удалить</button></div>' +
       '</div>'
     ).join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Промокодов нет</div>');
 }
@@ -2258,7 +2107,7 @@ window.adminCreatePromo = () => {
     '<input id="npDays" type="number" placeholder="Дней Plus" value="0">' +
     '<input id="npCoins" type="number" placeholder="SG" value="0">' +
     '<input id="npMax" type="number" placeholder="Макс использований" value="100">' +
-    '<button id="bCreatePromo" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Создать</button>' +
+    '<button id="bCreatePromo" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Создать</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
   $('bCreatePromo').onclick = async () => {
@@ -2284,7 +2133,7 @@ window.adminDeletePromo = async (pid) => {
   catch(e) { toast('Ошибка'); }
 };
 
-// ============ BIND BUTTONS (главное!) ============
+// ============ BIND BUTTONS ============
 function bindButtons() {
   console.log('🔗 Привязка кнопок...');
 
@@ -2303,13 +2152,9 @@ function bindButtons() {
     'bSaved': () => toast('📌 Избранное — скоро'),
     'bVer': () => window.openVerification()
   };
-
   Object.keys(bindings).forEach(id => {
     const el = $(id);
-    if (el) {
-      el.onclick = bindings[id];
-      console.log('✅ Привязан:', id);
-    }
+    if (el) { el.onclick = bindings[id]; console.log('✅ ' + id); }
   });
 
   const chatActions = {
@@ -2323,11 +2168,8 @@ function bindButtons() {
     if (el) el.onclick = chatActions[id];
   });
 
-  const bBack = $('bBack');
-  if (bBack) bBack.onclick = back;
-
-  const rClose = $('rClose');
-  if (rClose) rClose.onclick = cancelRep;
+  const bBack = $('bBack'); if (bBack) bBack.onclick = back;
+  const rClose = $('rClose'); if (rClose) rClose.onclick = cancelRep;
 
   const msgI = $('msgI');
   const bSend = $('bSend');
@@ -2354,17 +2196,13 @@ function bindButtons() {
   };
 
   const bMic = $('bMic');
-  if (bMic) {
-    bMic.onclick = () => {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        bMic.textContent = '🎤';
-        bMic.style.background = '';
-      } else {
-        startVoice();
-      }
-    };
-  }
+  if (bMic) bMic.onclick = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      bMic.textContent = '🎤';
+      bMic.style.background = '';
+    } else startVoice();
+  };
 
   ['ap','af','as','ag','avn','ab','apo'].forEach(id => {
     const el = $(id);
@@ -2399,7 +2237,7 @@ function bindButtons() {
   const myA = $('myA');
   if (myA) myA.onclick = () => showProf();
 
-  console.log('✅ Все кнопки привязаны');
+  console.log('✅ Кнопки привязаны');
 }
 
 function switchTab(tab) {
@@ -2528,7 +2366,7 @@ function openPollCreate() {
     '<input class="poll-i" placeholder="Вариант 1">' +
     '<input class="poll-i" placeholder="Вариант 2">' +
     '<input class="poll-i" placeholder="Вариант 3">' +
-    '<button id="bCrPoll" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
+    '<button id="bCrPoll" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
   $('bCrPoll').onclick = async () => {
@@ -2560,7 +2398,7 @@ function openSidebar() {
   if (!sb2) {
     sb2 = document.createElement('div');
     sb2.className = 'sg-sidebar';
-    sb2.innerHTML = '<div style="font-size:20px;font-weight:800;margin-bottom:20px">✈️ Spacegram</div><div id="sbMenu"></div>';
+    sb2.innerHTML = '<div style="font-size:20px;font-weight:800;margin-bottom:20px;background:linear-gradient(135deg,#ff6b35,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🔥 Fenix</div><div id="sbMenu"></div>';
     document.body.appendChild(sb2);
 
     const menu = [
@@ -2568,6 +2406,7 @@ function openSidebar() {
       { i:'➕', t:'Группа/Канал', a:() => { closeSidebar(); window.openGroupCreate(); } },
       { i:'👤', t:'Мой профиль', a:() => { closeSidebar(); showProf(); } },
       { i:'🔍', t:'Поиск', a:() => { closeSidebar(); window.openGlobalSearch(); } },
+      { i:'🎰', t:'Musor Drop 🎲', a:() => { closeSidebar(); window.openMusorDrop(); } },
       { i:'🛒', t:'Магазин', a:() => { closeSidebar(); window.openShop(); } },
       { i:'💰', t:'Баланс', a:() => { closeSidebar(); window.openBalance(); } },
       { i:'🎁', t:'Промокод', a:() => { closeSidebar(); window.openPromo(); } },
@@ -2611,18 +2450,18 @@ window.openGroupCreate = function() {
   openModal(
     '<h2>➕ Новая группа/канал</h2>' +
     '<div style="display:flex;gap:6px;margin-bottom:14px" id="typeGrp">' +
-      '<button data-t="group" style="flex:1;padding:10px;border-radius:10px;background:var(--a);color:#fff;font-weight:600;border:none;cursor:pointer">👥 Группа</button>' +
+      '<button data-t="group" style="flex:1;padding:10px;border-radius:10px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:600;border:none;cursor:pointer">👥 Группа</button>' +
       '<button data-t="channel" style="flex:1;padding:10px;border-radius:10px;background:var(--p2);color:var(--t);font-weight:600;border:none;cursor:pointer">📢 Канал</button>' +
     '</div>' +
     '<input id="grpName" placeholder="Название">' +
-    '<button id="bCreateGrp" class="primary" style="width:100%;padding:13px;border-radius:12px;background:var(--a);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
+    '<button id="bCreateGrp" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
   let type = 'group';
   document.querySelectorAll('#typeGrp button').forEach(b => b.onclick = () => {
     type = b.dataset.t;
     document.querySelectorAll('#typeGrp button').forEach(x => { x.style.background = 'var(--p2)'; x.style.color = 'var(--t)'; });
-    b.style.background = 'var(--a)'; b.style.color = '#fff';
+    b.style.background = 'linear-gradient(135deg,#ff6b35,#ffd700)'; b.style.color = '#000';
   });
   $('bCreateGrp').onclick = async () => {
     const name = $('grpName').value.trim();
@@ -2703,7 +2542,7 @@ window.clearChatHistory = async () => {
   toast('Очищено');
 };
 
-// ============ WATCH BAN ============
+// ============ BAN WATCH ============
 function startBanWatch() {
   setInterval(async () => {
     if (!state.user) return;
@@ -2716,7 +2555,7 @@ function startBanWatch() {
 
 // ============ MAIN ============
 (async function main() {
-  console.log('🚀 Spacegram v17 init...');
+  console.log('🚀 Fenix v18 init...');
 
   try {
     const createClient = await loadSupabase();
@@ -2725,15 +2564,13 @@ function startBanWatch() {
   } catch (e) {
     console.error('❌ Supabase error:', e);
     document.body.innerHTML = '<div style="padding:40px;color:#fff;font-family:monospace;background:#0e1621;min-height:100vh">' +
-      '<h1>❌ Ошибка загрузки</h1><pre>' + esc(e.message) + '</pre>' +
-      '<button onclick="location.reload()" style="padding:12px 20px;margin-top:20px;border-radius:10px;background:#4a9eff;color:#fff;border:none;cursor:pointer">🔄 Перезагрузить</button>' +
-    '</div>';
+      '<h1>❌ Ошибка</h1><pre>' + esc(e.message) + '</pre>' +
+      '<button onclick="location.reload()" style="padding:12px 20px;margin-top:20px;border-radius:10px;background:#ff6b35;color:#fff;border:none;cursor:pointer">🔄 Перезагрузить</button></div>';
     return;
   }
 
   applyTheme(state.settings.theme);
   applyMode(state.settings.mode);
-
   initAuth();
 
   const savedId = localStorage.getItem('sg_user_id');
@@ -2757,7 +2594,6 @@ function startBanWatch() {
         if (authEl) authEl.style.display = 'flex';
       }
     } catch(e) {
-      console.error('Login error:', e);
       if (loadingEl) loadingEl.classList.add('hide');
       if (authEl) authEl.style.display = 'flex';
     }
@@ -2766,5 +2602,5 @@ function startBanWatch() {
     if (authEl) authEl.style.display = 'flex';
   }
 
-  console.log('✅ Spacegram готов');
+  console.log('✅ Fenix готов');
 })();
