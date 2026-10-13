@@ -1,0 +1,18 @@
+{
+  "name": "Fenix Messenger",
+  "short_name": "Fenix",
+  "description": "Мессенджер нового поколения",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#17212b",
+  "theme_color": "#17212b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><circle cx='256' cy='256' r='256' fill='%2317212b'/><text y='.75em' x='256' font-size='400' text-anchor='middle'>🔥</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
