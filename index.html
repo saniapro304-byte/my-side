@@ -6,14 +6,33 @@
 <meta name="theme-color" content="#17212b">
 <title>Fenix</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
-<link rel="stylesheet" href="styles.css?v=22">
-<script>window.onerror=function(m,s,l,c,e){console.error('ОШИБКА:',m,l+':'+c);};</script>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fenix">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Fenix">
+<link rel="stylesheet" href="styles.css?v=23">
+<script>
+window.onerror=function(msg,src,line,col,err){
+  console.error('ОШИБКА:',msg,src,line+':'+col);
+  if(err&&err.stack)console.error(err.stack);
+};
+window.addEventListener('unhandledrejection',function(e){
+  console.error('PROMISE:',e.reason);
+});
+</script>
 <style>@keyframes heartPop{0%{transform:scale(0) rotate(-20deg);opacity:0}50%{transform:scale(1.3) rotate(10deg);opacity:1}100%{transform:scale(1) rotate(0) translateY(-60px);opacity:0}}</style>
 </head>
 <body>
 
-<div id="L"><div class="sp"></div><div style="color:#7f91a4;font-size:13px">Загрузка...</div></div>
+<!-- ЭКРАН ЗАГРУЗКИ -->
+<div id="L">
+  <div class="sp"></div>
+  <div style="color:#7f91a4;font-size:13px">Загрузка...</div>
+</div>
 
+<!-- ЭКРАН АВТОРИЗАЦИИ -->
 <div id="A" style="display:none">
   <h1>🔥 Fenix</h1>
   <input type="email" id="em" placeholder="Email" autocomplete="email">
@@ -29,6 +48,7 @@
   </div>
 </div>
 
+<!-- ГЛАВНЫЙ APP -->
 <div class="app" id="APP" style="display:none">
   <div class="sd" id="SD">
     <div class="tp">
@@ -39,9 +59,11 @@
         <button class="tb" id="bNewChat" title="Новый чат">💬</button>
         <button class="tb" id="bGrp" title="Группа">➕</button>
         <button class="tb" id="bSearch" title="Поиск">🔍</button>
+        <button class="tb" id="bNotif" title="Уведомления">🔔</button>
         <div class="avt" id="myA" title="Профиль">?</div>
       </div>
     </div>
+
     <div class="folders" id="folders">
       <button class="folder-btn on" data-folder="all">Все</button>
       <button class="folder-btn" data-folder="personal">Личные</button>
@@ -49,35 +71,73 @@
       <button class="folder-btn" data-folder="channels">Каналы</button>
       <button class="folder-btn" data-folder="bots">Боты</button>
     </div>
+
     <div class="st" id="sBar"></div>
-    <div class="sr"><input id="srch" placeholder="Поиск @username или текст..." autocomplete="off"></div>
+
+    <div class="sr">
+      <input id="srch" placeholder="Поиск @username или текст..." autocomplete="off">
+    </div>
+
     <div class="ls" id="chats"></div>
   </div>
 
+  <!-- ЛЕНТА -->
   <div class="fd" id="fdScr" style="display:none">
-    <div style="padding:14px 16px 10px"><h2 style="font-size:19px;font-weight:800">📰 Лента</h2></div>
+    <div style="padding:14px 16px 10px">
+      <h2 style="font-size:19px;font-weight:800">📰 Лента</h2>
+    </div>
     <div id="fdL" style="padding:0 14px"></div>
   </div>
-  <div class="fc" id="fcBtn" style="display:none">✏️</div>
+  <div class="fc" id="fcBtn" style="display:none" title="Написать пост">✏️</div>
 
+  <!-- ОБЛАСТЬ ЧАТА -->
   <div class="area" id="AR">
     <div class="chd" id="CH" style="display:none">
       <button class="bk" id="bBack">←</button>
       <div class="hv" id="hA">?</div>
-      <div class="hi" id="hI"><h3 id="hN">—</h3><div class="sub" id="hS"></div></div>
+      <div class="hi" id="hI">
+        <h3 id="hN">—</h3>
+        <div class="sub" id="hS"></div>
+      </div>
       <div class="ha">
-        <button id="bStalk">🕵️</button>
-        <button id="bChatGallery">🖼️</button>
-        <button id="bSrch">🔍</button>
-        <button id="bMenu">⋮</button>
+        <button id="bStalk" title="StalkerGram">🕵️</button>
+        <button id="bChatGallery" title="Галерея">🖼️</button>
+        <button id="bSrch" title="Поиск">🔍</button>
+        <button id="bMenu" title="Меню">⋮</button>
       </div>
     </div>
-    <div class="ms" id="msgs" style="display:none"></div>
-    <div class="rp" id="rP" style="display:none"><div class="br"></div><div class="cc"><div class="ca" id="rA"></div><div class="ct" id="rT"></div></div><button id="rClose">✕</button></div>
 
-    <div class="pnl h" id="stkP"><div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:8px">СТИКЕРЫ</div><div id="stkG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px"></div></div>
-    <div class="pnl h" id="gifP"><input id="gifS" placeholder="Поиск GIF..." style="width:100%;padding:10px 14px;border-radius:10px;background:var(--p2);color:var(--t);margin-bottom:8px;border:1px solid var(--br)"><div id="gifG" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px"></div></div>
-    <div class="pnl h" id="brnP"><div style="font-size:12px;color:var(--r);font-weight:700;margin-bottom:8px">🔥 САМОУНИЧТОЖЕНИЕ</div><div class="tg" id="brnO"><button data-b="0" class="on">Выкл</button><button data-b="5">5с</button><button data-b="30">30с</button><button data-b="60">1м</button></div></div>
+    <div class="ms" id="msgs" style="display:none"></div>
+
+    <div class="rp" id="rP" style="display:none">
+      <div class="br"></div>
+      <div class="cc">
+        <div class="ca" id="rA"></div>
+        <div class="ct" id="rT"></div>
+      </div>
+      <button id="rClose">✕</button>
+    </div>
+
+    <div class="pnl h" id="stkP">
+      <div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:8px">СТИКЕРЫ</div>
+      <div id="stkG" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:8px"></div>
+    </div>
+
+    <div class="pnl h" id="gifP">
+      <input id="gifS" placeholder="Поиск GIF..." style="width:100%;padding:10px 14px;border-radius:10px;background:var(--p2);color:var(--t);margin-bottom:8px;border:1px solid var(--br)">
+      <div id="gifG" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px"></div>
+    </div>
+
+    <div class="pnl h" id="brnP">
+      <div style="font-size:12px;color:var(--r);font-weight:700;margin-bottom:8px">🔥 САМОУНИЧТОЖЕНИЕ</div>
+      <div class="tg" id="brnO">
+        <button data-b="0" class="on">Выкл</button>
+        <button data-b="5">5с</button>
+        <button data-b="30">30с</button>
+        <button data-b="60">1м</button>
+      </div>
+    </div>
+
     <div class="pnl h" id="attP">
       <div style="font-size:10px;color:var(--a);font-weight:700;margin-bottom:10px">ВЛОЖЕНИЯ</div>
       <div class="ag">
@@ -92,14 +152,20 @@
     </div>
 
     <div class="inp" id="inp" style="display:none">
-      <button class="ib" id="bPlus">📎</button>
-      <div class="ep" id="emW"><button class="ib" id="bEmo">😊</button></div>
+      <button class="ib" id="bPlus" title="Вложения">📎</button>
+      <div class="ep" id="emW">
+        <button class="ib" id="bEmo" title="Эмодзи">😊</button>
+      </div>
       <emoji-picker id="ep" locale="ru"></emoji-picker>
       <input id="msgI" placeholder="Сообщение" autocomplete="off">
-      <button class="ib" id="bMic">🎤</button>
-      <button class="ib sn" id="bSend">➤</button>
+      <button class="ib" id="bMic" title="Голосовое">🎤</button>
+      <button class="ib sn" id="bSend" title="Отправить">➤</button>
     </div>
-    <div class="emp" id="emp"><div class="ic">💬</div><div>Выбери чат</div></div>
+
+    <div class="emp" id="emp">
+      <div class="ic">💬</div>
+      <div>Выбери чат</div>
+    </div>
   </div>
 
   <div class="bn" id="bnv">
@@ -109,20 +175,33 @@
   </div>
 </div>
 
+<!-- АДМИН-ПАНЕЛЬ -->
 <div class="apn" id="apn">
   <div style="display:flex;flex-direction:column;min-height:100%">
-    <div class="atp"><h2>🔐 Админ-панель</h2><button onclick="document.getElementById('apn').classList.remove('show')">✕</button></div>
+    <div class="atp">
+      <h2>🔐 Админ-панель</h2>
+      <button onclick="document.getElementById('apn').classList.remove('show')">✕</button>
+    </div>
     <div class="ast" id="astat"></div>
     <div class="atb" id="atab"></div>
     <div class="abd" id="abod"></div>
   </div>
 </div>
 
-<div id="pinLock"><div style="font-size:60px">🔒</div><div style="font-size:20px;font-weight:700">Введи PIN</div><div id="pinDots">○ ○ ○ ○</div><div id="pinErr" style="font-size:14px;color:#e53935;min-height:20px"></div><div id="pinKb"></div></div>
+<!-- PIN-ЭКРАН -->
+<div id="pinLock">
+  <div style="font-size:60px">🔒</div>
+  <div style="font-size:20px;font-weight:700">Введи PIN</div>
+  <div id="pinDots">○ ○ ○ ○</div>
+  <div id="pinErr" style="font-size:14px;color:#e53935;min-height:20px"></div>
+  <div id="pinKb"></div>
+</div>
 
 <script type="module">
   import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.20.0/index.js';
 </script>
-<script type="module" src="app.js?v=22"></script>
+
+<script type="module" src="app.js?v=23"></script>
+
 </body>
-          </html>
+  </html>
