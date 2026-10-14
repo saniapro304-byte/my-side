@@ -1,6 +1,6 @@
 /* ============================================================
-   FENIX v22 — app.js
-   Часть 1: Ядро + auth + чаты + сообщения + профиль + фичи
+   FENIX v23 — app.js
+   Часть 1/4: Ядро + auth + device + аккаунты + мут/бан + чаты
    ============================================================ */
 
 const CDNS = [
@@ -34,6 +34,10 @@ const state = {
   typingTimer: null, draftTimer: null,
   adminUsersCache: [], adminTab: 'users',
   accounts: JSON.parse(localStorage.getItem('sg_accounts') || '[]'),
+  notifPermission: (typeof Notification !== 'undefined') ? Notification.permission : 'denied',
+  lastSeenMsg: {},
+  lastNotifyCheck: new Date(Date.now() - 60000).toISOString(),
+  lastAdminTotal: 0,
   settings: {
     theme: localStorage.getItem('sg_theme') || 'midnight',
     mode: localStorage.getItem('sg_mode') || 'dark',
@@ -215,24 +219,133 @@ window.openRules = function() {
   );
   loadRules();
 };
-
 async function loadRules() {
   const el = $('rulesContent');
   if (!el) return;
   try {
-    const r = await fetch('rules.json?v=22');
+    const r = await fetch('rules.json?v=23');
     if (!r.ok) throw new Error('rules.json не найден');
     const rules = await r.json();
     el.innerHTML = rules.categories.map(cat =>
-      '<div class="rules-category">' +
-        '<div class="rules-category-title">' + esc(cat.title) + '</div>' +
+      '<div class="rules-category"><div class="rules-category-title">' + esc(cat.title) + '</div>' +
         cat.rules.map(rule => '<div class="rules-rule">' + esc(rule) + '</div>').join('') +
         (cat.punish ? '<div class="rules-punish">⚖️ Наказание: ' + esc(cat.punish) + '</div>' : '') +
       '</div>'
     ).join('');
-  } catch(e) {
-    el.innerHTML = '<div style="text-align:center;padding:20px;color:#e53935">Ошибка: ' + esc(e.message) + '</div>';
-  }
+  } catch(e) { el.innerHTML = '<div style="text-align:center;padding:20px;color:#e53935">Ошибка: ' + esc(e.message) + '</div>'; }
+}
+
+/* ============ УВЕДОМЛЕНИЯ ============ */
+async function initNotifications() {
+  if (typeof Notification === 'undefined') return;
+  state.notifPermission = Notification.permission;
+  console.log('🔔 Permission:', state.notifPermission);
+  if (Notification.permission === 'default') setTimeout(askNotificationPermission, 3000);
+}
+
+async function askNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') { toast('✅ Уведомления уже включены'); return; }
+  if (Notification.permission === 'denied') { toast('🔕 Заблокированы в настройках браузера'); return; }
+  try {
+    const perm = await Notification.requestPermission();
+    state.notifPermission = perm;
+    if (perm === 'granted') {
+      toast('🔔 Уведомления включены!');
+      new Notification('Fenix', { body: '✅ Уведомления включены!', icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>' });
+    } else toast('❌ Отклонено');
+  } catch(e) { console.warn(e); }
+}
+window.askNotificationPermission = askNotificationPermission;
+
+function showNotification(title, body, opts = {}) {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission !== 'granted') return;
+  if (!document.hidden && state.currentChat && opts.chatId === state.currentChat.id) return;
+  try {
+    const n = new Notification(title, {
+      body: body,
+      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>',
+      badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🔥</text></svg>',
+      tag: 'fenix-' + (opts.chatId || 'msg'),
+      renotify: true,
+      vibrate: [200, 100, 200]
+    });
+    n.onclick = function() {
+      window.focus();
+      if (opts.chatId) {
+        const chat = state.chats.find(c => String(c.id) === String(opts.chatId));
+        if (chat) openChat(chat.id);
+      }
+      n.close();
+    };
+    setTimeout(() => { try { n.close(); } catch(e) {} }, 8000);
+    console.log('🔔 Shown:', title);
+    if (state.settings.sound) playNotificationSound();
+    if (state.settings.vibrate && navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  } catch (e) { console.warn('Notif err:', e); }
+}
+
+function playNotificationSound() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC();
+    const o1 = ctx.createOscillator(), g1 = ctx.createGain();
+    o1.connect(g1); g1.connect(ctx.destination);
+    o1.frequency.value = 800; o1.type = 'sine';
+    g1.gain.setValueAtTime(0.15, ctx.currentTime);
+    g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    o1.start(); o1.stop(ctx.currentTime + 0.4);
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.frequency.value = 1200; o2.type = 'sine';
+    g2.gain.setValueAtTime(0, ctx.currentTime);
+    g2.gain.setValueAtTime(0.12, ctx.currentTime + 0.1);
+    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    o2.start(ctx.currentTime + 0.1); o2.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+}
+
+async function checkNewMessagesAndNotify() {
+  if (!state.user) return;
+  try {
+    const since = state.lastNotifyCheck;
+    const { data: chats } = await sb.from('chats').select('*').or(`user1.eq.${state.user.id},user2.eq.${state.user.id}`).order('id', { ascending: false }).limit(30);
+    for (const c of (chats || [])) {
+      const { data: msgs } = await sb.from('messages').select('id,sender,sender_name,text,created_at,chat_id').eq('chat_id', c.id).gt('created_at', since).neq('sender', state.user.id).order('created_at', { ascending: false }).limit(5);
+      if (msgs && msgs.length) {
+        const lastMsg = msgs[0];
+        const lastKey = c.id + '_' + lastMsg.id;
+        if (state.lastSeenMsg[c.id] !== lastKey) {
+          state.lastSeenMsg[c.id] = lastKey;
+          const otherId = c.user1 === state.user.id ? c.user2 : c.user1;
+          const { data: other } = await sb.from('profiles').select('display_name').eq('id', otherId).maybeSingle();
+          const senderName = other?.display_name || lastMsg.sender_name || 'Юзер';
+          showNotification('💬 ' + senderName, (lastMsg.text || '📎 Медиа').slice(0, 100), { chatId: c.id });
+        }
+      }
+    }
+    state.lastNotifyCheck = new Date().toISOString();
+  } catch(e) {}
+}
+
+async function checkAdminNew() {
+  if (!isAdmin()) return;
+  try {
+    const { count: rc } = await sb.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+    const { count: vc } = await sb.from('verification_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending');
+    const total = (rc || 0) + (vc || 0);
+    const bAdm = $('bAdm');
+    if (!bAdm) return;
+    bAdm.style.position = 'relative';
+    let badge = bAdm.querySelector('.admin-badge');
+    if (total > 0) {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'admin-badge'; bAdm.appendChild(badge); }
+      badge.textContent = total > 99 ? '99+' : total;
+      state.lastAdminTotal = total;
+    } else if (badge) badge.remove();
+  } catch(e) {}
 }
 
 /* ============ ЖАЛОБЫ ============ */
@@ -288,7 +401,6 @@ window.adminMute = function(uid) {
   if (!u) return;
   const mutedUntil = u.muted_until ? new Date(u.muted_until) : null;
   const isMuted = mutedUntil && mutedUntil > new Date();
-
   openModal(
     '<h2>🔇 Мут @' + esc(u.username) + '</h2>' +
     (isMuted ? '<div style="background:rgba(243,156,18,.15);color:#f39c12;padding:10px;border-radius:10px;margin-bottom:12px;font-size:13px;font-weight:700">Сейчас в муте до ' + fmtTime(u.muted_until) + ' ' + fmtDate(u.muted_until) + '<br>' + (u.mute_reason ? 'Причина: ' + esc(u.mute_reason) : '') + '</div>' : '') +
@@ -311,7 +423,6 @@ window.adminMute = function(uid) {
     '<button id="bApplyMute" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#f39c12,#e67e22);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">🔇 Применить</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
-
   document.querySelectorAll('.mute-dur').forEach(b => {
     b.onclick = () => {
       document.querySelectorAll('.mute-dur').forEach(x => { x.style.background = 'var(--p2)'; x.style.color = 'var(--t)'; });
@@ -319,7 +430,6 @@ window.adminMute = function(uid) {
       $('muteCustom').value = b.dataset.min;
     };
   });
-
   $('bApplyMute').onclick = async () => {
     const mins = parseInt($('muteCustom').value) || 0;
     const reason = $('muteReason').value.trim();
@@ -342,9 +452,8 @@ window.adminTempBan = function(uid) {
   const u = state.adminUsersCache.find(x => x.id === uid);
   if (!u) return;
   if (uid === state.user.id) { toast('Себя нельзя'); return; }
-
   openModal(
-    '<h2>⏰ Временный бан @' + esc(u.username) + '</h2>' +
+    '<h2>⏰ Бан @' + esc(u.username) + '</h2>' +
     (u.is_banned ? '<div style="background:rgba(229,57,53,.15);color:#e53935;padding:10px;border-radius:10px;margin-bottom:12px;font-size:13px;font-weight:700">Сейчас в бане<br>' + (u.ban_reason ? 'Причина: ' + esc(u.ban_reason) : '') + '</div>' : '') +
     '<div style="font-size:12px;color:var(--t2);margin-bottom:6px">Длительность:</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px" id="banDurations">' +
@@ -359,12 +468,11 @@ window.adminTempBan = function(uid) {
     '</div>' +
     '<div style="font-size:12px;color:var(--t2);margin-bottom:4px">Или своё время (минут):</div>' +
     '<input id="banCustom" type="number" placeholder="Например: 500" style="margin-bottom:10px">' +
-    '<div style="font-size:12px;color:var(--t2);margin-bottom:4px">Причина бана:</div>' +
-    '<textarea id="banReason" rows="2" placeholder="Например: Оскорбление администрации">' + esc(u.ban_reason || '') + '</textarea>' +
-    '<button id="bApplyBan" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#e53935,#c0392b);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">🚫 Применить бан</button>' +
+    '<div style="font-size:12px;color:var(--t2);margin-bottom:4px">Причина:</div>' +
+    '<textarea id="banReason" rows="2" placeholder="Например: Оскорбление админа">' + esc(u.ban_reason || '') + '</textarea>' +
+    '<button id="bApplyBan" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#e53935,#c0392b);color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">🚫 Применить</button>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
   );
-
   document.querySelectorAll('.ban-dur').forEach(b => {
     b.onclick = () => {
       document.querySelectorAll('.ban-dur').forEach(x => { x.style.background = 'var(--p2)'; x.style.color = 'var(--t)'; });
@@ -372,62 +480,41 @@ window.adminTempBan = function(uid) {
       $('banCustom').value = b.dataset.min;
     };
   });
-
   $('bApplyBan').onclick = async () => {
     const mins = parseInt($('banCustom').value);
     const reason = $('banReason').value.trim() || 'Нарушение правил';
     if (isNaN(mins)) { toast('Выбери длительность'); return; }
-
     if (mins === 0) {
-      try {
-        await sb.from('profiles').update({ is_banned: false, ban_reason: null, banned_until: null, banned_by: null }).eq('id', uid);
-        toast('✅ Разбанен');
-      } catch(e) { toast('Ошибка: ' + e.message); return; }
+      try { await sb.from('profiles').update({ is_banned: false, ban_reason: null, banned_until: null, banned_by: null }).eq('id', uid); toast('✅ Разбанен'); } catch(e) { toast('Ошибка'); return; }
     } else {
       const isPerm = mins === -1;
       const until = isPerm ? null : new Date(Date.now() + mins * 60000).toISOString();
-      try {
-        await sb.from('profiles').update({
-          is_banned: true,
-          ban_reason: reason + (isPerm ? ' (ПЕРМ)' : ' (' + mins + ' мин)'),
-          banned_until: until,
-          banned_by: state.user.id
-        }).eq('id', uid);
-        toast(isPerm ? '🚫 Перм-бан выдан' : '⏰ Бан на ' + mins + ' мин');
-      } catch(e) { toast('Ошибка: ' + e.message); return; }
+      try { await sb.from('profiles').update({ is_banned: true, ban_reason: reason + (isPerm ? ' (ПЕРМ)' : ' (' + mins + ' мин)'), banned_until: until, banned_by: state.user.id }).eq('id', uid); toast(isPerm ? '🚫 Перм' : '⏰ Бан ' + mins + ' мин'); } catch(e) { toast('Ошибка'); return; }
     }
-    closeModal();
-    renderAdminUsers();
+    closeModal(); renderAdminUsers();
   };
 };
 
-/* ============ БАН ПО IP / ЖЕЛЕЗУ ============ */
+/* ============ БАН IP/DEV ============ */
 window.adminBanIP = async function(uid) {
   const u = state.adminUsersCache.find(x => x.id === uid);
   if (!u) return;
-  const ip = prompt('Введи IP:', u.ip_address || '');
+  const ip = prompt('IP:', u.ip_address || '');
   if (!ip) return;
   const reason = prompt('Причина:', 'Нарушение') || 'Нарушение';
-  const days = parseInt(prompt('Дней? (0 = навсегда)', '7')) || 7;
+  const days = parseInt(prompt('Дней (0=навсегда)', '7')) || 7;
   const expires = days === 0 ? null : new Date(Date.now() + days * 86400000).toISOString();
-  try {
-    await sb.from('bans').insert({ type: 'ip', value: ip, reason, banned_by: state.user.id, expires_at: expires, active: true });
-    toast('🚫 IP забанен');
-  } catch(e) { toast('Ошибка: ' + e.message); }
+  try { await sb.from('bans').insert({ type: 'ip', value: ip, reason, banned_by: state.user.id, expires_at: expires, active: true }); toast('🚫 IP'); } catch(e) { toast('Ошибка'); }
 };
-
 window.adminBanDevice = async function(uid) {
   const u = state.adminUsersCache.find(x => x.id === uid);
   if (!u) return;
   const deviceId = prompt('Device ID:', u.device_id || '');
   if (!deviceId) return;
   const reason = prompt('Причина:', 'Нарушение') || 'Нарушение';
-  const days = parseInt(prompt('Дней? (0 = навсегда)', '7')) || 7;
+  const days = parseInt(prompt('Дней (0=навсегда)', '7')) || 7;
   const expires = days === 0 ? null : new Date(Date.now() + days * 86400000).toISOString();
-  try {
-    await sb.from('bans').insert({ type: 'device', value: deviceId, reason, banned_by: state.user.id, expires_at: expires, active: true });
-    toast('🚫 Устройство забанено');
-  } catch(e) { toast('Ошибка: ' + e.message); }
+  try { await sb.from('bans').insert({ type: 'device', value: deviceId, reason, banned_by: state.user.id, expires_at: expires, active: true }); toast('🚫 Dev'); } catch(e) { toast('Ошибка'); }
 };
 
 function checkMute() {
@@ -449,7 +536,7 @@ function showMuteBanner() {
   banner.id = 'muteBanner';
   banner.classList.add('show');
   const left = Math.ceil((until - new Date()) / 60000);
-  banner.textContent = '🔇 Вы в муте. Осталось: ' + left + ' мин' + (state.profile.mute_reason ? ' · ' + state.profile.mute_reason : '');
+  banner.textContent = '🔇 Мут. Осталось: ' + left + ' мин' + (state.profile.mute_reason ? ' · ' + state.profile.mute_reason : '');
   const inp = $('inp');
   if (inp && inp.parentNode) inp.parentNode.insertBefore(banner, inp);
 }
@@ -491,9 +578,9 @@ function initAuth() {
     await enterApp();
   };
   const bUnban = $('bTUnban');
-  if (bUnban) bUnban.onclick = () => openModal('<h2>🚫 Разбан</h2><input id="unbanEmail" placeholder="Email"><textarea id="unbanMsg" rows="4" placeholder="Объясни..."></textarea><button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
+  if (bUnban) bUnban.onclick = () => openModal('<h2>🚫 Разбан</h2><input id="unbanEmail" placeholder="Email"><textarea id="unbanMsg" rows="4" placeholder="Объясни..."></textarea><button onclick="window.sendUnban()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
   const bContact = $('bTContact');
-  if (bContact) bContact.onclick = () => openModal('<h2>💬 Связаться</h2><input id="ticketEmail" placeholder="Email"><input id="ticketSubject" placeholder="Тема"><textarea id="ticketText" rows="4" placeholder="Опиши..."></textarea><button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
+  if (bContact) bContact.onclick = () => openModal('<h2>💬 Связаться</h2><input id="ticketEmail" placeholder="Email"><input id="ticketSubject" placeholder="Тема"><textarea id="ticketText" rows="4" placeholder="Опиши..."></textarea><button onclick="window.sendTicket()" class="primary" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
   const bAge = $('bTAge');
   if (bAge) bAge.onclick = () => { if (confirm('16+?')) { localStorage.setItem('sg_age_verified', '1'); toast('✅'); } };
 }
@@ -514,12 +601,10 @@ async function enterApp() {
   if (auth) auth.style.display = 'none';
   if (app) app.style.display = 'flex';
   if (isAdmin() && $('bAdm')) $('bAdm').style.display = 'flex';
-
   const ipBanned = await checkIPBan();
   if (ipBanned) return;
   const devBanned = await checkDeviceBan();
   if (devBanned) return;
-
   await refreshProfile();
   await loadChats();
   await loadStickers();
@@ -533,6 +618,7 @@ async function enterApp() {
   setupDoubleTap();
   setupSwipeReply();
   attachTypingToInput();
+  initNotifications();
   if (typeof loadStoriesBar === 'function') await loadStoriesBar();
   if (state.profile) saveAccount(state.profile);
   showMuteBanner();
@@ -568,11 +654,26 @@ function logout() {
 window.logout = logout;
 
 function setupRealtime() {
-  state.realtimeChats = sb.channel('rt-chats-' + state.user.id).on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { loadChats(); }).subscribe();
-  state.realtimeMsgs = sb.channel('rt-msgs-' + state.user.id).on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, (payload) => {
-    if (state.currentChat && payload.new && String(payload.new.chat_id) === String(state.currentChat.id)) loadMessages();
-    else loadChats();
-  }).subscribe();
+  state.realtimeChats = sb.channel('rt-chats-' + state.user.id)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { loadChats(); })
+    .subscribe();
+  state.realtimeMsgs = sb.channel('rt-msgs-' + state.user.id)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, async (payload) => {
+      const msg = payload.new;
+      if (!msg || msg.sender === state.user.id) return;
+      if (state.currentChat && String(msg.chat_id) === String(state.currentChat.id)) { loadMessages(); return; }
+      console.log('🔔 New msg other chat:', msg.chat_id);
+      try {
+        const { data: chat } = await sb.from('chats').select('*').eq('id', msg.chat_id).maybeSingle();
+        if (!chat) return;
+        const otherId = chat.user1 === state.user.id ? chat.user2 : chat.user1;
+        const { data: other } = await sb.from('profiles').select('display_name').eq('id', otherId).maybeSingle();
+        const senderName = other?.display_name || msg.sender_name || 'Юзер';
+        showNotification('💬 ' + senderName, (msg.text || '📎 Медиа').slice(0, 100), { chatId: msg.chat_id });
+      } catch(e) {}
+      loadChats();
+    })
+    .subscribe((s) => console.log('📡 messages:', s));
 }
 
 function setupPolling() {
@@ -644,11 +745,7 @@ function renderChats() {
     const last = c.last_message || 'Нет сообщений';
     const badge = c.other ? userBadgeHtml(c.other) : '';
     const otherUid = c.other?.id || '';
-    return '<div class="ch" data-id="' + c.id + '">' +
-      '<div class="cv" data-uid="' + otherUid + '" onclick="event.stopPropagation();if(this.dataset.uid)window.viewUserProfile(this.dataset.uid)">' +
-        (avatar ? '<img src="' + esc(avatar) + '">' : initial) + '</div>' +
-      '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:15px;margin-bottom:3px;display:flex;align-items:center;gap:5px">' + esc(name) + ' ' + emoji + ' ' + badge + '</div>' +
-      '<div style="color:var(--t2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(last) + '</div></div></div>';
+    return '<div class="ch" data-id="' + c.id + '"><div class="cv" data-uid="' + otherUid + '" onclick="event.stopPropagation();if(this.dataset.uid)window.viewUserProfile(this.dataset.uid)">' + (avatar ? '<img src="' + esc(avatar) + '">' : initial) + '</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:15px;margin-bottom:3px;display:flex;align-items:center;gap:5px">' + esc(name) + ' ' + emoji + ' ' + badge + '</div><div style="color:var(--t2);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(last) + '</div></div></div>';
   }).join('');
   el.querySelectorAll('.ch').forEach(item => item.onclick = () => openChat(item.dataset.id));
 }
@@ -673,11 +770,7 @@ async function openChat(chatId) {
   }
   const initial = (name[0] || '?').toUpperCase();
   const avatar = chat.group_avatar || chat.other?.avatar_url;
-  if ($('hA')) {
-    $('hA').innerHTML = avatar ? '<img src="' + esc(avatar) + '">' : initial;
-    $('hA').style.cursor = 'pointer';
-    if (chat.other?.id) $('hA').onclick = () => window.viewUserProfile(chat.other.id);
-  }
+  if ($('hA')) { $('hA').innerHTML = avatar ? '<img src="' + esc(avatar) + '">' : initial; $('hA').style.cursor = 'pointer'; if (chat.other?.id) $('hA').onclick = () => window.viewUserProfile(chat.other.id); }
   await loadMessages();
   await markMessagesRead();
   const draft = localStorage.getItem('sg_draft_' + chat.id);
@@ -738,10 +831,7 @@ function renderMessages() {
       if (rep) replyHtml = '<div style="border-left:2px solid ' + (own ? '#fff' : '#ff6b35') + ';padding:2px 8px;margin-bottom:4px;font-size:12px;opacity:.85">' + esc((rep.text || '[медиа]').slice(0,50)) + '</div>';
     }
     const showSender = !own && (state.currentChat.is_group || state.currentChat.is_channel);
-    return dateSep + '<div class="m ' + (own ? 'me' : 'you') + '" data-id="' + m.id + '">' +
-      (showSender ? '<div style="font-size:12px;font-weight:700;color:#ff6b35;margin-bottom:2px">' + esc(m.sender_name || 'Юзер') + '</div>' : '') +
-      replyHtml + content + reactionsHtml +
-      '<span class="msg-time">' + time + '</span></div>';
+    return dateSep + '<div class="m ' + (own ? 'me' : 'you') + '" data-id="' + m.id + '">' + (showSender ? '<div style="font-size:12px;font-weight:700;color:#ff6b35;margin-bottom:2px">' + esc(m.sender_name || 'Юзер') + '</div>' : '') + replyHtml + content + reactionsHtml + '<span class="msg-time">' + time + '</span></div>';
   }).join('');
   el.scrollTop = el.scrollHeight;
 }
@@ -813,14 +903,13 @@ async function sendFile(file) {
 async function loadStickers() {
   const { data } = await sb.from('stickers').select('*').limit(100);
   state.stickers = data || [];
-}
+   }
 /* ============================================================
-   Часть 2: Профиль, Настройки, Сторис, Лента, Магазин, Бот, Админка, bindButtons, main
+   Часть 2/4: Профиль, Настройки, Сторис, Лента, Магазин, Бот, MUSOR DROP
    ============================================================ */
 
 const EMOJI_STATUSES = ['😀','😎','🤔','😴','🥳','😭','❤️','🔥','🚀','⭐','💯','🙏','👀','💀','🤡','🎮','📚','🎧','☕','🍕'];
 
-// ============ ПРОФИЛЬ СВОЙ ============
 function showProf() {
   const p = state.profile;
   if (!p) return;
@@ -908,7 +997,6 @@ function showProf() {
 }
 window.showProf = showProf;
 
-// ============ ПРОСМОТР ЧУЖОГО ПРОФИЛЯ ============
 window.viewUserProfile = async function(userId) {
   if (!userId) return;
   if (userId === state.user.id) { showProf(); return; }
@@ -955,7 +1043,6 @@ window.openQRof = function(username) {
   openModal('<h2 style="text-align:center">📱 QR @' + esc(username) + '</h2><div style="background:#fff;padding:16px;border-radius:16px;display:flex;justify-content:center;margin-bottom:14px"><img src="' + qrUrl + '" style="width:100%;max-width:250px;display:block"></div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>');
 };
 
-// ============ НАСТРОЙКИ ============
 window.openSettings = function() {
   const s = state.settings;
   openModal(
@@ -963,6 +1050,7 @@ window.openSettings = function() {
     '<div class="settings-section-title">ВНЕШНИЙ ВИД</div>' +
     '<button class="settings-item" onclick="window.openThemePicker()"><span class="si-icon" style="background:linear-gradient(135deg,#ff6b35,#ffd700)">🎨</span><div class="si-body"><div class="si-title">Тема</div><div class="si-sub">' + s.theme + ' · ' + (s.mode === 'light' ? 'Светлая' : 'Тёмная') + '</div></div><span class="si-arrow">›</span></button>' +
     '<div class="settings-section-title">УВЕДОМЛЕНИЯ</div>' +
+    '<button class="settings-item" onclick="window.askNotificationPermission()"><span class="si-icon" style="background:linear-gradient(135deg,#ff6b35,#ffd700)">🔔</span><div class="si-body"><div class="si-title">Разрешить уведомления</div><div class="si-sub">' + (Notification.permission === 'granted' ? '✅ Включены' : Notification.permission === 'denied' ? '❌ Заблокированы' : '⚠️ Не запрошены') + '</div></div><span class="si-arrow">›</span></button>' +
     toggleRowTg('cbSound', '🔊', 'Звук', 'Сообщений', s.sound) +
     toggleRowTg('cbVib', '📳', 'Вибрация', 'При сообщениях', s.vibrate) +
     '<div class="settings-section-title">ЧАТЫ</div>' +
@@ -1011,7 +1099,6 @@ window.openThemePicker = function() {
   });
 };
 
-// ============ БАЛАНС ============
 window.openBalance = async () => {
   let logs = [];
   try { const r = await sb.from('balance_log').select('*').eq('user_id', state.user.id).order('id', { ascending: false }).limit(30); logs = r.data || []; } catch(e) {}
@@ -1023,7 +1110,6 @@ window.openBalance = async () => {
   );
 };
 
-// ============ ПРОМОКОД ============
 window.openPromo = () => {
   openModal(
     '<h2>🎁 Промокод</h2>' +
@@ -1048,12 +1134,11 @@ window.openPromo = () => {
     if (promo.bonus_coins) { try { await sb.from('balance_log').insert({ user_id: state.user.id, amount: promo.bonus_coins, reason: 'Промокод ' + code }); } catch(e) {} }
     await refreshProfile();
     s.textContent = '✅ Активирован!'; s.style.color = '#4caf50';
-    toast('🎉 Промокод активирован!');
+    toast('🎉');
     setTimeout(() => closeModal(), 1200);
   };
 };
 
-// ============ МАГАЗИН ============
 window.openShop = async () => {
   let items = [];
   try { const r = await sb.from('shop_items').select('*').limit(50); items = r.data || []; } catch(e) {}
@@ -1061,7 +1146,7 @@ window.openShop = async () => {
     '<h2>🛒 Магазин</h2>' +
     '<div style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:12px;padding:12px;text-align:center;font-weight:700;margin-bottom:14px">💰 ' + (state.profile.balance || 0) + ' SG</div>' +
     '<div style="max-height:400px;overflow-y:auto">' +
-      (items.length ? items.map(i => '<div style="padding:12px;background:var(--p2);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">' + (i.icon || '🎁') + '</span><div><div style="font-weight:700;font-size:14px">' + esc(i.name) + '</div><div style="font-size:11px;color:var(--t2)">' + esc(i.category || '') + '</div></div></div><button onclick="window.buyItem(\'' + i.id + '\')" style="padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700;border:none;cursor:pointer">' + i.price + ' SG</button></div>').join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Магазин пуст 😢</div>') +
+      (items.length ? items.map(i => '<div style="padding:12px;background:var(--p2);border-radius:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">' + (i.icon || '🎁') + '</span><div><div style="font-weight:700;font-size:14px">' + esc(i.name) + '</div><div style="font-size:11px;color:var(--t2)">' + esc(i.category || '') + '</div></div></div><button onclick="window.buyItem(\'' + i.id + '\')" style="padding:8px 14px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700;border:none;cursor:pointer">' + i.price + ' SG</button></div>').join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Магазин пуст</div>') +
     '</div>' +
     '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
   );
@@ -1081,7 +1166,6 @@ window.buyItem = async (itemId) => {
   } catch(e) { toast('Ошибка'); }
 };
 
-// ============ MUSOR DROP ============
 window.openMusorDrop = function() {
   openModal(
     '<h2 style="text-align:center">🎰 Musor Drop</h2>' +
@@ -1114,12 +1198,11 @@ window.mdSpin = async function(bet) {
 async function finishSpin(bet, resultEl, emojiEl) {
   const roll = Math.random();
   let newBal = state.profile.balance || 0, txt = '', emo = '', reason = '', change = 0;
-  if (roll < 0.05) { change = bet * 20; newBal = newBal - bet + change; txt = '🎉 ДЖЕКПОТ! +' + change + ' SG'; emo = '💎'; reason = 'Musor Drop 🎉 JACKPOT ×20'; }
-  else if (roll < 0.45) { const m = [2,3,5,10][Math.floor(Math.random()*4)]; change = bet * m - bet; newBal = newBal - bet + (bet * m); txt = '✅ Победа! ×' + m + ' (+' + change + ')'; emo = '⭐'; reason = 'Musor Drop ✅ Win ×' + m; }
-  else if (roll < 0.85) { newBal = newBal - bet; change = -bet; txt = '❌ Мимо... −' + bet + ' SG'; emo = '💀'; reason = 'Musor Drop ❌ Lose'; }
+  if (roll < 0.05) { change = bet * 20; newBal = newBal - bet + change; txt = '🎉 ДЖЕКПОТ! +' + change; emo = '💎'; reason = 'Musor Drop 🎉 JACKPOT'; }
+  else if (roll < 0.45) { const m = [2,3,5,10][Math.floor(Math.random()*4)]; change = bet * m - bet; newBal = newBal - bet + (bet * m); txt = '✅ ×' + m + ' (+' + change + ')'; emo = '⭐'; reason = 'Musor Drop ✅ ×' + m; }
+  else if (roll < 0.85) { newBal = newBal - bet; change = -bet; txt = '❌ −' + bet; emo = '💀'; reason = 'Musor Drop ❌'; }
   else { newBal = 0; change = -(state.profile.balance || 0); txt = '💥 ВСЁ ОТВАЛИЛОСЬ!'; emo = '☠️'; reason = 'Musor Drop 💥 CRASH'; }
-  newBal = Math.max(0, Math.floor(newBal));
-  change = Math.round(change);
+  newBal = Math.max(0, Math.floor(newBal)); change = Math.round(change);
   try {
     await sb.from('profiles').update({ balance: newBal }).eq('id', state.user.id);
     await sb.from('balance_log').insert({ user_id: state.user.id, amount: change, reason });
@@ -1128,18 +1211,16 @@ async function finishSpin(bet, resultEl, emojiEl) {
     emojiEl.textContent = emo;
     const balEl = $('mdBalance'); if (balEl) balEl.textContent = '💰 ' + newBal + ' SG';
     if (navigator.vibrate) navigator.vibrate(change > 0 ? [30,50,30] : 100);
-    toast(change > 0 ? '🎉 +' + change : (newBal === 0 ? '💥 Всё!' : '😢 ' + change));
-  } catch(e) { toast('Ошибка'); }
+    toast(change > 0 ? '🎉 +' + change : (newBal === 0 ? '💥' : '😢 ' + change));
+  } catch(e) {}
 }
 
-// ============ QR ============
 window.openQR = () => {
   const url = location.origin + '?u=' + state.profile.username;
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' + encodeURIComponent(url);
   openModal('<h2 style="text-align:center">📱 QR</h2><div style="background:#fff;padding:16px;border-radius:16px;display:flex;justify-content:center;margin-bottom:14px"><img src="' + qrUrl + '" style="width:100%;max-width:250px;display:block"></div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>');
 };
 
-// ============ СТОРИС ============
 async function loadStoriesBar() {
   const bar = $('sBar'); if (!bar) return;
   let stories = [];
@@ -1181,16 +1262,15 @@ window.viewStory = async (sid) => {
   openModal('<div class="story-card" style="background:' + (story.bg_color || '#000') + '">' + (story.media_url ? (story.media_type === 'video' ? '<video src="' + esc(story.media_url) + '" autoplay controls></video>' : '<img src="' + esc(story.media_url) + '">') : '') + (story.text_content ? '<div class="text-overlay">' + esc(story.text_content) + '</div>' : '') + '<div class="story-author"><div class="story-avatar">' + (author?.avatar_url ? '<img src="' + esc(author.avatar_url) + '">' : (author?.display_name || '?')[0].toUpperCase()) + '</div><div class="story-info"><b>' + esc(author?.display_name || '') + '</b><br><span style="opacity:.8">' + fmtTime(story.created_at) + ' · 👁 ' + views.length + '</span></div></div></div><div class="story-reactions">' + ['❤️','🔥','😂','😮','👏'].map(e => '<button onclick="window.reactStory(\'' + sid + '\',\'' + e + '\')">' + e + '</button>').join('') + '</div><div style="display:flex;gap:8px;margin-top:8px">' + (isMine ? '<button onclick="window.deleteStory(\'' + sid + '\')" class="dg" style="flex:1;padding:11px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:700;border:1px solid rgba(229,57,53,.3);cursor:pointer">🗑</button>' : '<button onclick="window.storyReply(\'' + sid + '\',\'' + story.user_id + '\')" class="primary" style="flex:1;padding:11px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer">💬</button>') + '<button onclick="window.closeModal()" class="gh" style="flex:1;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button></div>');
 };
 window.reactStory = async (sid, emoji) => { toast(emoji); try { await sb.from('story_reactions').insert({ story_id: sid, user_id: state.user.id, emoji }); } catch(e) {} };
-window.deleteStory = async (sid) => { if (!confirm('Удалить?')) return; try { await sb.from('stories').delete().eq('id', sid); toast('Удалено'); closeModal(); loadStoriesBar(); } catch(e) { toast('Ошибка'); } };
+window.deleteStory = async (sid) => { if (!confirm('Удалить?')) return; try { await sb.from('stories').delete().eq('id', sid); toast('Удалено'); closeModal(); loadStoriesBar(); } catch(e) {} };
 window.storyReply = async (sid, uid) => { closeModal(); if (uid === state.user.id) return; const { data: other } = await sb.from('profiles').select('*').eq('id', uid).maybeSingle(); if (!other) return; const { data: existing } = await sb.from('chats').select('*').or(`and(user1.eq.${state.user.id},user2.eq.${other.id}),and(user1.eq.${other.id},user2.eq.${state.user.id})`).maybeSingle(); let chat = existing; if (!chat) { const { data } = await sb.from('chats').insert({ user1: state.user.id, user2: other.id, created_by: state.user.id }).select().single(); chat = data; } await loadChats(); if (chat) openChat(chat.id); };
 
-// ============ ЛЕНТА ============
 async function loadFeed() {
   const el = $('fdL'); if (!el) return;
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">Загрузка...</div>';
   let posts = [];
   try { const r = await sb.from('posts').select('*').order('id', { ascending: false }).limit(30); if (r.error) { el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Ошибка</div>'; return; } posts = r.data || []; } catch(e) { el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Ошибка</div>'; return; }
-  if (!posts.length) { el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Пока нет постов<br><br>Нажми ✏️</div>'; return; }
+  if (!posts.length) { el.innerHTML = '<div class="empty-feed"><div class="empty-feed-icon">📰</div>Пока нет постов</div>'; return; }
   const uids = [...new Set(posts.map(p => p.user_id).filter(Boolean))];
   const profs = {};
   if (uids.length) { try { const r = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,role').in('id', uids); (r.data || []).forEach(p => profs[p.id] = p); } catch(e) {} }
@@ -1212,12 +1292,10 @@ window.openPost = () => {
   };
 };
 
-// ============ БОТ ============
 window.openBotChat = async () => {
   openModal('<h2>🤖 @Fenixhelperbot</h2><div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;line-height:1.6;color:var(--t2);margin-bottom:14px">погода Москва<br>шутка<br>котик<br>биткоин<br>викторина<br>переведи hello на русский<br>нарисуй космонавта</div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;font-size:13px;border:none;cursor:pointer">Понятно</button>');
 };
 
-// ============ ВЕРИФИКАЦИЯ ============
 window.openVerification = function() {
   openModal('<h2>✅ Заявка на галочку</h2><div style="background:var(--p2);border-radius:12px;padding:14px;font-size:13px;color:var(--t2);margin-bottom:14px">Галочка ставится только админом.</div><div style="font-size:12px;color:var(--t2);margin-bottom:6px">Какую?</div><div class="tg" id="verType" style="margin-bottom:14px"><button data-t="verified" class="on">✅ Верифиц</button><button data-t="youtuber">▶️ YT</button><button data-t="bot">🤖 Бот</button></div><textarea id="verMsg" rows="4" placeholder="Ссылки..."></textarea><button id="bSendVer" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">📤 Отправить</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
   let badgeType = 'verified';
@@ -1229,7 +1307,6 @@ window.openVerification = function() {
   };
 };
 
-// ============ МОИ СТИКЕРЫ ============
 window.openMyStickers = function() {
   openModal('<h2>🎨 Мои стикеры</h2><input type="file" id="stkFile" accept="image/*" style="width:100%;margin-bottom:14px"><button onclick="window.uploadSticker()" class="primary" style="width:100%;padding:11px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">➕ Загрузить</button><div id="myStkList" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;max-height:300px;overflow-y:auto"></div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>');
   loadMyStickers();
@@ -1253,7 +1330,6 @@ window.sendStickerImg = async (url) => {
   closeModal(); await loadMessages(); toast('✅');
 };
 
-// ============ ГОЛОСОВЫЕ ============
 let mediaRecorder = null, audioChunks = [], recordingStart = 0;
 async function startVoice() {
   try {
@@ -1281,31 +1357,43 @@ async function startVoice() {
     const bMic = $('bMic'); if (bMic) { bMic.textContent = '⏹'; bMic.style.background = '#e53935'; }
     toast('🎤 Запись');
   } catch (e) { toast('Нет микрофона'); }
-}
+     }
+/* ============================================================
+   Часть 3/4: АДМИН-ПАНЕЛЬ (юзеры, жалобы, верификация, тикеты, промо, баны)
+   ============================================================ */
 
-// ============ АДМИН-ПАНЕЛЬ ============
 window.openAdmin = function() {
   if (!isAdmin()) { toast('Нет доступа'); return; }
   const apn = $('apn'); if (!apn) return;
   apn.classList.add('show');
   document.body.style.overflow = 'hidden';
-  renderAdminStats(); renderAdminTabs(); switchAdminTab('users');
+  renderAdminStats();
+  renderAdminTabs();
+  switchAdminTab('users');
 };
+
 async function renderAdminStats() {
   const el = $('astat'); if (!el) return;
-  let u = 0, c = 0, m = 0, r = 0;
+  let u = 0, c = 0, m = 0, r = 0, v = 0;
   try { const x = await sb.from('profiles').select('id', { count: 'exact', head: true }); u = x.count || 0; } catch(e) {}
   try { const x = await sb.from('chats').select('id', { count: 'exact', head: true }); c = x.count || 0; } catch(e) {}
   try { const x = await sb.from('messages').select('id', { count: 'exact', head: true }); m = x.count || 0; } catch(e) {}
-  try { const x = await sb.from('verification_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'); r = x.count || 0; } catch(e) {}
-  el.innerHTML = '<div class="admin-stat"><div class="admin-stat-value">' + u + '</div><div class="admin-stat-label">Юзеров</div></div><div class="admin-stat"><div class="admin-stat-value">' + c + '</div><div class="admin-stat-label">Чатов</div></div><div class="admin-stat"><div class="admin-stat-value">' + m + '</div><div class="admin-stat-label">Сообщений</div></div><div class="admin-stat"><div class="admin-stat-value" style="color:#ffd700">' + r + '</div><div class="admin-stat-label">Заявок ✅</div></div>';
+  try { const x = await sb.from('reports').select('id', { count: 'exact', head: true }).eq('status', 'pending'); r = x.count || 0; } catch(e) {}
+  try { const x = await sb.from('verification_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'); v = x.count || 0; } catch(e) {}
+  el.innerHTML =
+    '<div class="admin-stat"><div class="admin-stat-value">' + u + '</div><div class="admin-stat-label">Юзеров</div></div>' +
+    '<div class="admin-stat"><div class="admin-stat-value">' + c + '</div><div class="admin-stat-label">Чатов</div></div>' +
+    '<div class="admin-stat"><div class="admin-stat-value">' + m + '</div><div class="admin-stat-label">Сообщений</div></div>' +
+    '<div class="admin-stat"><div class="admin-stat-value" style="color:#e53935">' + r + '</div><div class="admin-stat-label">🚩 Жалоб</div></div>' +
+    '<div class="admin-stat"><div class="admin-stat-value" style="color:#2196f3">' + v + '</div><div class="admin-stat-label">✅ Заявок</div></div>';
 }
+
 function renderAdminTabs() {
   const el = $('atab'); if (!el) return;
   const tabs = [
     { id: 'users', icon: '👥', name: 'Юзеры' },
-    { id: 'verifications', icon: '✅', name: 'Заявки' },
     { id: 'reports', icon: '🚩', name: 'Жалобы' },
+    { id: 'verifications', icon: '✅', name: 'Заявки' },
     { id: 'tickets', icon: '🎫', name: 'Тикеты' },
     { id: 'promo', icon: '🎁', name: 'Промо' },
     { id: 'bans', icon: '🚫', name: 'Баны' }
@@ -1313,29 +1401,43 @@ function renderAdminTabs() {
   el.innerHTML = tabs.map(t => '<button data-tab="' + t.id + '" class="' + (state.adminTab === t.id ? 'on' : '') + '">' + t.icon + ' ' + t.name + '</button>').join('');
   el.querySelectorAll('button').forEach(b => b.onclick = () => switchAdminTab(b.dataset.tab));
 }
+
 function switchAdminTab(tab) {
+  console.log('🔐 switchAdminTab:', tab);
   state.adminTab = tab;
   renderAdminTabs();
-  const bod = $('abod'); if (!bod) return;
+  const bod = $('abod'); if (!bod) { console.error('abod не найден'); return; }
   bod.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t2)">Загрузка...</div>';
-  if (tab === 'users') renderAdminUsers();
-  else if (tab === 'verifications') renderAdminVerifications();
-  else if (tab === 'reports') renderAdminReports();
-  else if (tab === 'tickets') renderAdminTickets();
-  else if (tab === 'promo') renderAdminPromo();
-  else if (tab === 'bans') renderAdminBans();
+  try {
+    if (tab === 'users') renderAdminUsers();
+    else if (tab === 'reports') renderAdminReports();
+    else if (tab === 'verifications') renderAdminVerifications();
+    else if (tab === 'tickets') renderAdminTickets();
+    else if (tab === 'promo') renderAdminPromo();
+    else if (tab === 'bans') renderAdminBans();
+  } catch(e) {
+    console.error('switchAdminTab err:', e);
+    bod.innerHTML = '<div style="text-align:center;padding:30px;color:#e53935">Ошибка: ' + esc(e.message) + '</div>';
+  }
 }
 
-// --- АДМИН: ЮЗЕРЫ ---
+// ============ ЮЗЕРЫ ============
 async function renderAdminUsers() {
+  console.log('📥 renderAdminUsers');
   const bod = $('abod'); if (!bod) return;
   let users = [];
-  try { const r = await sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(200); users = r.data || []; } catch(e) {}
+  try {
+    const r = await sb.from('profiles').select('*').order('created_at', { ascending: false }).limit(200);
+    console.log('📥 users:', r.data?.length || 0);
+    if (r.error) { bod.innerHTML = '<div style="text-align:center;padding:30px;color:#e53935">Ошибка: ' + esc(r.error.message) + '</div>'; return; }
+    users = r.data || [];
+  } catch(e) { bod.innerHTML = '<div style="text-align:center;padding:30px;color:#e53935">Ошибка: ' + esc(e.message) + '</div>'; return; }
   state.adminUsersCache = users;
   bod.innerHTML = '<input id="adminUserSearch" placeholder="🔍 Поиск..." style="margin-bottom:10px;width:100%;padding:10px 14px;border-radius:10px;background:var(--p2);color:var(--t);border:1px solid var(--br)"><div id="adminUserList">' + renderAdminUsersList('') + '</div>';
   const search = $('adminUserSearch');
   if (search) search.oninput = () => { const list = $('adminUserList'); if (list) list.innerHTML = renderAdminUsersList(search.value.toLowerCase().trim()); };
 }
+
 function renderAdminUsersList(filter) {
   const list = state.adminUsersCache.filter(u => !filter || (u.username || '').toLowerCase().indexOf(filter) !== -1 || (u.display_name || '').toLowerCase().indexOf(filter) !== -1);
   if (!list.length) return '<div style="text-align:center;padding:30px;color:var(--t2)">Никого</div>';
@@ -1349,7 +1451,7 @@ function renderAdminUsersList(filter) {
     const muted = u.muted_until && new Date(u.muted_until) > new Date() ? '<span style="color:#f39c12;font-size:10px;font-weight:700">🔇 МУТ</span>' : '';
     return '<div class="admin-user-row">' +
       '<div class="admin-user-name">' + esc(u.display_name || '—') + badges + ' ' + banned + ' ' + muted + '</div>' +
-      '<div class="admin-user-info">@' + esc(u.username || '—') + ' · 💰 ' + (u.balance||0) + ' · 🎯 ' + (u.level||1) + ' · 💬 ' + (u.messages_count||0) + '</div>' +
+      '<div class="admin-user-info">@' + esc(u.username || '—') + ' · 💰 ' + (u.balance||0) + ' · 🎯 ' + (u.level||1) + ' · 💬 ' + (u.messages_count||0) + '<br>рег: ' + fmtDate(u.created_at) + '</div>' +
       '<div class="admin-user-actions">' +
         '<button onclick="window.adminEditUser(\'' + u.id + '\')" style="background:var(--a);color:#fff">✏️ Изм</button>' +
         '<button onclick="window.adminGiveBalance(\'' + u.id + '\')" style="background:#10b981;color:#fff">💰 SG</button>' +
@@ -1365,14 +1467,16 @@ function renderAdminUsersList(filter) {
     '</div>';
   }).join('');
 }
+
 window.adminEditUser = (uid) => {
   const u = state.adminUsersCache.find(x => x.id === uid); if (!u) return;
-  openModal('<h2>✏️ ' + esc(u.username) + '</h2><input id="auName" placeholder="Имя" value="' + esc(u.display_name || '') + '"><input id="auAvatar" placeholder="URL аватара" value="' + esc(u.avatar_url || '') + '"><input id="auBalance" type="number" placeholder="Баланс" value="' + (u.balance || 0) + '"><input id="auLevel" type="number" placeholder="Уровень" value="' + (u.level || 1) + '"><select id="auRole"><option value="user"' + (u.role === 'user' ? ' selected' : '') + '>user</option><option value="moderator"' + (u.role === 'moderator' ? ' selected' : '') + '>moderator</option><option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>admin</option></select><button id="bSaveUser" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Сохранить</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
+  openModal('<h2>✏️ ' + esc(u.username) + '</h2><input id="auName" placeholder="Имя" value="' + esc(u.display_name || '') + '"><input id="auAvatar" placeholder="URL аватара" value="' + esc(u.avatar_url || '') + '"><textarea id="auBio" rows="2" placeholder="Био">' + esc(u.bio || '') + '</textarea><input id="auBalance" type="number" placeholder="Баланс" value="' + (u.balance || 0) + '"><input id="auLevel" type="number" placeholder="Уровень" value="' + (u.level || 1) + '"><select id="auRole"><option value="user"' + (u.role === 'user' ? ' selected' : '') + '>user</option><option value="moderator"' + (u.role === 'moderator' ? ' selected' : '') + '>moderator</option><option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>admin</option></select><button id="bSaveUser" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Сохранить</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
   $('bSaveUser').onclick = async () => {
-    const updates = { display_name: $('auName').value.trim() || u.display_name, avatar_url: $('auAvatar').value.trim() || null, balance: parseInt($('auBalance').value) || 0, level: parseInt($('auLevel').value) || 1, role: $('auRole').value };
+    const updates = { display_name: $('auName').value.trim() || u.display_name, avatar_url: $('auAvatar').value.trim() || null, bio: $('auBio').value.trim(), balance: parseInt($('auBalance').value) || 0, level: parseInt($('auLevel').value) || 1, role: $('auRole').value };
     try { await sb.from('profiles').update(updates).eq('id', uid); toast('✅'); closeModal(); renderAdminUsers(); } catch(e) { toast('Ошибка'); }
   };
 };
+
 window.adminGiveBalance = (uid) => {
   const u = state.adminUsersCache.find(x => x.id === uid); if (!u) return;
   const amount = prompt('Сколько SG?', '100'); if (!amount) return;
@@ -1382,19 +1486,20 @@ window.adminGiveBalance = (uid) => {
     try { await sb.from('profiles').update({ balance: newBal }).eq('id', uid); try { await sb.from('balance_log').insert({ user_id: uid, amount: n, reason: 'Начисление админом' }); } catch(e) {} toast('💰 ' + newBal); renderAdminUsers(); } catch(e) { toast('Ошибка'); }
   })();
 };
+
 window.adminToggleVerified = async (uid) => {
   const u = state.adminUsersCache.find(x => x.id === uid); if (!u) return;
-  try { await sb.from('profiles').update({ is_verified: !u.is_verified }).eq('id', uid); toast(!u.is_verified ? '✅' : '❌'); renderAdminUsers(); } catch(e) { toast('Ошибка'); }
+  try { await sb.from('profiles').update({ is_verified: !u.is_verified }).eq('id', uid); toast(!u.is_verified ? '✅' : '❌'); renderAdminUsers(); } catch(e) {}
 };
 window.adminTogglePlus = async (uid) => {
   const u = state.adminUsersCache.find(x => x.id === uid); if (!u) return;
-  try { await sb.from('profiles').update({ is_plus: !u.is_plus }).eq('id', uid); toast(!u.is_plus ? '⭐' : '❌'); renderAdminUsers(); } catch(e) { toast('Ошибка'); }
+  try { await sb.from('profiles').update({ is_plus: !u.is_plus }).eq('id', uid); toast(!u.is_plus ? '⭐' : '❌'); renderAdminUsers(); } catch(e) {}
 };
 window.adminToggleCreator = async (uid) => {
   if (uid === state.user.id) { toast('Себя нельзя'); return; }
   const u = state.adminUsersCache.find(x => x.id === uid); if (!u) return;
   if (u.is_creator && !confirm('Снять?')) return;
-  try { await sb.from('profiles').update({ is_creator: !u.is_creator }).eq('id', uid); toast(!u.is_creator ? '👑' : '❌'); renderAdminUsers(); } catch(e) { toast('Ошибка'); }
+  try { await sb.from('profiles').update({ is_creator: !u.is_creator }).eq('id', uid); toast(!u.is_creator ? '👑' : '❌'); renderAdminUsers(); } catch(e) {}
 };
 window.adminToggleBan = async (uid) => {
   const u = state.adminUsersCache.find(x => x.id === uid); if (!u) return;
@@ -1403,22 +1508,67 @@ window.adminToggleBan = async (uid) => {
     if (u.is_banned) { await sb.from('profiles').update({ is_banned: false, ban_reason: null, banned_until: null }).eq('id', uid); toast('✅ Разбан'); }
     else { const reason = prompt('Причина:', 'Нарушение') || 'Нарушение'; await sb.from('profiles').update({ is_banned: true, ban_reason: reason, banned_by: state.user.id }).eq('id', uid); toast('🚫'); }
     renderAdminUsers();
-  } catch(e) { toast('Ошибка'); }
+  } catch(e) {}
 };
 
-// --- АДМИН: ВЕРИФИКАЦИЯ ---
-async function renderAdminVerifications() {
+// ============ ЖАЛОБЫ ============
+async function renderAdminReports() {
+  console.log('📥 renderAdminReports');
   const bod = $('abod'); if (!bod) return;
+  bod.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t2)">Загрузка жалоб...</div>';
+  let reports = [];
+  try {
+    const r = await sb.from('reports').select('*').eq('status', 'pending').order('id', { ascending: false }).limit(50);
+    console.log('📥 reports:', r);
+    if (r.error) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:#e53935">Ошибка: ' + esc(r.error.message) + '</div>'; return; }
+    reports = r.data || [];
+  } catch(e) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:#e53935">Ошибка: ' + esc(e.message) + '</div>'; return; }
+  console.log('📥 reports count:', reports.length);
+  if (!reports.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Жалоб нет</div>'; return; }
+  const uids = [...new Set([...reports.map(r => r.reporter_id).filter(Boolean), ...reports.map(r => r.reported_user_id).filter(Boolean)])];
+  const profs = {};
+  if (uids.length) { try { const r = await sb.from('profiles').select('id,username,display_name').in('id', uids); (r.data || []).forEach(p => profs[p.id] = p); } catch(e) {} }
+  bod.innerHTML = reports.map(r => {
+    const rep = profs[r.reporter_id] || {};
+    const rpd = profs[r.reported_user_id] || {};
+    return '<div class="ver-card"><div class="ver-card-name">🚩 ' + esc(r.reason || '—') + '</div><div class="ver-card-user">От: @' + esc(rep.username || '?') + (rpd.id ? '<br>На: @' + esc(rpd.username || '?') : '') + '<br>ID: ' + r.id + ' · ' + fmtDate(r.created_at) + '</div>' + (r.comment ? '<div class="ver-card-msg">' + esc(r.comment) + '</div>' : '') + '<div class="ver-card-actions">' + (rpd.id ? '<button class="approve" onclick="window.reportTakeAction(\'' + rpd.id + '\',\'' + r.id + '\')">⚖️ Действие</button>' : '') + '<button class="reject" onclick="window.adminResolveReport(\'' + r.id + '\')">✅ Решено</button></div></div>';
+  }).join('');
+}
+
+window.reportTakeAction = async function(userId, reportId) {
+  await sb.from('reports').update({ status: 'reviewed', reviewed_by: state.user.id }).eq('id', reportId);
+  closeModal();
+  const apn = $('apn'); if (apn) apn.classList.add('show');
+  if (!state.adminUsersCache.length) await renderAdminUsers();
+  const u = state.adminUsersCache.find(x => x.id === userId);
+  if (u) window.adminMute(userId);
+  else toast('Обнови админку');
+};
+window.adminResolveReport = async (rid) => {
+  try { await sb.from('reports').update({ status: 'resolved', reviewed_by: state.user.id, reviewed_at: new Date().toISOString() }).eq('id', rid); toast('✅'); renderAdminReports(); renderAdminStats(); } catch(e) {}
+};
+
+// ============ ВЕРИФИКАЦИЯ ============
+async function renderAdminVerifications() {
+  console.log('📥 renderAdminVerifications');
+  const bod = $('abod'); if (!bod) return;
+  bod.innerHTML = '<div style="text-align:center;padding:30px;color:var(--t2)">Загрузка заявок...</div>';
   let reqs = [];
-  try { const r = await sb.from('verification_requests').select('*').eq('status', 'pending').order('id', { ascending: false }).limit(50); reqs = r.data || []; } catch(e) {}
-  if (!reqs.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Нет заявок</div>'; return; }
+  try {
+    const r = await sb.from('verification_requests').select('*').eq('status', 'pending').order('id', { ascending: false }).limit(50);
+    console.log('📥 verifications:', r);
+    if (r.error) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:#e53935">Ошибка: ' + esc(r.error.message) + '</div>'; return; }
+    reqs = r.data || [];
+  } catch(e) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:#e53935">Ошибка: ' + esc(e.message) + '</div>'; return; }
+  console.log('📥 verifications count:', reqs.length);
+  if (!reqs.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Заявок нет</div>'; return; }
   const uids = [...new Set(reqs.map(r => r.user_id).filter(Boolean))];
   const profs = {};
   if (uids.length) { try { const r = await sb.from('profiles').select('id,username,display_name').in('id', uids); (r.data || []).forEach(p => profs[p.id] = p); } catch(e) {} }
   const badgeNames = { verified: '✅ Верифицирован', youtuber: '▶️ YouTuber', bot: '🤖 Bot' };
   bod.innerHTML = reqs.map(req => {
     const u = profs[req.user_id] || {};
-    return '<div class="ver-card"><div class="ver-card-name">' + esc(u.display_name || '—') + '<span class="ver-card-badge ' + req.badge_type + '">' + (badgeNames[req.badge_type] || req.badge_type) + '</span></div><div class="ver-card-user">@' + esc(u.username || '?') + '</div><div class="ver-card-msg">' + esc(req.message || '') + '</div><div class="ver-card-actions"><button class="approve" onclick="window.adminApproveVer(\'' + req.id + '\',\'' + req.user_id + '\',\'' + req.badge_type + '\')">✅</button><button class="reject" onclick="window.adminRejectVer(\'' + req.id + '\')">❌</button></div></div>';
+    return '<div class="ver-card"><div class="ver-card-name">' + esc(u.display_name || '—') + '<span class="ver-card-badge ' + req.badge_type + '">' + (badgeNames[req.badge_type] || req.badge_type) + '</span></div><div class="ver-card-user">@' + esc(u.username || '?') + ' · ' + fmtDate(req.created_at) + '</div><div class="ver-card-msg">' + esc(req.message || '') + '</div><div class="ver-card-actions"><button class="approve" onclick="window.adminApproveVer(\'' + req.id + '\',\'' + req.user_id + '\',\'' + req.badge_type + '\')">✅ Одобрить</button><button class="reject" onclick="window.adminRejectVer(\'' + req.id + '\')">❌ Отклонить</button></div></div>';
   }).join('');
 }
 window.adminApproveVer = async (reqId, uid, badgeType) => {
@@ -1435,54 +1585,26 @@ window.adminApproveVer = async (reqId, uid, badgeType) => {
 };
 window.adminRejectVer = async (reqId) => {
   const reason = prompt('Причина:') || 'Не соответствует';
-  try { await sb.from('verification_requests').update({ status: 'rejected', reject_reason: reason, reviewed_by: state.user.id, reviewed_at: new Date().toISOString() }).eq('id', reqId); toast('Отклонено'); renderAdminVerifications(); } catch(e) { toast('Ошибка'); }
+  try { await sb.from('verification_requests').update({ status: 'rejected', reject_reason: reason, reviewed_by: state.user.id, reviewed_at: new Date().toISOString() }).eq('id', reqId); toast('Отклонено'); renderAdminVerifications(); renderAdminStats(); } catch(e) {}
 };
 
-// --- АДМИН: ЖАЛОБЫ ---
-async function renderAdminReports() {
-  const bod = $('abod'); if (!bod) return;
-  let reports = [];
-  try { const r = await sb.from('reports').select('*').eq('status', 'pending').order('id', { ascending: false }).limit(50); reports = r.data || []; } catch(e) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:#e53935">Ошибка</div>'; return; }
-  if (!reports.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎉 Жалоб нет</div>'; return; }
-  const uids = [...new Set([...reports.map(r => r.reporter_id).filter(Boolean), ...reports.map(r => r.reported_user_id).filter(Boolean)])];
-  const profs = {};
-  if (uids.length) { try { const r = await sb.from('profiles').select('id,username,display_name').in('id', uids); (r.data || []).forEach(p => profs[p.id] = p); } catch(e) {} }
-  bod.innerHTML = reports.map(r => {
-    const reporter = profs[r.reporter_id] || {};
-    const reported = profs[r.reported_user_id] || {};
-    return '<div class="ver-card"><div class="ver-card-name">🚩 ' + esc(r.reason || '—') + '</div><div class="ver-card-user">От: @' + esc(reporter.username || '?') + (reported.id ? '<br>На: @' + esc(reported.username || '?') : '') + '<br>' + fmtDate(r.created_at) + '</div>' + (r.comment ? '<div class="ver-card-msg">' + esc(r.comment) + '</div>' : '') + '<div class="ver-card-actions">' + (reported.id ? '<button class="approve" onclick="window.reportTakeAction(\'' + reported.id + '\',\'' + r.id + '\')">⚖️</button>' : '') + '<button class="reject" onclick="window.adminResolveReport(\'' + r.id + '\')">✅ Решено</button></div></div>';
-  }).join('');
-}
-window.reportTakeAction = async function(userId, reportId) {
-  await sb.from('reports').update({ status: 'reviewed', reviewed_by: state.user.id }).eq('id', reportId);
-  closeModal();
-  const apn = $('apn'); if (apn) apn.classList.add('show');
-  if (!state.adminUsersCache.length) await renderAdminUsers();
-  const u = state.adminUsersCache.find(x => x.id === userId);
-  if (u) window.adminMute(userId);
-  else toast('Обнови админку');
-};
-window.adminResolveReport = async (rid) => {
-  try { await sb.from('reports').update({ status: 'resolved', reviewed_by: state.user.id, reviewed_at: new Date().toISOString() }).eq('id', rid); toast('✅'); renderAdminReports(); } catch(e) { toast('Ошибка'); }
-};
-
-// --- АДМИН: ТИКЕТЫ ---
+// ============ ТИКЕТЫ ============
 async function renderAdminTickets() {
   const bod = $('abod'); if (!bod) return;
   let tickets = [];
   try { const r = await sb.from('tickets').select('*').order('id', { ascending: false }).limit(50); tickets = r.data || []; } catch(e) {}
   if (!tickets.length) { bod.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t2)">🎫 Нет тикетов</div>'; return; }
-  bod.innerHTML = tickets.map(t => '<div class="ver-card"><div class="ver-card-name">' + esc(t.subject || 'Без темы') + '</div><div class="ver-card-user">' + esc(t.email || '') + '</div><div class="ver-card-msg">' + esc(t.message || '') + '</div><div class="ver-card-actions"><button class="approve" onclick="window.adminResolveTicket(\'' + t.id + '\')">✅</button><button class="reject" onclick="window.adminDeleteTicket(\'' + t.id + '\')">🗑</button></div></div>').join('');
+  bod.innerHTML = tickets.map(t => '<div class="ver-card"><div class="ver-card-name">' + esc(t.subject || 'Без темы') + '</div><div class="ver-card-user">' + esc(t.email || '') + ' · ' + esc(t.type || '') + '</div><div class="ver-card-msg">' + esc(t.message || '') + '</div><div class="ver-card-actions"><button class="approve" onclick="window.adminResolveTicket(\'' + t.id + '\')">✅ Решено</button><button class="reject" onclick="window.adminDeleteTicket(\'' + t.id + '\')">🗑 Удалить</button></div></div>').join('');
 }
 window.adminResolveTicket = async (tid) => { try { await sb.from('tickets').update({ status: 'resolved' }).eq('id', tid); toast('✅'); renderAdminTickets(); } catch(e) {} };
 window.adminDeleteTicket = async (tid) => { if (!confirm('Удалить?')) return; try { await sb.from('tickets').delete().eq('id', tid); toast('🗑'); renderAdminTickets(); } catch(e) {} };
 
-// --- АДМИН: ПРОМО ---
+// ============ ПРОМО ============
 async function renderAdminPromo() {
   const bod = $('abod'); if (!bod) return;
   let promos = [];
   try { const r = await sb.from('promocodes').select('*').order('id', { ascending: false }).limit(50); promos = r.data || []; } catch(e) {}
-  bod.innerHTML = '<button onclick="window.adminCreatePromo()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:14px">＋ Создать</button>' + (promos.length ? promos.map(p => '<div class="ver-card"><div class="ver-card-name">🎁 ' + esc(p.code) + '</div><div class="ver-card-user">' + (p.days || 0) + ' дней · ' + (p.bonus_coins || 0) + ' SG · ' + (p.uses || 0) + '/' + (p.max_uses || 0) + '</div><div class="ver-card-actions"><button class="reject" onclick="window.adminDeletePromo(\'' + p.id + '\')">🗑</button></div></div>').join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Нет промо</div>');
+  bod.innerHTML = '<button onclick="window.adminCreatePromo()" style="width:100%;padding:12px;border-radius:12px;background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:14px">＋ Создать промокод</button>' + (promos.length ? promos.map(p => '<div class="ver-card"><div class="ver-card-name">🎁 ' + esc(p.code) + '</div><div class="ver-card-user">' + (p.days || 0) + ' дней · ' + (p.bonus_coins || 0) + ' SG · ' + (p.uses || 0) + '/' + (p.max_uses || 0) + '</div><div class="ver-card-actions"><button class="reject" onclick="window.adminDeletePromo(\'' + p.id + '\')">🗑 Удалить</button></div></div>').join('') : '<div style="text-align:center;padding:30px;color:var(--t2)">Нет промокодов</div>');
 }
 window.adminCreatePromo = () => {
   openModal('<h2>🎁 Промокод</h2><input id="npCode" placeholder="КОД" style="text-transform:uppercase"><input id="npDays" type="number" placeholder="Дней Plus" value="0"><input id="npCoins" type="number" placeholder="SG" value="0"><input id="npMax" type="number" placeholder="Макс" value="100"><button id="bCreatePromo" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">💾 Создать</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
@@ -1494,7 +1616,7 @@ window.adminCreatePromo = () => {
 };
 window.adminDeletePromo = async (pid) => { if (!confirm('Удалить?')) return; try { await sb.from('promocodes').delete().eq('id', pid); toast('🗑'); renderAdminPromo(); } catch(e) {} };
 
-// --- АДМИН: БАНЫ (IP/Dev) ---
+// ============ БАНЫ (IP/DEV) ============
 async function renderAdminBans() {
   const bod = $('abod'); if (!bod) return;
   let bans = [];
@@ -1511,36 +1633,507 @@ window.adminCreateBan = () => {
   };
 };
 window.adminRemoveBan = async (id) => { if (!confirm('Снять бан?')) return; try { await sb.from('bans').update({ active: false }).eq('id', id); toast('✅'); renderAdminBans(); } catch(e) {} };
+/* ============================================================
+   Часть 4/4: Sidebar, bindButtons, main, финал
+   ============================================================ */
+
+// ============ SIDEBAR (бургер) ============
+function openSidebar() {
+  let sb2 = document.querySelector('.sg-sidebar');
+  if (!sb2) {
+    sb2 = document.createElement('div');
+    sb2.className = 'sg-sidebar';
+    const p = state.profile || {};
+    const init = (p.display_name || '?')[0].toUpperCase();
+    const badge = p.is_creator ? renderBadge('creator') : (p.is_verified ? renderBadge('verified') : '');
+    sb2.innerHTML =
+      '<div style="font-size:20px;font-weight:800;margin-bottom:16px;background:linear-gradient(135deg,#ff6b35,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🔥 Fenix</div>' +
+      '<div class="sg-sidebar-user" onclick="closeSidebar();window.openAccounts()">' +
+        '<div class="acc-avatar">' + (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '">' : init) + '</div>' +
+        '<div class="acc-info">' +
+          '<div class="acc-name">' + esc(p.display_name || '?') + badge + '</div>' +
+          '<div class="acc-username">@' + esc(p.username || '?') + ' · сменить</div>' +
+        '</div>' +
+        '<span style="color:var(--t2);font-size:20px">⇄</span>' +
+      '</div>' +
+      '<div id="sbMenu"></div>';
+    document.body.appendChild(sb2);
+
+    const menu = [
+      { i:'🎭', t:'Аккаунты', a:() => { closeSidebar(); window.openAccounts(); } },
+      { i:'📜', t:'Правила Fenix', a:() => { closeSidebar(); window.openRules(); } },
+      { i:'💬', t:'Новый чат', a:() => { closeSidebar(); window.openNewChat(); } },
+      { i:'➕', t:'Группа/Канал', a:() => { closeSidebar(); window.openGroupCreate(); } },
+      { i:'👤', t:'Мой профиль', a:() => { closeSidebar(); showProf(); } },
+      { i:'🔍', t:'Поиск', a:() => { closeSidebar(); window.openGlobalSearch(); } },
+      { i:'🔔', t:'Уведомления', a:() => { closeSidebar(); window.askNotificationPermission(); } },
+      { i:'🎰', t:'Musor Drop 🎲', a:() => { closeSidebar(); window.openMusorDrop(); } },
+      { i:'🛒', t:'Магазин', a:() => { closeSidebar(); window.openShop(); } },
+      { i:'💰', t:'Баланс', a:() => { closeSidebar(); window.openBalance(); } },
+      { i:'🎁', t:'Промокод', a:() => { closeSidebar(); window.openPromo(); } },
+      { i:'🤖', t:'Бот', a:() => { closeSidebar(); window.openBotChat(); } },
+      { i:'✅', t:'Верификация', a:() => { closeSidebar(); window.openVerification(); } },
+      { i:'🎨', t:'Стикеры', a:() => { closeSidebar(); window.openMyStickers(); } },
+      { i:'⚙️', t:'Настройки', a:() => { closeSidebar(); window.openSettings(); } }
+    ];
+    if (isAdmin()) menu.push({ i:'👑', t:'Админ-панель', a:() => { closeSidebar(); window.openAdmin(); } });
+    menu.push({ i:'🚪', t:'Выйти', a:() => { if (confirm('Выйти?')) logout(); } });
+
+    $('sbMenu').innerHTML = menu.map((m,i) =>
+      '<button data-i="' + i + '" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border-radius:12px;background:transparent;color:var(--t);font-size:14px;font-weight:600;border:none;cursor:pointer;text-align:left;margin-bottom:4px">' +
+        '<span style="font-size:18px">' + m.i + '</span> ' + m.t +
+      '</button>'
+    ).join('');
+
+    $('sbMenu').querySelectorAll('button').forEach(b => { b.onclick = () => menu[+b.dataset.i].a(); });
+
+    const ov = document.createElement('div');
+    ov.className = 'sg-sidebar-ov';
+    ov.onclick = closeSidebar;
+    document.body.appendChild(ov);
+  }
+  sb2.style.transform = 'translateX(0)';
+  const ov = document.querySelector('.sg-sidebar-ov');
+  if (ov) ov.style.display = 'block';
+}
+function closeSidebar() {
+  const sb2 = document.querySelector('.sg-sidebar');
+  const ov = document.querySelector('.sg-sidebar-ov');
+  if (sb2) sb2.style.transform = 'translateX(-100%)';
+  if (ov) ov.style.display = 'none';
+}
+window.closeSidebar = closeSidebar;
+
+// ============ ГРУППА/КАНАЛ ============
+window.openGroupCreate = function() {
+  openModal(
+    '<h2>➕ Группа/Канал</h2>' +
+    '<div style="display:flex;gap:6px;margin-bottom:14px" id="typeGrp">' +
+      '<button data-t="group" style="flex:1;padding:10px;border-radius:10px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:600;border:none;cursor:pointer">👥 Группа</button>' +
+      '<button data-t="channel" style="flex:1;padding:10px;border-radius:10px;background:var(--p2);color:var(--t);font-weight:600;border:none;cursor:pointer">📢 Канал</button>' +
+    '</div>' +
+    '<input id="grpName" placeholder="Название">' +
+    '<button id="bCreateGrp" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+  );
+  let type = 'group';
+  document.querySelectorAll('#typeGrp button').forEach(b => b.onclick = () => {
+    type = b.dataset.t;
+    document.querySelectorAll('#typeGrp button').forEach(x => { x.style.background = 'var(--p2)'; x.style.color = 'var(--t)'; });
+    b.style.background = 'linear-gradient(135deg,#ff6b35,#ffd700)'; b.style.color = '#000';
+  });
+  $('bCreateGrp').onclick = async () => {
+    const name = $('grpName').value.trim();
+    if (!name) { toast('Название'); return; }
+    const { data, error } = await sb.from('chats').insert({ is_group: type === 'group', is_channel: type === 'channel', group_name: name, created_by: state.user.id, user1: state.user.id, user2: state.user.id }).select().single();
+    if (error) { toast('Ошибка: ' + error.message); return; }
+    closeModal();
+    await loadChats();
+    openChat(data.id);
+  };
+};
+
+// ============ МЕНЮ ЧАТА ============
+window.openChatMenu = function() {
+  if (!state.currentChat) return;
+  const name = (state.currentChat.is_group || state.currentChat.is_channel) ? state.currentChat.group_name : state.currentChat.other?.display_name;
+  openModal(
+    '<h2>' + esc(name || 'Чат') + '</h2>' +
+    '<button onclick="window.openReportMenu()" style="width:100%;padding:12px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:700;border:1px solid rgba(229,57,53,.3);cursor:pointer;margin-bottom:6px">🚩 Пожаловаться</button>' +
+    '<button onclick="window.clearChatHistory()" class="gh" style="width:100%;padding:12px;border-radius:12px;background:var(--p2);color:var(--t);font-weight:600;border:1px solid var(--br);cursor:pointer;margin-bottom:6px">🗑 Очистить</button>' +
+    (state.currentChat.other ? '<button onclick="window.viewUserProfile(\'' + state.currentChat.other.id + '\')" class="gh" style="width:100%;padding:12px;border-radius:12px;background:var(--p2);color:var(--t);font-weight:600;border:1px solid var(--br);cursor:pointer;margin-bottom:6px">👤 Профиль юзера</button>' : '') +
+    (isAdmin() && state.currentChat.other ? '<button onclick="window.closeModal();window.adminMute(\'' + state.currentChat.other.id + '\')" style="width:100%;padding:12px;border-radius:12px;background:#f39c12;color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:6px">🔇 Мут юзеру</button>' : '') +
+    (isAdmin() && state.currentChat.other ? '<button onclick="window.closeModal();window.adminTempBan(\'' + state.currentChat.other.id + '\')" style="width:100%;padding:12px;border-radius:12px;background:#e53935;color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:6px">🚫 Бан юзеру</button>' : '') +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>'
+  );
+};
+window.clearChatHistory = async () => {
+  if (!state.currentChat) return;
+  if (!confirm('Очистить?')) return;
+  await sb.from('messages').update({ deleted: true }).eq('chat_id', state.currentChat.id);
+  await loadMessages();
+  closeModal();
+  toast('Очищено');
+};
+
+// ============ STALKER / ГАЛЕРЕЯ / ПОИСК В ЧАТЕ ============
+window.openStalker = function() {
+  if (!state.currentChat) return;
+  const deleted = state.messages.filter(m => m.deleted);
+  openModal(
+    '<h2>🕵️ StalkerGram</h2>' +
+    (deleted.length ? deleted.map(m => '<div style="padding:10px;background:var(--p2);border-radius:10px;margin-bottom:6px;font-size:13px;opacity:.7"><b>' + esc(m.sender_name || '?') + ':</b> ' + esc(m.text || '[медиа]') + '</div>').join('') : '<div style="text-align:center;padding:20px;color:var(--t2)">Пусто</div>') +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
+  );
+};
+window.openChatGallery = function() {
+  if (!state.currentChat) return;
+  const media = state.messages.filter(m => m.file_url && (m.file_type || '').indexOf('image') === 0);
+  openModal(
+    '<h2>🖼️ Галерея</h2>' +
+    (media.length ? '<div class="chat-gallery">' + media.map(m => '<img src="' + esc(m.file_url) + '" onclick="window.openImage(\'' + esc(m.file_url) + '\')">').join('') + '</div>' : '<div style="text-align:center;padding:20px;color:var(--t2)">Нет фото</div>') +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>'
+  );
+};
+window.openChatSearch = function() {
+  openModal('<h2>🔍 Поиск в чате</h2><input id="chatSearchQ" placeholder="Что искать?"><div id="chatSearchRes" style="max-height:300px;overflow-y:auto"></div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>');
+  $('chatSearchQ').oninput = () => {
+    const q = $('chatSearchQ').value.trim().toLowerCase();
+    if (q.length < 2) { $('chatSearchRes').innerHTML = ''; return; }
+    const found = state.messages.filter(m => (m.text || '').toLowerCase().indexOf(q) !== -1);
+    $('chatSearchRes').innerHTML = found.length ? found.slice(0, 30).map(m => '<div style="padding:8px;background:var(--p2);border-radius:8px;margin-bottom:6px;font-size:13px"><b>' + esc(m.sender_name || '?') + ':</b> ' + esc((m.text || '').slice(0, 100)) + '</div>').join('') : '<div style="text-align:center;padding:20px;color:var(--t2)">Ничего</div>';
+  };
+};
+
+// ============ ПОИСК ЮЗЕРОВ ============
+window.openNewChat = function() {
+  openModal(
+    '<h2>💬 Новый чат</h2>' +
+    '<input id="newChatUser" placeholder="@username" autocomplete="off">' +
+    '<div id="newChatResults" style="max-height:300px;overflow-y:auto;margin-top:6px"></div>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>'
+  );
+  const inp = $('newChatUser'), res = $('newChatResults');
+  let timer;
+  const doSearch = async () => {
+    const q = inp.value.trim().toLowerCase().replace('@', '');
+    if (q.length < 1) { res.innerHTML = ''; return; }
+    res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Поиск...</div>';
+    let { data, error } = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,is_bot_verified,role').ilike('username', '%' + q + '%').limit(30);
+    if (!error && (!data || !data.length)) { const ex = await sb.from('profiles').select('*').eq('username', q).limit(10); if (ex.data && ex.data.length) data = ex.data; }
+    if (!error && (!data || !data.length)) { const dn = await sb.from('profiles').select('*').ilike('display_name', '%' + q + '%').limit(20); if (dn.data && dn.data.length) data = dn.data; }
+    if (error) { res.innerHTML = '<div style="text-align:center;padding:14px;color:#e53935">' + esc(error.message) + '</div>'; return; }
+    const found = (data || []).filter(u => u.id !== state.user.id);
+    if (!found.length) { res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Никого</div>'; return; }
+    res.innerHTML = found.map(u => {
+      const init = (u.display_name || '?')[0].toUpperCase();
+      const badge = userBadgeHtml(u);
+      return '<div class="ch" data-uid="' + u.id + '"><div class="cv" style="width:44px;height:44px;font-size:16px">' + (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) + '</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:4px">' + esc(u.display_name || '—') + badge + '</div><div style="color:var(--t2);font-size:12px">@' + esc(u.username) + '</div></div><div style="font-size:20px;color:#ff6b35">›</div></div>';
+    }).join('');
+    res.querySelectorAll('.ch[data-uid]').forEach(el => { el.onclick = () => window.startChatWith(el.dataset.uid); });
+  };
+  inp.oninput = () => { clearTimeout(timer); timer = setTimeout(doSearch, 250); };
+  setTimeout(() => inp.focus(), 100);
+};
+
+window.startChatWith = async (otherId) => {
+  if (!otherId) return;
+  if (otherId === state.user.id) { toast('Это ты'); return; }
+  const { data: existing } = await sb.from('chats').select('*').or(`and(user1.eq.${state.user.id},user2.eq.${otherId}),and(user1.eq.${otherId},user2.eq.${state.user.id})`).maybeSingle();
+  let chat = existing;
+  if (!chat) {
+    const { data, error } = await sb.from('chats').insert({ user1: state.user.id, user2: otherId, created_by: state.user.id, is_group: false, is_channel: false }).select().single();
+    if (error) { toast('Ошибка: ' + error.message); return; }
+    chat = data;
+  }
+  closeModal();
+  await loadChats();
+  if (chat) openChat(chat.id);
+};
+
+window.openGlobalSearch = function() {
+  openModal(
+    '<h2>🔍 Поиск</h2>' +
+    '<input id="globalSearchQ" placeholder="Юзеры..." autofocus>' +
+    '<div id="globalSearchRes" style="max-height:400px;overflow-y:auto;margin-top:6px"></div>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>'
+  );
+  const inp = $('globalSearchQ'), res = $('globalSearchRes');
+  let timer;
+  inp.oninput = () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const q = inp.value.trim().toLowerCase().replace('@','');
+      if (q.length < 2) { res.innerHTML = ''; return; }
+      const { data: users } = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,role').or('username.ilike.%' + q + '%,display_name.ilike.%' + q + '%').limit(10);
+      let html = '';
+      if (users?.length) {
+        html += '<div style="font-size:11px;color:var(--t2);font-weight:700;padding:8px 4px 4px">👤 ЮЗЕРЫ</div>';
+        html += users.map(u => {
+          const init = (u.display_name || '?')[0].toUpperCase();
+          const badge = userBadgeHtml(u);
+          return '<div class="ch" data-uid="' + u.id + '"><div class="cv" style="width:40px;height:40px;font-size:14px">' + (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) + '</div><div style="flex:1"><div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:4px">' + esc(u.display_name || '—') + badge + '</div><div style="color:var(--t2);font-size:12px">@' + esc(u.username) + '</div></div></div>';
+        }).join('');
+      }
+      if (!html) html = '<div style="text-align:center;padding:20px;color:var(--t2)">Ничего</div>';
+      res.innerHTML = html;
+      res.querySelectorAll('.ch[data-uid]').forEach(el => { el.onclick = () => window.startChatWith(el.dataset.uid); });
+    }, 400);
+  };
+  setTimeout(() => inp.focus(), 100);
+};
+
+window.openImage = (url) => {
+  openModal('<img src="' + esc(url) + '" style="width:100%;border-radius:14px;display:block;margin-bottom:10px"><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>');
+};
+
+// ============ ТИПИНГ / ДВОЙНОЙ ТАП / СВАЙП ============
+function startTypingWatch() {
+  if (state.typingWatchTimer) clearInterval(state.typingWatchTimer);
+  state.typingWatchTimer = setInterval(async () => {
+    if (!state.currentChat || !state.user) return;
+    if (state.currentChat.is_group || state.currentChat.is_channel) return;
+    const otherId = state.currentChat.user1 === state.user.id ? state.currentChat.user2 : state.currentChat.user1;
+    if (!otherId) return;
+    try {
+      const { data } = await sb.from('profiles').select('typing_until').eq('id', otherId).maybeSingle();
+      const sub = $('hS');
+      if (!sub) return;
+      if (data?.typing_until && new Date(data.typing_until) > new Date()) { sub.textContent = 'печатает...'; sub.style.color = '#ff6b35'; }
+      else { sub.textContent = 'был(а) недавно'; sub.style.color = ''; }
+    } catch(e) {}
+  }, 1500);
+}
+
+function sendTypingStatus() {
+  if (!state.user || !state.settings.showTyping) return;
+  clearTimeout(state.typingTimer);
+  try { sb.from('profiles').update({ typing_until: new Date(Date.now() + 3000).toISOString() }).eq('id', state.user.id); } catch(e) {}
+  state.typingTimer = setTimeout(() => { try { sb.from('profiles').update({ typing_until: null }).eq('id', state.user.id); } catch(e) {} }, 3000);
+}
+
+function setupDoubleTap() {
+  const el = $('msgs'); if (!el || el._dtBound) return; el._dtBound = true;
+  const doHeart = async (msgEl, x, y) => {
+    const msgId = msgEl.dataset.id;
+    if (!msgId || !state.currentChat) return;
+    try {
+      const { data: m } = await sb.from('messages').select('reactions').eq('id', msgId).single();
+      if (!m) return;
+      const reactions = m.reactions || {};
+      reactions['❤️'] = reactions['❤️'] || [];
+      const uid = state.user.id;
+      if (reactions['❤️'].indexOf(uid) !== -1) reactions['❤️'] = reactions['❤️'].filter(x => x !== uid);
+      else reactions['❤️'].push(uid);
+      if (!reactions['❤️'].length) delete reactions['❤️'];
+      await sb.from('messages').update({ reactions }).eq('id', msgId);
+      if (navigator.vibrate) navigator.vibrate(20);
+      const heart = document.createElement('div');
+      heart.textContent = '❤️';
+      heart.style.cssText = 'position:fixed;font-size:40px;pointer-events:none;z-index:99999;left:' + x + 'px;top:' + y + 'px;animation:heartPop .6s ease-out forwards';
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 700);
+      await loadMessages();
+    } catch(err) {}
+  };
+  el.addEventListener('dblclick', (e) => { const m = e.target.closest('.m'); if (m) doHeart(m, e.clientX, e.clientY); });
+  let lastTap = 0;
+  el.addEventListener('touchend', (e) => { const now = Date.now(); const m = e.target.closest('.m'); if (!m) { lastTap = now; return; } if (now - lastTap < 300) { const rect = m.getBoundingClientRect(); doHeart(m, rect.right - 20, rect.top); } lastTap = now; });
+}
+
+function setupSwipeReply() {
+  const el = $('msgs'); if (!el || el._swBound) return; el._swBound = true;
+  let startX = 0, startY = 0, currentMsg = null, currentEl = null;
+  el.addEventListener('touchstart', (e) => {
+    const m = e.target.closest('.m'); if (!m) return;
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+    currentMsg = m; currentEl = m; m.style.transition = 'none';
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    if (!currentEl) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dy > 20) { currentEl.style.transform = ''; currentMsg = null; currentEl = null; return; }
+    if (dx > 0 && dx < 80) currentEl.style.transform = 'translateX(' + dx + 'px)';
+  }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (!currentEl) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    currentEl.style.transition = 'transform .2s';
+    currentEl.style.transform = '';
+    if (dx > 60 && currentMsg) {
+      const msgId = currentMsg.dataset.id;
+      const msg = state.messages.find(m => String(m.id) === String(msgId));
+      if (msg) {
+        state.replyTo = msg;
+        const rp = $('rP');
+        if (rp) {
+          rp.style.display = 'flex'; rp.classList.add('active');
+          const rA = $('rA'), rT = $('rT');
+          if (rA) rA.textContent = msg.sender === state.user.id ? 'Себе' : (msg.sender_name || 'Юзер');
+          if (rT) rT.textContent = (msg.text || '[медиа]').slice(0, 60);
+        }
+        if (navigator.vibrate) navigator.vibrate(15);
+      }
+    }
+    currentMsg = null; currentEl = null;
+  });
+}
+
+function attachTypingToInput() {
+  const inp = $('msgI');
+  if (!inp || inp._typingBound) return;
+  inp._typingBound = true;
+  inp.addEventListener('input', () => {
+    sendTypingStatus();
+    if (state.currentChat) {
+      clearTimeout(state.draftTimer);
+      state.draftTimer = setTimeout(() => {
+        if (inp.value.trim()) localStorage.setItem('sg_draft_' + state.currentChat.id, inp.value);
+        else localStorage.removeItem('sg_draft_' + state.currentChat.id);
+      }, 500);
+    }
+  });
+}
+
+// ============ ФАЙЛЫ / СТИКЕРЫ / GIF / СЖЕЧЬ / ОПРОС ============
+function pickFile(accept) {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = accept || '*/*';
+  inp.onchange = () => { const file = inp.files[0]; if (file && state.currentChat) sendFile(file); };
+  inp.click();
+}
+
+function openStickerPicker() {
+  const s = $('stkP'); if (!s) return;
+  s.classList.toggle('h');
+  const g = $('stkG');
+  if (g) {
+    const list = ['😀','😂','🥰','😎','🤔','😴','🤯','🥳','😭','😡','👍','👎','❤️','🔥','🎉','🚀','⭐','💯','✅','❌','🙏','🤝','👀','💀','🤡'];
+    g.innerHTML = list.map(e => '<button style="font-size:32px;padding:6px;border-radius:10px;background:var(--p2);border:none;cursor:pointer" onclick="window.sendSticker(\'' + e + '\')">' + e + '</button>').join('');
+  }
+}
+
+window.sendSticker = async (emoji) => {
+  if (!state.currentChat) { toast('Открой чат'); return; }
+  const payload = { chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, text: emoji, is_sticker: true, is_read: false, deleted: false };
+  let { error } = await sb.from('messages').insert(payload);
+  if (error && error.message.indexOf('sender_name') !== -1) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
+  if (error) { toast('Ошибка'); return; }
+  const p = $('stkP'); if (p) p.classList.add('h');
+  await loadMessages();
+};
+
+function openGifPicker() {
+  const p = $('gifP'); if (!p) return;
+  p.classList.toggle('h');
+  const inp = $('gifS');
+  if (inp) inp.oninput = async () => {
+    const q = inp.value.trim(); if (!q) return;
+    try {
+      const d = await fetch('https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=' + encodeURIComponent(q) + '&limit=20').then(r => r.json());
+      const g = $('gifG');
+      if (g) g.innerHTML = (d.data || []).map(x => '<img src="' + x.images.fixed_height_small.url + '" style="width:100%;border-radius:8px;cursor:pointer" onclick="window.sendGif(\'' + x.images.original.url + '\')">').join('');
+    } catch(e) {}
+  };
+}
+
+window.sendGif = async (url) => {
+  if (!state.currentChat) return;
+  const payload = { chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, file_url: url, file_type: 'image/gif', is_read: false, deleted: false };
+  let { error } = await sb.from('messages').insert(payload);
+  if (error && error.message.indexOf('sender_name') !== -1) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
+  if (error) { toast('Ошибка'); return; }
+  const p = $('gifP'); if (p) p.classList.add('h');
+  await loadMessages();
+};
+
+function toggleBurn() {
+  const p = $('brnP'); if (!p) return;
+  p.classList.toggle('h');
+  const opts = $('brnO');
+  if (opts) opts.querySelectorAll('button').forEach(b => {
+    b.classList.toggle('on', String(state.burnAfter) === b.dataset.b);
+    b.onclick = () => {
+      state.burnAfter = parseInt(b.dataset.b) || 0;
+      opts.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      if (state.burnAfter > 0) toast('🔥 ' + b.textContent);
+    };
+  });
+}
+
+function openPollCreate() {
+  openModal(
+    '<h2>📊 Опрос</h2>' +
+    '<input id="pollQ" placeholder="Вопрос">' +
+    '<input class="poll-i" placeholder="Вариант 1">' +
+    '<input class="poll-i" placeholder="Вариант 2">' +
+    '<input class="poll-i" placeholder="Вариант 3">' +
+    '<button id="bCrPoll" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button>' +
+    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>'
+  );
+  $('bCrPoll').onclick = async () => {
+    const q = $('pollQ').value.trim();
+    const opts = [...document.querySelectorAll('.poll-i')].map(i => i.value.trim()).filter(Boolean);
+    if (!q || opts.length < 2) { toast('Нужен вопрос и 2 варианта'); return; }
+    if (!state.currentChat) return;
+    const text = '📊 ' + q + '\n' + opts.map((o,i) => (i+1) + '. ' + o).join('\n');
+    const payload = { chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, text, is_read: false, deleted: false };
+    let { error } = await sb.from('messages').insert(payload);
+    if (error && error.message.indexOf('sender_name') !== -1) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
+    if (error) { toast('Ошибка'); return; }
+    closeModal();
+    await loadMessages();
+  };
+}
 
 // ============ BIND BUTTONS ============
 function bindButtons() {
-  console.log('🔗 Привязка...');
-  const bSidebar = $('bSidebar'); if (bSidebar) bSidebar.onclick = () => openSidebar();
+  console.log('🔗 Привязка кнопок...');
+
+  const bNotif = $('bNotif');
+  if (bNotif) bNotif.onclick = () => askNotificationPermission();
+
+  const bSidebar = $('bSidebar');
+  if (bSidebar) bSidebar.onclick = () => openSidebar();
+
   const bindings = {
-    'bAdm': () => window.openAdmin(), 'bSet': () => window.openSettings(), 'bShop': () => window.openShop(),
-    'bBot': () => window.openBotChat(), 'bGrp': () => window.openGroupCreate(), 'bNewChat': () => window.openNewChat(),
-    'bSearch': () => window.openGlobalSearch(), 'bStickers': () => window.openMyStickers(),
-    'bSaved': () => toast('📌 Скоро'), 'bVer': () => window.openVerification()
+    'bAdm': () => window.openAdmin(),
+    'bSet': () => window.openSettings(),
+    'bShop': () => window.openShop(),
+    'bBot': () => window.openBotChat(),
+    'bGrp': () => window.openGroupCreate(),
+    'bNewChat': () => window.openNewChat(),
+    'bSearch': () => window.openGlobalSearch(),
+    'bStickers': () => window.openMyStickers(),
+    'bSaved': () => toast('📌 Скоро'),
+    'bVer': () => window.openVerification()
   };
   Object.keys(bindings).forEach(id => { const el = $(id); if (el) el.onclick = bindings[id]; });
+
   const chatActions = { 'bStalk': () => window.openStalker(), 'bChatGallery': () => window.openChatGallery(), 'bSrch': () => window.openChatSearch(), 'bMenu': () => window.openChatMenu() };
   Object.keys(chatActions).forEach(id => { const el = $(id); if (el) el.onclick = chatActions[id]; });
+
   const bBack = $('bBack'); if (bBack) bBack.onclick = back;
   const rClose = $('rClose'); if (rClose) rClose.onclick = cancelRep;
+
   const msgI = $('msgI'), bSend = $('bSend');
   if (msgI) msgI.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && state.settings.enterSend) { e.preventDefault(); sendMessage(); } };
   if (bSend) bSend.onclick = sendMessage;
-  const bPlus = $('bPlus'); if (bPlus) bPlus.onclick = () => { const p = $('attP'); if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
-  const bEmo = $('bEmo'); if (bEmo) bEmo.onclick = () => { const ep = $('ep'); if (ep) ep.classList.toggle('show'); document.querySelectorAll('.pnl').forEach(p => p.classList.add('h')); };
-  const bMic = $('bMic'); if (bMic) bMic.onclick = () => { if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); bMic.textContent = '🎤'; bMic.style.background = ''; } else startVoice(); };
+
+  const bPlus = $('bPlus');
+  if (bPlus) bPlus.onclick = () => { const p = $('attP'); if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
+
+  const bEmo = $('bEmo');
+  if (bEmo) bEmo.onclick = () => { const ep = $('ep'); if (ep) ep.classList.toggle('show'); document.querySelectorAll('.pnl').forEach(p => p.classList.add('h')); };
+
+  const bMic = $('bMic');
+  if (bMic) bMic.onclick = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      bMic.textContent = '🎤'; bMic.style.background = '';
+    } else startVoice();
+  };
+
   ['ap','af','as','ag','avn','ab','apo'].forEach(id => {
     const el = $(id); if (!el) return;
     el.onclick = () => {
       const attP = $('attP'); if (attP) attP.style.display = 'none';
-      const map = { 'ap': () => pickFile('image/*'), 'af': () => pickFile('*/*'), 'as': () => openStickerPicker(), 'ag': () => openGifPicker(), 'avn': () => toast('⭕ Скоро'), 'ab': () => toggleBurn(), 'apo': () => openPollCreate() };
+      const map = {
+        'ap': () => pickFile('image/*'),
+        'af': () => pickFile('*/*'),
+        'as': () => openStickerPicker(),
+        'ag': () => openGifPicker(),
+        'avn': () => toast('⭕ Скоро'),
+        'ab': () => toggleBurn(),
+        'apo': () => openPollCreate()
+      };
       (map[id] || (()=>{}))();
     };
   });
+
   document.querySelectorAll('.bn button').forEach(b => {
     b.onclick = null;
     b.addEventListener('click', (e) => {
@@ -1550,15 +2143,20 @@ function bindButtons() {
       switchTab(b.dataset.tab);
     });
   });
+
   const fcBtn = $('fcBtn'); if (fcBtn) fcBtn.onclick = () => window.openPost();
   const myA = $('myA'); if (myA) myA.onclick = () => showProf();
-  console.log('✅ Готово');
+
+  console.log('✅ Кнопки привязаны');
 }
+
 function switchTab(tab) {
+  console.log('📱 switchTab:', tab);
   const sd = $('SD'), fd = $('fdScr'), area = $('AR');
   if (sd) sd.style.display = 'none';
   if (fd) fd.style.display = 'none';
   if (area) area.style.display = 'none';
+
   if (tab === 'chats') {
     if (sd) sd.style.display = 'flex';
     if (area) area.style.display = 'flex';
@@ -1582,280 +2180,48 @@ function switchTab(tab) {
   }
 }
 
-// ============ ФАЙЛЫ/СТИКЕРЫ/GIF ============
-function pickFile(accept) {
-  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = accept || '*/*';
-  inp.onchange = () => { const file = inp.files[0]; if (file && state.currentChat) sendFile(file); };
-  inp.click();
-}
-function openStickerPicker() {
-  const s = $('stkP'); if (!s) return;
-  s.classList.toggle('h');
-  const g = $('stkG');
-  if (g) { const list = ['😀','😂','🥰','😎','🤔','😴','🤯','🥳','😭','😡','👍','👎','❤️','🔥','🎉','🚀','⭐','💯','✅','❌','🙏','🤝','👀','💀','🤡']; g.innerHTML = list.map(e => '<button style="font-size:32px;padding:6px;border-radius:10px;background:var(--p2);border:none;cursor:pointer" onclick="window.sendSticker(\'' + e + '\')">' + e + '</button>').join(''); }
-}
-window.sendSticker = async (emoji) => {
-  if (!state.currentChat) { toast('Открой чат'); return; }
-  const payload = { chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, text: emoji, is_sticker: true, is_read: false, deleted: false };
-  let { error } = await sb.from('messages').insert(payload);
-  if (error && error.message.indexOf('sender_name') !== -1) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
-  if (error) { toast('Ошибка'); return; }
-  const p = $('stkP'); if (p) p.classList.add('h');
-  await loadMessages();
-};
-function openGifPicker() {
-  const p = $('gifP'); if (!p) return;
-  p.classList.toggle('h');
-  const inp = $('gifS');
-  if (inp) inp.oninput = async () => {
-    const q = inp.value.trim(); if (!q) return;
-    try { const d = await fetch('https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=' + encodeURIComponent(q) + '&limit=20').then(r => r.json()); const g = $('gifG'); if (g) g.innerHTML = (d.data || []).map(x => '<img src="' + x.images.fixed_height_small.url + '" style="width:100%;border-radius:8px;cursor:pointer" onclick="window.sendGif(\'' + x.images.original.url + '\')">').join(''); } catch(e) {}
-  };
-}
-window.sendGif = async (url) => {
-  if (!state.currentChat) return;
-  const payload = { chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, file_url: url, file_type: 'image/gif', is_read: false, deleted: false };
-  let { error } = await sb.from('messages').insert(payload);
-  if (error && error.message.indexOf('sender_name') !== -1) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
-  if (error) { toast('Ошибка'); return; }
-  const p = $('gifP'); if (p) p.classList.add('h');
-  await loadMessages();
-};
-function toggleBurn() {
-  const p = $('brnP'); if (!p) return;
-  p.classList.toggle('h');
-  const opts = $('brnO');
-  if (opts) opts.querySelectorAll('button').forEach(b => {
-    b.classList.toggle('on', String(state.burnAfter) === b.dataset.b);
-    b.onclick = () => { state.burnAfter = parseInt(b.dataset.b) || 0; opts.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); if (state.burnAfter > 0) toast('🔥 ' + b.textContent); };
-  });
-}
-function openPollCreate() {
-  openModal('<h2>📊 Опрос</h2><input id="pollQ" placeholder="Вопрос"><input class="poll-i" placeholder="Вариант 1"><input class="poll-i" placeholder="Вариант 2"><input class="poll-i" placeholder="Вариант 3"><button id="bCrPoll" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
-  $('bCrPoll').onclick = async () => {
-    const q = $('pollQ').value.trim();
-    const opts = [...document.querySelectorAll('.poll-i')].map(i => i.value.trim()).filter(Boolean);
-    if (!q || opts.length < 2) { toast('Нужен вопрос и 2 варианта'); return; }
-    if (!state.currentChat) return;
-    const text = '📊 ' + q + '\n' + opts.map((o,i) => (i+1) + '. ' + o).join('\n');
-    const payload = { chat_id: state.currentChat.id, sender: state.user.id, sender_name: state.profile.display_name, text, is_read: false, deleted: false };
-    let { error } = await sb.from('messages').insert(payload);
-    if (error && error.message.indexOf('sender_name') !== -1) { delete payload.sender_name; const r = await sb.from('messages').insert(payload); error = r.error; }
-    if (error) { toast('Ошибка'); return; }
-    closeModal(); await loadMessages();
-  };
-}
-
-// ============ SIDEBAR ============
-function openSidebar() {
-  let sb2 = document.querySelector('.sg-sidebar');
-  if (!sb2) {
-    sb2 = document.createElement('div');
-    sb2.className = 'sg-sidebar';
-    const p = state.profile || {};
-    const init = (p.display_name || '?')[0].toUpperCase();
-    const badge = p.is_creator ? renderBadge('creator') : (p.is_verified ? renderBadge('verified') : '');
-    sb2.innerHTML = '<div style="font-size:20px;font-weight:800;margin-bottom:16px;background:linear-gradient(135deg,#ff6b35,#ffd700);-webkit-background-clip:text;-webkit-text-fill-color:transparent">🔥 Fenix</div><div class="sg-sidebar-user" onclick="closeSidebar();window.openAccounts()"><div class="acc-avatar">' + (p.avatar_url ? '<img src="' + esc(p.avatar_url) + '">' : init) + '</div><div class="acc-info"><div class="acc-name">' + esc(p.display_name || '?') + badge + '</div><div class="acc-username">@' + esc(p.username || '?') + ' · сменить</div></div><span style="color:var(--t2);font-size:20px">⇄</span></div><div id="sbMenu"></div>';
-    document.body.appendChild(sb2);
-    const menu = [
-      { i:'🎭', t:'Аккаунты', a:() => { closeSidebar(); window.openAccounts(); } },
-      { i:'📜', t:'Правила Fenix', a:() => { closeSidebar(); window.openRules(); } },
-      { i:'💬', t:'Новый чат', a:() => { closeSidebar(); window.openNewChat(); } },
-      { i:'➕', t:'Группа/Канал', a:() => { closeSidebar(); window.openGroupCreate(); } },
-      { i:'👤', t:'Мой профиль', a:() => { closeSidebar(); showProf(); } },
-      { i:'🔍', t:'Поиск', a:() => { closeSidebar(); window.openGlobalSearch(); } },
-      { i:'🎰', t:'Musor Drop 🎲', a:() => { closeSidebar(); window.openMusorDrop(); } },
-      { i:'🛒', t:'Магазин', a:() => { closeSidebar(); window.openShop(); } },
-      { i:'💰', t:'Баланс', a:() => { closeSidebar(); window.openBalance(); } },
-      { i:'🎁', t:'Промокод', a:() => { closeSidebar(); window.openPromo(); } },
-      { i:'🤖', t:'Бот', a:() => { closeSidebar(); window.openBotChat(); } },
-      { i:'✅', t:'Верификация', a:() => { closeSidebar(); window.openVerification(); } },
-      { i:'🎨', t:'Стикеры', a:() => { closeSidebar(); window.openMyStickers(); } },
-      { i:'⚙️', t:'Настройки', a:() => { closeSidebar(); window.openSettings(); } }
-    ];
-    if (isAdmin()) menu.push({ i:'👑', t:'Админ-панель', a:() => { closeSidebar(); window.openAdmin(); } });
-    menu.push({ i:'🚪', t:'Выйти', a:() => { if (confirm('Выйти?')) logout(); } });
-    $('sbMenu').innerHTML = menu.map((m,i) => '<button data-i="' + i + '" style="display:flex;align-items:center;gap:12px;width:100%;padding:12px;border-radius:12px;background:transparent;color:var(--t);font-size:14px;font-weight:600;border:none;cursor:pointer;text-align:left;margin-bottom:4px"><span style="font-size:18px">' + m.i + '</span> ' + m.t + '</button>').join('');
-    $('sbMenu').querySelectorAll('button').forEach(b => { b.onclick = () => menu[+b.dataset.i].a(); });
-    const ov = document.createElement('div');
-    ov.className = 'sg-sidebar-ov';
-    ov.onclick = closeSidebar;
-    document.body.appendChild(ov);
-  }
-  sb2.style.transform = 'translateX(0)';
-  const ov = document.querySelector('.sg-sidebar-ov');
-  if (ov) ov.style.display = 'block';
-}
-function closeSidebar() {
-  const sb2 = document.querySelector('.sg-sidebar');
-  const ov = document.querySelector('.sg-sidebar-ov');
-  if (sb2) sb2.style.transform = 'translateX(-100%)';
-  if (ov) ov.style.display = 'none';
-}
-window.closeSidebar = closeSidebar;
-
-// ============ ГРУППА ============
-window.openGroupCreate = function() {
-  openModal('<h2>➕ Группа/Канал</h2><div style="display:flex;gap:6px;margin-bottom:14px" id="typeGrp"><button data-t="group" style="flex:1;padding:10px;border-radius:10px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:600;border:none;cursor:pointer">👥 Группа</button><button data-t="channel" style="flex:1;padding:10px;border-radius:10px;background:var(--p2);color:var(--t);font-weight:600;border:none;cursor:pointer">📢 Канал</button></div><input id="grpName" placeholder="Название"><button id="bCreateGrp" class="primary" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#ff6b35,#ffd700);color:#000;font-weight:700;border:none;cursor:pointer;margin-bottom:8px">Создать</button><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Отмена</button>');
-  let type = 'group';
-  document.querySelectorAll('#typeGrp button').forEach(b => b.onclick = () => {
-    type = b.dataset.t;
-    document.querySelectorAll('#typeGrp button').forEach(x => { x.style.background = 'var(--p2)'; x.style.color = 'var(--t)'; });
-    b.style.background = 'linear-gradient(135deg,#ff6b35,#ffd700)'; b.style.color = '#000';
-  });
-  $('bCreateGrp').onclick = async () => {
-    const name = $('grpName').value.trim();
-    if (!name) { toast('Название'); return; }
-    const { data, error } = await sb.from('chats').insert({ is_group: type === 'group', is_channel: type === 'channel', group_name: name, created_by: state.user.id, user1: state.user.id, user2: state.user.id }).select().single();
-    if (error) { toast('Ошибка: ' + error.message); return; }
-    closeModal(); await loadChats(); openChat(data.id);
-  };
-};
-
-// ============ STALKER/GALLERY/SEARCH ============
-window.openStalker = function() {
-  if (!state.currentChat) return;
-  const deleted = state.messages.filter(m => m.deleted);
-  openModal('<h2>🕵️ StalkerGram</h2>' + (deleted.length ? deleted.map(m => '<div style="padding:10px;background:var(--p2);border-radius:10px;margin-bottom:6px;font-size:13px;opacity:.7"><b>' + esc(m.sender_name || '?') + ':</b> ' + esc(m.text || '[медиа]') + '</div>').join('') : '<div style="text-align:center;padding:20px;color:var(--t2)">Пусто</div>') + '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>');
-};
-window.openChatGallery = function() {
-  if (!state.currentChat) return;
-  const media = state.messages.filter(m => m.file_url && (m.file_type || '').indexOf('image') === 0);
-  openModal('<h2>🖼️ Галерея</h2>' + (media.length ? '<div class="chat-gallery">' + media.map(m => '<img src="' + esc(m.file_url) + '" onclick="window.openImage(\'' + esc(m.file_url) + '\')">').join('') + '</div>' : '<div style="text-align:center;padding:20px;color:var(--t2)">Нет фото</div>') + '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>');
-};
-window.openChatSearch = function() {
-  openModal('<h2>🔍 Поиск</h2><input id="chatSearchQ" placeholder="Что искать?"><div id="chatSearchRes" style="max-height:300px;overflow-y:auto"></div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:14px">Закрыть</button>');
-  $('chatSearchQ').oninput = () => {
-    const q = $('chatSearchQ').value.trim().toLowerCase();
-    if (q.length < 2) { $('chatSearchRes').innerHTML = ''; return; }
-    const found = state.messages.filter(m => (m.text || '').toLowerCase().indexOf(q) !== -1);
-    $('chatSearchRes').innerHTML = found.length ? found.slice(0, 30).map(m => '<div style="padding:8px;background:var(--p2);border-radius:8px;margin-bottom:6px;font-size:13px"><b>' + esc(m.sender_name || '?') + ':</b> ' + esc((m.text || '').slice(0, 100)) + '</div>').join('') : '<div style="text-align:center;padding:20px;color:var(--t2)">Ничего</div>';
-  };
-};
-window.openChatMenu = function() {
-  if (!state.currentChat) return;
-  const name = (state.currentChat.is_group || state.currentChat.is_channel) ? state.currentChat.group_name : state.currentChat.other?.display_name;
-  openModal(
-    '<h2>' + esc(name || 'Чат') + '</h2>' +
-    '<button onclick="window.openReportMenu()" style="width:100%;padding:12px;border-radius:12px;background:rgba(229,57,53,.15);color:#e53935;font-weight:700;border:1px solid rgba(229,57,53,.3);cursor:pointer;margin-bottom:6px">🚩 Пожаловаться</button>' +
-    '<button onclick="window.clearChatHistory()" class="gh" style="width:100%;padding:12px;border-radius:12px;background:var(--p2);color:var(--t);font-weight:600;border:1px solid var(--br);cursor:pointer;margin-bottom:6px">🗑 Очистить</button>' +
-    (state.currentChat.other ? '<button onclick="window.viewUserProfile(\'' + state.currentChat.other.id + '\')" class="gh" style="width:100%;padding:12px;border-radius:12px;background:var(--p2);color:var(--t);font-weight:600;border:1px solid var(--br);cursor:pointer;margin-bottom:6px">👤 Профиль</button>' : '') +
-    (isAdmin() && state.currentChat.other ? '<button onclick="window.closeModal();window.adminMute(\'' + state.currentChat.other.id + '\')" style="width:100%;padding:12px;border-radius:12px;background:#f39c12;color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:6px">🔇 Мут</button>' : '') +
-    (isAdmin() && state.currentChat.other ? '<button onclick="window.closeModal();window.adminTempBan(\'' + state.currentChat.other.id + '\')" style="width:100%;padding:12px;border-radius:12px;background:#e53935;color:#fff;font-weight:700;border:none;cursor:pointer;margin-bottom:6px">🚫 Бан</button>' : '') +
-    '<button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>'
-  );
-};
-window.clearChatHistory = async () => {
-  if (!state.currentChat) return;
-  if (!confirm('Очистить?')) return;
-  await sb.from('messages').update({ deleted: true }).eq('chat_id', state.currentChat.id);
-  await loadMessages(); closeModal(); toast('Очищено');
-};
-
-// ============ ПОИСК ЮЗЕРОВ ============
-window.openNewChat = function() {
-  openModal('<h2>💬 Новый чат</h2><input id="newChatUser" placeholder="@username" autocomplete="off"><div id="newChatResults" style="max-height:300px;overflow-y:auto;margin-top:6px"></div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>');
-  const inp = $('newChatUser'), res = $('newChatResults');
-  let timer;
-  const doSearch = async () => {
-    const q = inp.value.trim().toLowerCase().replace('@', '');
-    if (q.length < 1) { res.innerHTML = ''; return; }
-    res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Поиск...</div>';
-    let { data, error } = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,is_bot_verified,role').ilike('username', '%' + q + '%').limit(30);
-    if (!error && (!data || !data.length)) { const ex = await sb.from('profiles').select('*').eq('username', q).limit(10); if (ex.data && ex.data.length) data = ex.data; }
-    if (error) { res.innerHTML = '<div style="text-align:center;padding:14px;color:#e53935">' + esc(error.message) + '</div>'; return; }
-    const found = (data || []).filter(u => u.id !== state.user.id);
-    if (!found.length) { res.innerHTML = '<div style="text-align:center;padding:14px;color:var(--t2)">Никого</div>'; return; }
-    res.innerHTML = found.map(u => {
-      const init = (u.display_name || '?')[0].toUpperCase();
-      const badge = userBadgeHtml(u);
-      return '<div class="ch" data-uid="' + u.id + '"><div class="cv" style="width:44px;height:44px;font-size:16px">' + (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) + '</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;display:flex;align-items:center;gap:4px">' + esc(u.display_name || '—') + badge + '</div><div style="color:var(--t2);font-size:12px">@' + esc(u.username) + '</div></div><div style="font-size:20px;color:#ff6b35">›</div></div>';
-    }).join('');
-    res.querySelectorAll('.ch[data-uid]').forEach(el => { el.onclick = () => window.startChatWith(el.dataset.uid); });
-  };
-  inp.oninput = () => { clearTimeout(timer); timer = setTimeout(doSearch, 250); };
-  setTimeout(() => inp.focus(), 100);
-};
-window.startChatWith = async (otherId) => {
-  if (!otherId) return;
-  if (otherId === state.user.id) { toast('Это ты'); return; }
-  const { data: existing } = await sb.from('chats').select('*').or(`and(user1.eq.${state.user.id},user2.eq.${otherId}),and(user1.eq.${otherId},user2.eq.${state.user.id})`).maybeSingle();
-  let chat = existing;
-  if (!chat) { const { data, error } = await sb.from('chats').insert({ user1: state.user.id, user2: otherId, created_by: state.user.id, is_group: false, is_channel: false }).select().single(); if (error) { toast('Ошибка: ' + error.message); return; } chat = data; }
-  closeModal(); await loadChats(); if (chat) openChat(chat.id);
-};
-window.openGlobalSearch = function() {
-  openModal('<h2>🔍 Поиск</h2><input id="globalSearchQ" placeholder="Юзеры..." autofocus><div id="globalSearchRes" style="max-height:400px;overflow-y:auto;margin-top:6px"></div><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer;margin-top:8px">Закрыть</button>');
-  const inp = $('globalSearchQ'), res = $('globalSearchRes');
-  let timer;
-  inp.oninput = () => { clearTimeout(timer); timer = setTimeout(async () => {
-    const q = inp.value.trim().toLowerCase().replace('@','');
-    if (q.length < 2) { res.innerHTML = ''; return; }
-    const { data: users } = await sb.from('profiles').select('id,username,display_name,avatar_url,is_verified,is_plus,is_creator,is_youtuber,role').or('username.ilike.%' + q + '%,display_name.ilike.%' + q + '%').limit(10);
-    let html = '';
-    if (users?.length) { html += '<div style="font-size:11px;color:var(--t2);font-weight:700;padding:8px 4px 4px">👤 ЮЗЕРЫ</div>'; html += users.map(u => { const init = (u.display_name || '?')[0].toUpperCase(); const badge = userBadgeHtml(u); return '<div class="ch" data-uid="' + u.id + '"><div class="cv" style="width:40px;height:40px;font-size:14px">' + (u.avatar_url ? '<img src="' + esc(u.avatar_url) + '">' : init) + '</div><div style="flex:1"><div style="font-weight:600;font-size:14px;display:flex;align-items:center;gap:4px">' + esc(u.display_name || '—') + badge + '</div><div style="color:var(--t2);font-size:12px">@' + esc(u.username) + '</div></div></div>'; }).join(''); }
-    if (!html) html = '<div style="text-align:center;padding:20px;color:var(--t2)">Ничего</div>';
-    res.innerHTML = html;
-    res.querySelectorAll('.ch[data-uid]').forEach(el => { el.onclick = () => window.startChatWith(el.dataset.uid); });
-  }, 400); };
-  setTimeout(() => inp.focus(), 100);
-};
-window.openImage = (url) => openModal('<img src="' + esc(url) + '" style="width:100%;border-radius:14px;display:block;margin-bottom:10px"><button onclick="window.closeModal()" class="gh" style="width:100%;padding:11px;border-radius:12px;background:var(--p2);color:var(--t2);font-weight:600;border:none;cursor:pointer">Закрыть</button>');
-
-// ============ ТИПИНГ/ДВОЙНОЙ ТАП/СВАЙП ============
-function startTypingWatch() {
-  if (state.typingWatchTimer) clearInterval(state.typingWatchTimer);
-  state.typingWatchTimer = setInterval(async () => {
-    if (!state.currentChat || !state.user) return;
-    if (state.currentChat.is_group || state.currentChat.is_channel) return;
-    const otherId = state.currentChat.user1 === state.user.id ? state.currentChat.user2 : state.currentChat.user1;
-    if (!otherId) return;
-    try { const { data } = await sb.from('profiles').select('typing_until').eq('id', otherId).maybeSingle(); const sub = $('hS'); if (!sub) return; if (data?.typing_until && new Date(data.typing_until) > new Date()) { sub.textContent = 'печатает...'; sub.style.color = '#ff6b35'; } else { sub.textContent = 'был(а) недавно'; sub.style.color = ''; } } catch(e) {}
-  }, 1500);
-}
-function sendTypingStatus() {
-  if (!state.user || !state.settings.showTyping) return;
-  clearTimeout(state.typingTimer);
-  try { sb.from('profiles').update({ typing_until: new Date(Date.now() + 3000).toISOString() }).eq('id', state.user.id); } catch(e) {}
-  state.typingTimer = setTimeout(() => { try { sb.from('profiles').update({ typing_until: null }).eq('id', state.user.id); } catch(e) {} }, 3000);
-}
-function setupDoubleTap() {
-  const el = $('msgs'); if (!el || el._dtBound) return; el._dtBound = true;
-  const doHeart = async (msgEl, x, y) => {
-    const msgId = msgEl.dataset.id; if (!msgId || !state.currentChat) return;
-    try { const { data: m } = await sb.from('messages').select('reactions').eq('id', msgId).single(); if (!m) return; const reactions = m.reactions || {}; reactions['❤️'] = reactions['❤️'] || []; const uid = state.user.id; if (reactions['❤️'].indexOf(uid) !== -1) reactions['❤️'] = reactions['❤️'].filter(x => x !== uid); else reactions['❤️'].push(uid); if (!reactions['❤️'].length) delete reactions['❤️']; await sb.from('messages').update({ reactions }).eq('id', msgId); if (navigator.vibrate) navigator.vibrate(20); const heart = document.createElement('div'); heart.textContent = '❤️'; heart.style.cssText = 'position:fixed;font-size:40px;pointer-events:none;z-index:99999;left:' + x + 'px;top:' + y + 'px;animation:heartPop .6s ease-out forwards'; document.body.appendChild(heart); setTimeout(() => heart.remove(), 700); await loadMessages(); } catch(err) {}
-  };
-  el.addEventListener('dblclick', (e) => { const m = e.target.closest('.m'); if (m) doHeart(m, e.clientX, e.clientY); });
-  let lastTap = 0;
-  el.addEventListener('touchend', (e) => { const now = Date.now(); const m = e.target.closest('.m'); if (!m) { lastTap = now; return; } if (now - lastTap < 300) { const rect = m.getBoundingClientRect(); doHeart(m, rect.right - 20, rect.top); } lastTap = now; });
-}
-function setupSwipeReply() {
-  const el = $('msgs'); if (!el || el._swBound) return; el._swBound = true;
-  let startX = 0, startY = 0, currentMsg = null, currentEl = null;
-  el.addEventListener('touchstart', (e) => { const m = e.target.closest('.m'); if (!m) return; startX = e.touches[0].clientX; startY = e.touches[0].clientY; currentMsg = m; currentEl = m; m.style.transition = 'none'; }, { passive: true });
-  el.addEventListener('touchmove', (e) => { if (!currentEl) return; const dx = e.touches[0].clientX - startX; const dy = Math.abs(e.touches[0].clientY - startY); if (dy > 20) { currentEl.style.transform = ''; currentMsg = null; currentEl = null; return; } if (dx > 0 && dx < 80) currentEl.style.transform = 'translateX(' + dx + 'px)'; }, { passive: true });
-  el.addEventListener('touchend', (e) => { if (!currentEl) return; const dx = e.changedTouches[0].clientX - startX; currentEl.style.transition = 'transform .2s'; currentEl.style.transform = ''; if (dx > 60 && currentMsg) { const msgId = currentMsg.dataset.id; const msg = state.messages.find(m => String(m.id) === String(msgId)); if (msg) { state.replyTo = msg; const rp = $('rP'); if (rp) { rp.style.display = 'flex'; rp.classList.add('active'); const rA = $('rA'), rT = $('rT'); if (rA) rA.textContent = msg.sender === state.user.id ? 'Себе' : (msg.sender_name || 'Юзер'); if (rT) rT.textContent = (msg.text || '[медиа]').slice(0, 60); } if (navigator.vibrate) navigator.vibrate(15); } } currentMsg = null; currentEl = null; });
-}
-function attachTypingToInput() {
-  const inp = $('msgI'); if (!inp || inp._typingBound) return; inp._typingBound = true;
-  inp.addEventListener('input', () => { sendTypingStatus(); if (state.currentChat) { clearTimeout(state.draftTimer); state.draftTimer = setTimeout(() => { if (inp.value.trim()) localStorage.setItem('sg_draft_' + state.currentChat.id, inp.value); else localStorage.removeItem('sg_draft_' + state.currentChat.id); }, 500); } });
-}
-
 // ============ BAN WATCH ============
 function startBanWatch() {
   setInterval(async () => {
     if (!state.user) return;
-    try { const { data } = await sb.from('profiles').select('is_banned,ban_reason,muted_until').eq('id', state.user.id).single(); if (data?.is_banned) showBanBanner(data.ban_reason); if (data) { state.profile.muted_until = data.muted_until; showMuteBanner(); } } catch(e) {}
+    try {
+      const { data } = await sb.from('profiles').select('is_banned,ban_reason,muted_until,mute_reason').eq('id', state.user.id).single();
+      if (data?.is_banned) showBanBanner(data.ban_reason);
+      if (data) {
+        state.profile.muted_until = data.muted_until;
+        state.profile.mute_reason = data.mute_reason;
+        showMuteBanner();
+      }
+    } catch(e) {}
   }, 30000);
+
+  // Проверка новых сообщений для уведомлений
+  setInterval(() => { if (state.user) checkNewMessagesAndNotify(); }, 10000);
+
+  // Проверка новых жалоб/заявок для админа
+  if (isAdmin()) {
+    setInterval(checkAdminNew, 30000);
+    setTimeout(checkAdminNew, 2000);
+  }
 }
 
 // ============ MAIN ============
 (async function main() {
-  console.log('🚀 Fenix v22 init...');
-  try { const createClient = await loadSupabase(); sb = createClient(SUPABASE_URL, SUPABASE_KEY); console.log('✅ Supabase OK'); }
-  catch (e) { document.body.innerHTML = '<div style="padding:40px;color:#fff;background:#0e1621;min-height:100vh"><h1>❌ Ошибка</h1><pre>' + esc(e.message) + '</pre></div>'; return; }
+  console.log('🚀 Fenix v23 init...');
+  try {
+    const createClient = await loadSupabase();
+    sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase client создан');
+  } catch (e) {
+    console.error('❌ Supabase error:', e);
+    document.body.innerHTML = '<div style="padding:40px;color:#fff;font-family:monospace;background:#0e1621;min-height:100vh">' +
+      '<h1>❌ Ошибка</h1><pre>' + esc(e.message) + '</pre>' +
+      '<button onclick="location.reload()" style="padding:12px 20px;margin-top:20px;border-radius:10px;background:#ff6b35;color:#fff;border:none;cursor:pointer">🔄 Перезагрузить</button></div>';
+    return;
+  }
 
-  applyTheme(state.settings.theme); applyMode(state.settings.mode);
+  applyTheme(state.settings.theme);
+  applyMode(state.settings.mode);
   initAuth();
 
   const savedId = localStorage.getItem('sg_user_id');
@@ -1865,21 +2231,27 @@ function startBanWatch() {
     try {
       const { data } = await sb.from('profiles').select('*').eq('id', savedId).maybeSingle();
       if (data && !data.is_banned) {
-        state.user = { id: data.id }; state.profile = data;
+        state.user = { id: data.id };
+        state.profile = data;
         if (loadingEl) loadingEl.classList.add('hide');
         await enterApp();
         startBanWatch();
-        console.log('✅ Автологин');
+        console.log('✅ Автологин OK');
       } else {
         if (data && data.is_banned) showBanBanner(data.ban_reason);
         localStorage.removeItem('sg_user_id');
         if (loadingEl) loadingEl.classList.add('hide');
         if (authEl) authEl.style.display = 'flex';
       }
-    } catch(e) { if (loadingEl) loadingEl.classList.add('hide'); if (authEl) authEl.style.display = 'flex'; }
+    } catch(e) {
+      console.error(e);
+      if (loadingEl) loadingEl.classList.add('hide');
+      if (authEl) authEl.style.display = 'flex';
+    }
   } else {
     if (loadingEl) loadingEl.classList.add('hide');
     if (authEl) authEl.style.display = 'flex';
   }
+
   console.log('✅ Fenix готов');
 })();
