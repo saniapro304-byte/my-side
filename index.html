@@ -5,29 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#17212b">
 <title>Fenix</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%23ff6b35'/><stop offset='100%25' stop-color='%23ffd700'/></linearGradient></defs><circle cx='50' cy='50' r='48' fill='%2317212b'/><text y='.75em' x='50' font-size='70' text-anchor='middle' fill='url(%23g)'>🔥</text></svg>">
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Fenix">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="application-name" content="Fenix">
-<link rel="stylesheet" href="styles.css?v=18">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<link rel="stylesheet" href="styles.css?v=21">
 <script>
-window.onerror=function(msg,src,line,col,err){
-  console.error('ОШИБКА:',msg,src,line+':'+col);
-  if(err&&err.stack)console.error(err.stack);
-};
-window.addEventListener('unhandledrejection',function(e){
-  console.error('PROMISE:',e.reason);
-});
+window.onerror=function(m,s,l,c,e){console.error('ОШИБКА:',m,l+':'+c);};
+window.addEventListener('unhandledrejection',function(e){console.error('PROMISE:',e.reason);});
 </script>
 <style>
-@keyframes heartPop {
-  0% { transform: scale(0) rotate(-20deg); opacity: 0; }
-  50% { transform: scale(1.3) rotate(10deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg) translateY(-60px); opacity: 0; }
-}
+@keyframes heartPop{0%{transform:scale(0) rotate(-20deg);opacity:0}50%{transform:scale(1.3) rotate(10deg);opacity:1}100%{transform:scale(1) rotate(0) translateY(-60px);opacity:0}}
 </style>
 </head>
 <body>
@@ -35,10 +20,7 @@ window.addEventListener('unhandledrejection',function(e){
 <div id="L">
   <div class="sp"></div>
   <div style="color:#7f91a4;font-size:13px">Загрузка...</div>
-  <div id="D"></div>
 </div>
-
-<div id="BE" style="display:none"></div>
 
 <div id="A" style="display:none">
   <h1>🔥 Fenix</h1>
@@ -86,11 +68,11 @@ window.addEventListener('unhandledrejection',function(e){
     <div class="ls" id="chats"></div>
   </div>
 
-  <div class="fd" id="fdScr">
-    <div style="padding:10px 4px">
+  <div class="fd" id="fdScr" style="display:none">
+    <div style="padding:14px 16px 10px">
       <h2 style="font-size:19px;font-weight:800">📰 Лента</h2>
     </div>
-    <div id="fdL"></div>
+    <div id="fdL" style="padding:0 14px"></div>
   </div>
   <div class="fc" id="fcBtn" style="display:none" title="Написать пост">✏️</div>
 
@@ -172,29 +154,11 @@ window.addEventListener('unhandledrejection',function(e){
   </div>
 
   <div class="bn" id="bnv">
-    <button class="on" data-tab="chats"><span class="bi">💬</span>Чаты</button>
-    <button data-tab="feed"><span class="bi">📰</span>Лента</button>
-    <button data-tab="profile"><span class="bi">👤</span>Профиль</button>
+    <button type="button" class="on" data-tab="chats"><span class="bi">💬</span>Чаты</button>
+    <button type="button" data-tab="feed"><span class="bi">📰</span>Лента</button>
+    <button type="button" data-tab="profile"><span class="bi">👤</span>Профиль</button>
   </div>
 </div>
-
-<div class="md" id="profM"><div class="mb" id="profBox"></div></div>
-<div class="md" id="setM"><div class="mb" id="setBox"></div></div>
-<div class="md" id="privM"><div class="mb" id="privBox"></div></div>
-<div class="md" id="promoM"><div class="mb" id="promoBox"></div></div>
-<div class="md" id="modsM"><div class="mb" id="modsBox"></div></div>
-<div class="md" id="shopM"><div class="mb" id="shopBox"></div></div>
-<div class="md" id="cosmeticsM"><div class="mb" id="cosmeticsBox"></div></div>
-<div class="md" id="myStickersM"><div class="mb" id="myStickersBox"></div></div>
-<div class="md" id="verM"><div class="mb" id="verBox"></div></div>
-<div class="md" id="postM"><div class="mb" id="postBox"></div></div>
-<div class="md" id="grpM"><div class="mb" id="grpBox"></div></div>
-<div class="md" id="pollM"><div class="mb" id="pollBox"></div></div>
-<div class="md" id="botM"><div class="mb" id="botBox"></div></div>
-<div class="md" id="appM"><div class="mb" id="appBox"></div></div>
-<div class="md" id="sessM"><div class="mb" id="sessBox"></div></div>
-<div class="md" id="reportM"><div class="mb" id="reportBox"></div></div>
-<div class="md" id="ticketM"><div class="mb" id="ticketBox"></div></div>
 
 <div class="apn" id="apn">
   <div style="display:flex;flex-direction:column;min-height:100%">
@@ -208,8 +172,6 @@ window.addEventListener('unhandledrejection',function(e){
   </div>
 </div>
 
-<div id="bm"><div id="bmc"></div></div>
-
 <div id="pinLock">
   <div style="font-size:60px">🔒</div>
   <div style="font-size:20px;font-weight:700">Введи PIN</div>
@@ -218,17 +180,11 @@ window.addEventListener('unhandledrejection',function(e){
   <div id="pinKb"></div>
 </div>
 
-<div class="sv" id="svV">
-  <div class="sh" id="svH"></div>
-  <div class="sc" id="svC"></div>
-  <button style="position:absolute;top:20px;right:12px;z-index:15;background:rgba(0,0,0,.4);width:36px;height:36px;border-radius:50%;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none" onclick="document.getElementById('svV').classList.remove('show')">✕</button>
-</div>
-
 <script type="module">
   import 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1.20.0/index.js';
 </script>
 
-<script type="module" src="app.js?v=18"></script>
+<script type="module" src="app.js?v=21"></script>
 
 </body>
-          </html>
+  </html>
